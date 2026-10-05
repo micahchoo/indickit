@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Small, exact utilities for text in Indian languages. First: a phonetic key that matches a name across 21 Indian scripts and English.",
   "license": "MIT",
+  "packageManager": "bun@1.3.14",
   "type": "module",
   "repository": {
     "type": "git",
