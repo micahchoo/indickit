@@ -1,0 +1,30 @@
+{
+  "name": "indickit",
+  "version": "0.1.0",
+  "description": "Small, exact utilities for text in Indian languages. First: a phonetic key that matches a name across 21 Indian scripts and English.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/micahchoo/indickit.git"
+  },
+  "exports": {
+    "./phonetic": {
+      "types": "./dist/types/js/phonetic.d.ts",
+      "default": "./dist/phonetic.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "bun build js/phonetic.ts --outfile dist/phonetic.js --target browser --format esm && tsc -p tsconfig.json",
+    "test": "bun test",
+    "check-dist": "node js/check-dist.mjs"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.0",
+    "typescript": "5.9.3"
+  }
+}
