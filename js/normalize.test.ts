@@ -22,7 +22,8 @@ test("every input gives the reference outputs", () => {
   }
   expect(n).toBeGreaterThan(300_000);
   expect(wrong.slice(0, 10)).toEqual([]);
-});
+  // 690,000 calls: about 4 s here, 7 s on a CI runner; bun's default limit is 5 s
+}, 60_000);
 
 test("cases", () => {
   const ZWNJ = "\u200c", ZWJ = "\u200d";
