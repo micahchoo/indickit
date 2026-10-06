@@ -19,3 +19,21 @@ if (wrong || n < 190_000 || !match("Ram", "राम")) {
   process.exit(1);
 }
 console.log(`dist/phonetic.js: all ${n} words agree (rules ${RULES_VERSION})`);
+
+// dist/normalize.js against normalize/testdata/conformance.jsonl.gz
+const { normalize, fold, RULES_VERSION: NORMALIZE_VERSION } = await import("../dist/normalize.js");
+const lines = gunzipSync(readFileSync(new URL("../normalize/testdata/conformance.jsonl.gz", import.meta.url))).toString("utf8");
+let m = 0, off = 0;
+for (const line of lines.split("\n")) {
+  if (!line) continue;
+  const [input, lang, wantN, wantF] = JSON.parse(line);
+  m++;
+  if (normalize(input, lang ?? undefined) !== wantN || fold(input, lang ?? undefined) !== wantF) {
+    if (off++ < 10) console.error(JSON.stringify([input, lang, wantN, wantF]));
+  }
+}
+if (off || m < 300_000) {
+  console.error(`dist/normalize.js: ${off} of ${m} inputs differ`);
+  process.exit(1);
+}
+console.log(`dist/normalize.js: all ${m} inputs agree (rules ${NORMALIZE_VERSION})`);

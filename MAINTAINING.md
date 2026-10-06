@@ -50,9 +50,8 @@ research repo, and say why in the commit.
 
 Do these steps in order. Each step ends at a point you can check.
 
-1. **Choose it.** `linguistic-utilities/opportunities.md` lists 13
-   candidates with their gaps. The next one is **text normalization**
-   (#1): JavaScript has none, and `phonetic` already does part of it.
+1. **Choose it.** `linguistic-utilities/opportunities.md` lists the
+   candidates with their gaps (`normalize`, shipped in v0.2.0, was #1).
    Done when the gap is written down with the languages it covers.
 2. **Find the oracle and the rival.** The **oracle** is the existing tool
    whose output stands in for the right answer. The rival is the best tool

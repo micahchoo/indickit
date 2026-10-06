@@ -33,3 +33,22 @@ test("the browser file is as small as the README says (4 KB gzipped)", () => {
   const gz = gzipSync(readFileSync(new URL("../dist/phonetic.js", import.meta.url))).length;
   expect(gz).toBeLessThan(4.5 * 1024);
 });
+
+// normalize: each example line `normalize("in", "lang"); // "out"` (or fold)
+// must return what its comment says. The strings are JS string literals, with
+// invisible characters written as escapes.
+test("every normalize(...) and fold(...) example in the README returns what its comment says", async () => {
+  const { normalize, fold } = await import("./normalize");
+  const claims = [...readme.matchAll(/^(normalize|fold)\(("[^"]*"), "([a-z]+)"\); \/\/ ("[^"]*")/gm)];
+  expect(claims.length).toBeGreaterThan(4);
+  for (const [, fn, input, lang, want] of claims) {
+    const got = (fn === "fold" ? fold : normalize)(JSON.parse(input), lang);
+    expect([fn, input, got]).toEqual([fn, input, JSON.parse(want)]);
+  }
+});
+
+test("dist/normalize.js is as small as the README says (13 KB gzipped)", () => {
+  expect(readme).toContain("The browser file is 13 KB gzipped.");
+  const gz = gzipSync(readFileSync(new URL("../dist/normalize.js", import.meta.url))).length;
+  expect(gz).toBeLessThan(13.5 * 1024);
+});
