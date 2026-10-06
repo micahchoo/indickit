@@ -3,7 +3,8 @@
 This file says how indickit grows and how it stays correct. Read it before
 you add a utility, change a rule, or cut a release. The rules here come
 from building `phonetic`; each one is here because ignoring it caused a
-real mistake.
+real mistake. `DESIGN.md` gives the principles behind these rules, so
+that you can apply them to a case that this file does not name.
 
 ## What indickit is
 
