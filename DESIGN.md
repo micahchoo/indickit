@@ -46,6 +46,33 @@ written. Each one can stop the work.
 If a measurement shows that the gain is small, ship the work inside an
 existing utility, or do not ship it.
 
+### Run each rival on every class of input that you hold
+
+A rival's name says what it was built for, not what it can read. A
+converter for one legacy font can read its relatives. We planned a
+converter for the Chanakya font, because no tool named Chanakya. The npm
+converter for Kruti Dev already read it: 77.4% of its output words were in
+the PIB vocabulary, the same as on Kruti Dev (77.3%), because both fonts use
+one keyboard layout. We ran that test last, after a table for Kruti Dev had
+been built and the release had been planned around Chanakya. It took five
+minutes.
+
+List the classes of input in your data, and run every rival on a sample of
+each class before you build.
+
+### Measure the gain on real text before you port
+
+A test set that you make yourself decides whether to continue. Only real
+text decides whether to ship. `pdftext.repair` put the vowel sign ि back in
+typed order in text extracted from PDFs. On PDFs that we made, it added 9 to
+10 points of exact words. On real PDFs, it added less than 1 point, because
+the real producers mostly wrote ि in typed order already. We measured the
+real gain after the Go and TypeScript ports were done, and the utility was
+not shipped.
+
+Measure the gain on real text first. Port only when the real gain is worth
+a utility.
+
 ## 1. Decide the layer first
 
 Every change that a utility makes to text is one of three kinds. Decide the
@@ -105,6 +132,34 @@ same bias.
 
 Before you climb, ask: which information does the answer key lose? Any rule
 that erases the same information gets a reward it did not earn.
+
+### Test the instrument before the measurement
+
+A reader, an extractor or a scorer is an oracle too, and it can be wrong.
+Before it measures text that you do not know, give it text that you know,
+and require that it returns that text exactly.
+
+Our PDF reader had three faults, and each one changed a conclusion:
+
+- PyMuPDF reports the extra characters of a glyph that maps to several
+  characters (द्व) with glyph index −1. The reader dropped them. So नहीं
+  came out as नही, and we reported "PDFs lose the anusvara". The PDFs did
+  not; the reader did.
+- A PDF can hold several subsets of one font under one name. The reader
+  kept the first subset only, so 320 glyphs had no shape to classify.
+- The reader cut words at every space that the text layer gave, and some
+  PDFs map a conjunct to a space.
+
+Fixing the three faults moved the result from 77.9% to 91.2% agreement with
+OCR. The PDFs that we made, with known text, would have shown each fault on
+the first day, if we had read them with the same reader.
+
+A test set that you make is an instrument too. Our first exam planted one
+kind of damage: a missing mapping for each conjunct. Real PDFs map 98% of
+their glyphs, and the damage is a wrong mapping. On the exam, the glyph
+reader scored 97–99%; on real PDFs, 44%, and part of that gap was the wrong
+damage. Measure the damage in real text first, and plant that damage at the
+rate you measured.
 
 ### Know how each source was processed
 
@@ -180,6 +235,17 @@ Give the budget in the same terms: "at most 1% of a search's hits", not
 The budget is a product choice: how many wrong results a user accepts. The
 owner of the utility makes it, and the log records it. The text fold's budget is
 the strict one, chosen by the owner.
+
+### Aim at the ceiling, not only at the rival
+
+The rival says whether we beat what people use today. It does not say how
+much is left. Build the ceiling: the best result that any tool in the layer
+can reach. For the canonical layer, the ceiling is the shaper itself, asked
+for each character of each word: "same glyph run without it, in every
+font?" It is too slow to ship, but cheap to measure. Report the share of
+the ceiling that the utility reaches: the normalizer reaches 96% (89.5% of
+robust groups, against a ceiling of 93.3%). Each gap then has a name: the
+classes lose some, the compression for the browser loses some.
 
 ### Give the rival its best chance
 
@@ -308,6 +374,13 @@ When a rule is local, list every context and let the oracle decide each one.
 A context that depends on the letters ("mixed") keeps the conservative
 choice.
 
+Test every letter of a class, not a sample. Twenty random letters per
+context missed Kannada RA, which draws a lone ZWJ after its virama where
+other consonants draw nothing. So the table now tries every member of the
+class at each position. Ligatures live in pairs of letters: one position
+at a time missed Tamil க + ஷ, which a ZWNJ keeps apart. So a conjunct
+context (consonant + virama, the character, a consonant) tries every pair.
+
 ### No rule depends on one font, source or language
 
 - **Font:** a rule passes only if it holds in every font family that we test.
@@ -368,6 +441,15 @@ The research repo writes every input with its output from the Python
 reference. Go and TypeScript must give that output for every input. This is
 the only copy of "the right answer" that other people can see.
 
+### Choose a size by measuring, not by guessing
+
+The browser file needs a small form of the rules. A decision tree learned
+from the table at "support 10" covered 94% of the invisible contexts, and the
+guess was that the other 6% were rare in real text. They were not: the tree
+lost 6.7 points of robust collapse on DEV. The tree at "support 3" lost
+nothing, at 8.7 KB gzipped. Measure each candidate size on DEV, and ship the
+smallest that loses less than half a point.
+
 ### Small, and only where it helps
 
 Each utility is its own entry point, with its own size budget. A user who
@@ -393,6 +475,8 @@ source three times.
 Use this list with the steps in `MAINTAINING.md`.
 
 1. Prove the gap: frequency, our own coverage, the rival, the prior art.
+   Run each rival on every class of input that you hold.
+   Test every reader and scorer on text that you know first.
 2. Name the layer: canonical, text fold or phonetic.
 3. Name the answer key. Write which information it loses.
 4. Find where the oracle is wrong. Remove those cases from the answer key.
@@ -402,10 +486,12 @@ Use this list with the steps in `MAINTAINING.md`.
 8. For each chosen rule, read its most frequent wrong merges.
 9. If a rule is local, derive it from every context with the oracle.
    Include every invisible character. Make each context one cluster wide.
-10. Measure the cost in the user's terms, beside the rival at its best.
+   Test every letter of each class, and every pair in a conjunct.
+10. Measure the cost in the user's terms, beside the rival at its best and the ceiling.
 11. Name the five shifts. Give each one a check, or write it as a gap.
 12. Read TEST once. Then read the held-out fonts and sources once.
 13. If a held-out read finds a fault, correct it. Confirm it on a reserve.
 14. Write the promises that strings can check as tests.
-15. Export the rules file and the conformance file. Port to Go and TypeScript.
+15. Measure the gain on real text. Then export the rules file and the
+    conformance file, and port to Go and TypeScript.
 16. Read FINAL once. Put its numbers in the README, each with a test.
