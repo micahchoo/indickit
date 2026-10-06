@@ -52,3 +52,31 @@ test("dist/normalize.js is as small as the README says (13 KB gzipped)", () => {
   const gz = gzipSync(readFileSync(new URL("../dist/normalize.js", import.meta.url))).length;
   expect(gz).toBeLessThan(13.5 * 1024);
 });
+
+// segment: each example line `segment("in"); // [...]` and `count("in"); // n`
+// must return what its comment says.
+test("every segment(...) and count(...) example in the README returns what its comment says", async () => {
+  const { segment, count } = await import("./segment");
+  const claims = [...readme.matchAll(/^segment\(("[^"]*")\); \/\/ (\[[^\]]*\])/gm)];
+  expect(claims.length).toBeGreaterThan(2);
+  for (const [, input, want] of claims) {
+    expect([input, segment(JSON.parse(input))]).toEqual([input, JSON.parse(want)]);
+  }
+  const counts = [...readme.matchAll(/^count\(("[^"]*")\); \/\/ (\d+)/gm)];
+  expect(counts.length).toBeGreaterThan(0);
+  for (const [, input, want] of counts) expect(count(JSON.parse(input))).toBe(Number(want));
+});
+
+test("dist/segment.js is as small as the README says (9 KB gzipped)", () => {
+  expect(readme).toContain("The browser file is 9 KB gzipped.");
+  const gz = gzipSync(readFileSync(new URL("../dist/segment.js", import.meta.url))).length;
+  expect(gz).toBeLessThan(9.5 * 1024);
+});
+
+// A tag in the README that is not this version sends users to old files.
+test("every version tag in the README is package.json's version", () => {
+  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  const tags = [...readme.matchAll(/indickit[#@](v\d+\.\d+\.\d+)/g)].map((m) => m[1]);
+  expect(tags.length).toBeGreaterThan(3);
+  expect(new Set(tags)).toEqual(new Set([`v${pkg.version}`]));
+});

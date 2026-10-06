@@ -37,3 +37,21 @@ if (off || m < 300_000) {
   process.exit(1);
 }
 console.log(`dist/normalize.js: all ${m} inputs agree (rules ${NORMALIZE_VERSION})`);
+
+// dist/segment.js against segment/testdata/conformance.jsonl.gz
+const { codePointBounds, RULES_VERSION: SEGMENT_VERSION } = await import("../dist/segment.js");
+const cases = gunzipSync(readFileSync(new URL("../segment/testdata/conformance.jsonl.gz", import.meta.url))).toString("utf8");
+let k = 0, bad = 0;
+for (const line of cases.split("\n")) {
+  if (!line) continue;
+  const [input, want] = JSON.parse(line);
+  k++;
+  if (codePointBounds(input).join(",") !== want.join(",")) {
+    if (bad++ < 10) console.error(JSON.stringify([input, want]));
+  }
+}
+if (bad || k < 850_000) {
+  console.error(`dist/segment.js: ${bad} of ${k} inputs differ`);
+  process.exit(1);
+}
+console.log(`dist/segment.js: all ${k} inputs agree (rules ${SEGMENT_VERSION})`);
