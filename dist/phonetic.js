@@ -1,11 +1,12 @@
 // phonetic/rules.json
 var rules_default = {
-  version: "2026-10-05",
+  version: "2026-10-06",
   folds: [
     "bn-case",
     "drop-vowels",
     "drop-y",
     "gu-case",
+    "latin-w-u",
     "ml-case",
     "nasal-all",
     "ng-k",
@@ -410,7 +411,8 @@ var rules_default = {
       l: "l",
       s: "s",
       h: "h"
-    }
+    },
+    w_ambiguous_unless_before: "aeiou"
   },
   class_map: {
     m: "n",
@@ -434,6 +436,12 @@ var rules_default = {
     "drop-final-vowel": false
   },
   branches: [
+    {
+      from: 0,
+      to: 127,
+      class: "w",
+      also: "u"
+    },
     {
       from: 2944,
       to: 3071,
@@ -554,6 +562,7 @@ function compile(rules) {
   for (const [l, c] of Object.entries(rules.latin.letters))
     latin[l.charCodeAt(0)] = c;
   const groups = rules.latin.groups;
+  const wUnlessNext = rules.latin.w_ambiguous_unless_before;
   const classMap = new Map(Object.entries(rules.class_map));
   const vowels = new Set(rules.vowels);
   const steps = rules.steps;
@@ -602,6 +611,8 @@ function compile(rules) {
         if (ch === 99) {
           const next = word[i + 1];
           out += next === "e" || next === "i" || next === "y" ? "s" : "k";
+        } else if (ch === 119 && i > 0 && !wUnlessNext.includes(word[i + 1] ?? " ")) {
+          out += "w";
         } else {
           out += latin[ch] ?? "";
         }

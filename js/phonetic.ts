@@ -28,6 +28,8 @@ function compile(rules: Rules) {
   const latin: (string | undefined)[] = new Array(128);
   for (const [l, c] of Object.entries(rules.latin.letters)) latin[l.charCodeAt(0)] = c;
   const groups = rules.latin.groups as [string, string][];
+  // a later w before none of these is "w": v, or a vowel in Bodo spelling
+  const wUnlessNext: string = rules.latin.w_ambiguous_unless_before;
   const classMap = new Map(Object.entries(rules.class_map));
   const vowels = new Set(rules.vowels);
   const steps = rules.steps;
@@ -65,6 +67,8 @@ function compile(rules: Rules) {
       if (ch === 99 /* c */) {
         const next = word[i + 1];
         out += next === "e" || next === "i" || next === "y" ? "s" : "k";
+      } else if (ch === 119 /* w */ && i > 0 && !wUnlessNext.includes(word[i + 1] ?? " ")) {
+        out += "w";
       } else {
         out += latin[ch] ?? "";
       }

@@ -40,5 +40,5 @@ test("match", () => {
 test("nameKeys meet across scripts; the rules are versioned", () => {
   const a = new Set(nameKeys("Shri Narendra Modi (politician)"));
   expect(nameKeys("श्री नरेंद्र मोदी").some((k) => a.has(k))).toBe(true);
-  expect(RULES_VERSION).toBe("2026-10-05");
+  expect(RULES_VERSION).toBe("2026-10-06");
 });

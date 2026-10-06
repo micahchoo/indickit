@@ -1,10 +1,11 @@
 {
- "version": "2026-10-05",
+ "version": "2026-10-06",
  "folds": [
   "bn-case",
   "drop-vowels",
   "drop-y",
   "gu-case",
+  "latin-w-u",
   "ml-case",
   "nasal-all",
   "ng-k",
@@ -409,7 +410,8 @@
    "l": "l",
    "s": "s",
    "h": "h"
-  }
+  },
+  "w_ambiguous_unless_before": "aeiou"
  },
  "class_map": {
   "m": "n",
@@ -433,6 +435,12 @@
   "drop-final-vowel": false
  },
  "branches": [
+  {
+   "from": 0,
+   "to": 127,
+   "class": "w",
+   "also": "u"
+  },
   {
    "from": 2944,
    "to": 3071,

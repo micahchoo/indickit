@@ -42,8 +42,9 @@ type rawRules struct {
 		Aspiration string            `json:"aspiration"`
 	} `json:"ol_chiki"`
 	Latin struct {
-		Groups  [][2]string       `json:"groups"`
-		Letters map[string]string `json:"letters"`
+		Groups      [][2]string       `json:"groups"`
+		Letters     map[string]string `json:"letters"`
+		WUnlessNext string            `json:"w_ambiguous_unless_before"`
 	} `json:"latin"`
 	ClassMap map[string]string `json:"class_map"`
 	Vowels   string            `json:"vowels"`
@@ -93,6 +94,7 @@ type engine struct {
 	olFrom, olTo             rune
 	groups                   []group
 	latin                    [128]rune // 0 = not coded
+	wUnlessNext              string    // a later w before none of these is "w": v or a vowel
 	isVowel                  map[rune]bool
 	ngK, initialVowels       bool
 	dropH, dropY, dropVowels bool
@@ -142,6 +144,7 @@ func load(data []byte) (*engine, error) {
 	for _, g := range r.Latin.Groups {
 		k.groups = append(k.groups, group{g[0], []rune(g[1])})
 	}
+	k.wUnlessNext = r.Latin.WUnlessNext
 	for _, v := range r.Vowels {
 		k.isVowel[v] = true
 	}
@@ -192,6 +195,8 @@ outer:
 			} else {
 				out = append(out, 'k')
 			}
+		} else if ch == 'w' && i > 0 && (i+1 == len(word) || !strings.ContainsRune(k.wUnlessNext, rune(word[i+1]))) {
+			out = append(out, 'w')
 		} else if c := k.latin[ch&0x7f]; c != 0 {
 			out = append(out, c)
 		}
