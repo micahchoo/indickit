@@ -9,7 +9,8 @@
  * information on purpose: apply it to a query and to an index, never to
  * stored text.
  *
- * `lang` is a language code ("as", "hi", ...). Assamese text needs it: after
+ * `lang` is a language tag ("as", "hi", "as-IN", "asm"); only its language
+ * counts, not case, region or script. Assamese text needs it: after
  * a virama, Assamese ৰ and Bengali র look alike, and each language keeps its
  * own.
  *
@@ -20,15 +21,27 @@
  */
 
 import rulesJson from "../normalize/rules.json" with { type: "json" };
+import { langCode } from "./lang";
 
 type Rules = typeof rulesJson;
 type Tree = number | [number, { [values: string]: Tree }];
 type Node = number | { f: number; kids: Map<string, Node> };
-type MapStep = { step: "map"; map: { [from: string]: string } };
-type AnusvaraStep = { step: "anusvara"; blocks: number[]; virama: number; anusvara: number; rows: number[][] };
+// langs: the step runs only for these languages. before / after: a map step
+// maps a character only where the next / previous character (of the step's
+// input) is in one of the ranges.
+type Context = { langs?: string[]; before?: number[][]; after?: number[][] };
+type MapStep = Context & { step: "map"; map: { [from: string]: string } };
+type AnusvaraStep = Context & { step: "anusvara"; blocks: number[]; virama: number; anusvara: number; rows: number[][] };
 
 const DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz";
 const cp = (s: string) => s.codePointAt(0)!;
+// String.fromCodePoint(...cps) passes one argument per code point, and a
+// runtime throws RangeError above its argument limit (node: about 125,000).
+function fromCodePoints(cps: number[]): string {
+  let s = "";
+  for (let i = 0; i < cps.length; i += 8192) s += String.fromCodePoint(...cps.slice(i, i + 8192));
+  return s;
+}
 
 // The engine: every table and switch is in rules.json; this is only the loop.
 function compile(r: Rules) {
@@ -136,7 +149,7 @@ function compile(r: Rules) {
       if (invisible.has(s[i]) && deletes(out.slice(-LEFT), s[i], s.slice(i + 1, i + 1 + RIGHT))) continue;
       out.push(s[i]);
     }
-    return String.fromCodePoint(...out).normalize("NFC");
+    return fromCodePoints(out).normalize("NFC");
   }
 
   // Again until nothing changes: deleting one invisible character can change
@@ -151,14 +164,24 @@ function compile(r: Rules) {
     return s;
   }
 
+  const inRanges = (c: number | undefined, rs: number[][]) =>
+    c !== undefined && rs.some(([lo, hi]) => c >= lo && c <= hi);
   const steps = (r.fold as (MapStep | AnusvaraStep)[]).map((st) => {
+    const run = (step: (s: number[]) => number[]) =>
+      (s: number[], lang?: string) => (st.langs && !st.langs.includes(lang ?? "") ? s : step(s));
     if (st.step === "map") {
       const m = new Map<number, string>();
       for (const [from, to] of Object.entries(st.map)) m.set(cp(from), to);
-      return (s: number[]) => Array.from(s.map((c) => m.get(c) ?? String.fromCodePoint(c)).join(""), cp);
+      const { before, after } = st;
+      const ok = (s: number[], i: number) =>
+        (!before || inRanges(s[i + 1], before)) && (!after || inRanges(i > 0 ? s[i - 1] : undefined, after));
+      return run((s) => Array.from(s.map((c, i) => {
+        const to = m.get(c);
+        return to !== undefined && ok(s, i) ? to : String.fromCodePoint(c);
+      }).join(""), cp));
     }
     // nasal + virama -> anusvara, before a consonant of the nasal's own row
-    return (s: number[]) => {
+    return run((s: number[]) => {
       const out: number[] = [];
       for (let i = 0; i < s.length; i++) {
         const b = st.blocks.find((b) => s[i] >= b && s[i] < b + 0x80);
@@ -169,14 +192,14 @@ function compile(r: Rules) {
         } else out.push(s[i]);
       }
       return out;
-    };
+    });
   });
 
   const normalize = (text: string, lang?: string) => fixed(onePass, text, lang);
   const foldPass = (text: string, lang?: string) => {
     let s = Array.from(normalize(text, lang), cp);
-    for (const step of steps) s = step(s);
-    return String.fromCodePoint(...s);
+    for (const step of steps) s = step(s, lang);
+    return fromCodePoints(s);
   };
   return { normalize, fold: (text: string, lang?: string) => fixed(foldPass, text, lang) };
 }
@@ -188,10 +211,10 @@ export const RULES_VERSION: string = rulesJson.version;
 
 /** One encoding for text that looks the same; never changes what a reader sees. */
 export function normalize(text: string, lang?: string): string {
-  return engine.normalize(text, lang);
+  return engine.normalize(text, langCode(lang));
 }
 
 /** normalize, then merge accepted spellings of one word. For search only. */
 export function fold(text: string, lang?: string): string {
-  return engine.fold(text, lang);
+  return engine.fold(text, langCode(lang));
 }

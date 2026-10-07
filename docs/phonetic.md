@@ -13,7 +13,9 @@ Chiki), Sindhi, Tamil, Telugu, Urdu, and Latin spellings of all of them.
 
 Measured on the names of 9,430 people never used to build the rules
 (Wikidata labels of Indian citizens; one person in ten, held out to the
-end). Each number is the share of searches that find the right person
+end). These labels have no titles (Shri, Smt., Dr) and few initials, and
+only names with the same number of words in both languages were compared.
+Real lists give lower numbers: see "On lists as people write them". Each number is the share of searches that find the right person
 when the name is looked up among the held-out names of another language;
 both columns use the same searches.
 
@@ -29,7 +31,9 @@ both columns use the same searches.
 
 The table was read with rules 2026-10-05. Rules 2026-10-06 add one key to
 255 of the 195,994 test words (English spellings with a w before a
-consonant, such as Andrew) and remove none.
+consonant, such as Andrew) and remove none. Rules 2026-10-06.1 key a
+number by its value (१२ = 12; before, every number matched every other
+number); 10 test words change.
 
 "Romanize + Soundex" is the best off-the-shelf alternative: the strongest
 existing romanizer for each script, then English Soundex. Neither of the
@@ -55,3 +59,38 @@ Known weak spots:
 - **Dogri and Bodo** were measured on ordinary words only; there was no
   set of names.
 
+## On lists as people write them
+
+Two real lists: the Lok Sabha member list (sansad.in), with each name in
+English and in Hindi as the list writes it, and the Local Government
+Directory's villages, with each name in English and in one of 8 scripts.
+Each number is the share of English names that find the right entry among
+the native-script names. "Romanize + fuzzy match" is the best romanizer,
+then a fuzzy word match, set to return no more wrong names than indickit.
+The numbers are from data that no threshold was set on, with rules
+2026-10-06.1.
+
+| List | indickit | romanize + fuzzy match |
+|---|---|---|
+| Lok Sabha members, as written | 42% | 52% |
+| the same, titles and initials removed | 70% | 69% |
+| Village names, 8 scripts | 73% | 71% |
+
+In the second row, only indickit's input changes. The fuzzy match reads
+the names as written, with a looser threshold that gives the same number
+of wrong names.
+
+- **Remove titles and initials before you key a name.** indickit does not
+  remove them. Shri against nothing, or "M" against एम, is a miss.
+- **Fuzzy matching does as well on these lists.** ICU transliteration then
+  the same fuzzy match finds 78% of villages. What indickit adds is an
+  index: one lookup per name, from any script to any script. A fuzzy match
+  compares the query with every name in the list.
+- **Short names give many wrong matches.** Most village names are one
+  short word. In Maharashtra's 35,988 villages, one search returns about 26
+  wrong villages. Search within a district, not within a state.
+- **Do not merge two records on a short name alone.** At the merge budget,
+  merge mode finds at most 9% of villages. Use a second field, such as the
+  district or a father's name.
+- **A digit joined to letters is dropped** (ନଂ13 is read as ନଂ), because
+  Hindi writes ० as an abbreviation dot (डॉ०).

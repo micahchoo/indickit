@@ -55,8 +55,9 @@ type rawRules struct {
 		Class string `json:"class"`
 		Also  string `json:"also"`
 	} `json:"branches"`
-	MaxKeys  int `json:"max_keys"`
-	Suffixes []struct {
+	DigitZeros []rune `json:"digit_zeros"`
+	MaxKeys    int    `json:"max_keys"`
+	Suffixes   []struct {
 		From    rune     `json:"from"`
 		To      rune     `json:"to"`
 		Endings []string `json:"endings"`
@@ -101,6 +102,7 @@ type engine struct {
 	dropFinalVowel           bool
 	branches                 []branch
 	suffixes                 []suffix
+	digitZeros               []rune // a word of these digits (zero, then 1-9) only is a number
 	maxKeys                  int
 }
 
@@ -129,7 +131,7 @@ func load(data []byte) (*engine, error) {
 		ain: one(r.Urdu.Ain), waw: one(r.Urdu.Waw), aspiration: one(r.OlChiki.Aspiration),
 		wawVBefore: r.Urdu.WawVBefore, finalHe: r.Urdu.FinalHe, finalHeHAfter: r.Urdu.FinalHeHAfter,
 		meeteiRanges: r.Meetei.Ranges, olFrom: r.OlChiki.From, olTo: r.OlChiki.To,
-		isVowel: map[rune]bool{}, maxKeys: r.MaxKeys,
+		isVowel: map[rune]bool{}, digitZeros: r.DigitZeros, maxKeys: r.MaxKeys,
 		ngK: r.Steps["ng-k"], initialVowels: r.Steps["initial-vowels-alike"],
 		dropH: r.Steps["drop-h"], dropY: r.Steps["drop-y"], dropVowels: r.Steps["drop-vowels"],
 		dropFinalVowel: r.Steps["drop-final-vowel"],
@@ -349,8 +351,31 @@ func (k *engine) variants(word string) [][]rune {
 	return vs
 }
 
-// keys returns the sorted, distinct keys of one normalized word.
+// number returns the value of a word of digits only, in ASCII (१२ → "12").
+func (k *engine) number(word string) (string, bool) {
+	var b strings.Builder
+	for _, r := range word {
+		digit := false
+		for _, z := range k.digitZeros {
+			if r >= z && r <= z+9 {
+				b.WriteRune('0' + r - z)
+				digit = true
+				break
+			}
+		}
+		if !digit {
+			return "", false
+		}
+	}
+	return b.String(), b.Len() > 0
+}
+
+// keys returns the sorted, distinct keys of one normalized word. It never
+// holds "": a word with no letter and no number has no key.
 func (k *engine) keys(word string) []string {
+	if n, ok := k.number(word); ok {
+		return []string{n}
+	}
 	bases := []string{word}
 	first, _ := utf8.DecodeRuneInString(word)
 	for _, s := range k.suffixes {
@@ -369,7 +394,7 @@ func (k *engine) keys(word string) []string {
 	for _, b := range bases {
 		for _, v := range k.variants(b) {
 			s := k.fold(v, buf[:])
-			dup := false
+			dup := s == ""
 			for _, o := range out {
 				if o == s {
 					dup = true

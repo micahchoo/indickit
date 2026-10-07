@@ -15,6 +15,7 @@
  */
 
 import rulesJson from "../stem/rules.json" with { type: "json" };
+import { langCode } from "./lang";
 
 type Table = { endings: Set<string>; vowel: boolean };
 
@@ -36,10 +37,11 @@ export const LANGUAGES: readonly string[] = [...TABLES.keys()].sort();
 
 /**
  * The search key of `word` in language `lang` (as bn gu hi kn ml mr ne pa
- * sa ta te ur). For any other `lang`, `word` unchanged.
+ * sa ta te ur). Only the tag's language counts: "ta-IN", "TA" and "tam" are
+ * "ta". For any other `lang`, `word` unchanged.
  */
 export function stem(word: string, lang: string): string {
-  const t = TABLES.get(lang);
+  const t = TABLES.get(langCode(lang));
   if (!t) return word;
   const r = Array.from(word);
   let end = r.length;

@@ -9,7 +9,8 @@
  * information on purpose: apply it to a query and to an index, never to
  * stored text.
  *
- * `lang` is a language code ("as", "hi", ...). Assamese text needs it: after
+ * `lang` is a language tag ("as", "hi", "as-IN", "asm"); only its language
+ * counts, not case, region or script. Assamese text needs it: after
  * a virama, Assamese ৰ and Bengali র look alike, and each language keeps its
  * own.
  *

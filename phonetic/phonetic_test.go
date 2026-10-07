@@ -61,10 +61,13 @@ func TestMatch(t *testing.T) {
 		{"मोहनलाल", "മോഹൻലാൽ", true},
 		{"सुरेश", "சுரேஷ்", true},
 		{"Parvez Khan", "پرویز خان", true},
-		{"Imran", "عمران", false},   // known miss: ع is read as a, "Imran" starts with i
-		{"Rāma", "राम", true},       // accents are removed
-		{"राम", "काम", false},       // Rām is not kām
-		{"Ram Singh", "राम", false}, // word counts differ
+		{"Imran", "عمران", false},      // known miss: ع is read as a, "Imran" starts with i
+		{"Rāma", "राम", true},          // accents are removed
+		{"राम", "काम", false},          // Rām is not kām
+		{"Ram Singh", "राम", false},    // word counts differ
+		{"Block 1", "Block 2", false},  // a number is keyed by its value
+		{"Block 12", "ब्लॉक १२", true}, // in any script
+		{"1", "2", false},
 	} {
 		if got := Match(c.a, c.b); got != c.want {
 			t.Errorf("Match(%q, %q) = %v, want %v", c.a, c.b, got, c.want)
@@ -77,8 +80,14 @@ func TestNameKeys(t *testing.T) {
 	if !shareOne(a, b) {
 		t.Errorf("NameKeys do not meet: %v and %v", a, b)
 	}
-	if RulesVersion == "" {
-		t.Error("RulesVersion is empty")
+	if got := NameKeys("Block 1"); len(got) != 1 || got[0] != "plk 1" {
+		t.Errorf(`NameKeys("Block 1") = %q, want ["plk 1"]`, got)
+	}
+	if got := Keys("॰"); len(got) != 0 { // no letter, no digit: no key, not ""
+		t.Errorf(`Keys("॰") = %q, want none`, got)
+	}
+	if RulesVersion != "2026-10-06.1" {
+		t.Errorf("RulesVersion = %q", RulesVersion)
 	}
 }
 

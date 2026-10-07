@@ -17,6 +17,11 @@ number quoted here.
 - **Oracle:** a program whose output stands in for the right answer. HarfBuzz
   is an oracle for "looks the same". libindic was an oracle for the key.
 - **Rival:** the best tool a user can pick today.
+- **Default rival:** what the named user of a demand note does today (fuzzy
+  matching, ICU, `Intl.Segmenter`), on their own task. It can be weaker
+  than the rival and still be the one to beat.
+- **Demand note:** who needs a utility, what they do today, what that costs
+  them, and how the fix reaches them (§0).
 - **DEV / TEST / FINAL:** three slices of the data. DEV chooses rules, TEST
   checks them, FINAL is read once, at release.
 - **Held out:** anything that no rule was chosen on. Data slices, fonts and
@@ -27,6 +32,31 @@ number quoted here.
   none.
 
 ## 0. Prove the gap before you build
+
+### Name who needs it first
+
+Before the gap, write the **demand note**. It has four fields:
+
+- **Who:** a named project, issue or thread, with a link.
+- **What they do today:** the default rival, for example fuzzy matching,
+  ICU or `Intl.Segmenter`.
+- **What that default costs them,** measured on their task.
+- **The delivery path:** an upstream report (CLDR, ICU, HarfBuzz), a pull
+  request into their project, or an indickit utility.
+
+With no named user, a job can spike, but it cannot climb, and it cannot
+spend a held-out set.
+
+Measure both rivals: the best tool, and the default rival. The default
+rival is the one that decides. We chose questions because an answer key
+existed, and we met the default rival only in the battle tests, after the
+release. `phonetic` found 83.6% on FINAL, but 42% on a real Lok Sabha roster;
+on villages, ICU and fuzzy matching found 78.8%, the key 72.9%. In real
+search, Morfessor found 3 to 11 points more than `stem`, and plain fuzzy
+search beat the four utilities as one analyzer in all 19 languages. The best
+tools in each layer did not show this; the user's default did.
+
+### The four measurements of the gap
 
 A utility earns its place with four measurements, made before any rule is
 written. Each one can stop the work.
@@ -85,6 +115,7 @@ and a different answer key.
 | Text fold | accepted spellings of one word (हिन्दी / हिंदी) | output stays readable, with few wrong matches | spelling variants, and a budget of wrong hits | `fold()` in `normalize` |
 | Phonetic | names that sound alike (राम / রাম) | finds the person | people in Wikidata | `phonetic` |
 | Morphological fold | forms of one word (किताब / किताबों) | a search finds the word in its other forms, within a budget of wrong hits | search on parallel text, judged by its English side; Wiktionary's inflection tables set the cost | `stem` |
+| Generation | nothing: it writes new text (लक्ष्मी → Lakshmi) | the same ranked list on every platform; the first answer is the most likely spelling | each person's own spellings (label and aliases); scored as a ranked list | romanizer (in research) |
 
 Store text only after the canonical layer. The text fold, the stem and the
 key lose information on purpose, so they are for search and matching only. Apply them
@@ -94,6 +125,13 @@ A rule that breaks its layer's promise belongs in a looser layer, or
 nowhere. The Malayalam nta rule (ന്റ → ൻ്റ) passed in Noto, then changed 947
 words in the three SMC fonts. It left the canonical layer and became a
 candidate for the text fold.
+
+The generation layer is not a merge, so it has no "wrong match" cost. Its
+cost is a wrong first answer. One name has several accepted spellings
+(Choudhury, Chowdhury), so a generator returns a ranked list, and it is
+scored by whether an accepted spelling is first, or in the first four. Its
+tables are learned from data, not written by hand, so "exact" means
+deterministic: the same input gives the same list everywhere.
 
 The morphological fold merges forms, not spellings, so its output is a key,
 not a word: ஆண்டு "year" and ஆண்டில் "in the year" both give ஆண்ட. Its first
@@ -203,8 +241,8 @@ of the most frequent words of Urdu.
 ### DEV chooses, TEST checks, FINAL is read once
 
 Choose rules on DEV only. Read TEST once to check them. Read FINAL once, at
-release. `linguistic-utilities/eval/once.py` records every read of a
-held-out slice in `eval/reads/` there.
+release. `linguistic-utilities/lu/once.py` records every read of a
+held-out slice in `reads/` there.
 A second read must be asked for, and its log line says why.
 
 When a held-out read finds a fault and you correct it, the corrected number
@@ -271,6 +309,26 @@ Write every claim with the evidence that backs it. "Zero damage" was true on
 DEV, on 894,417 planted variants and in 23 held-out fonts. On held-out
 Wikipedia, 267 words (0.004%) changed. The claim is "0 damage on DEV, planted
 variants and 23 fonts. 0.004% on held-out Wikipedia", never "zero damage".
+
+### At each milestone, sort the claims by how they are known
+
+At a milestone (a held-out read, a verdict, a release), write every claim
+about the utility in one of three lists:
+
+- **Deduction:** true by construction; no data can overturn it. The output is
+  deterministic; no fixed function beats the spelling-agreement ceiling; the
+  test tokens are outside both models' training data.
+- **Induction:** measured on samples; it holds only as far as the samples
+  reach. Every accuracy claim is here. Write its sample, its noise and the
+  populations it does not cover (notable people, not all people; names, not
+  places).
+- **Abduction:** an explanation proposed for a surprise, with the test that
+  checked it, or "not tested".
+
+The lists show what the README may claim (the deductions, and the inductions
+with their scope), and which test widens the claim most for the least cost
+(the weakest induction that a user depends on). The romanizer's first sort:
+`linguistic-utilities/research/romanize/claims.md`.
 
 ### Report the number that hurts
 
@@ -373,7 +431,7 @@ The normalizer's first joiner rule was written by hand, from the standards
 and from examples. It kept 253 joiner contexts that are invisible, and it
 deleted joiners in 13 contexts where they are visible.
 
-The current rule is a table. `linguistic-utilities/eval/joiner_table.py`
+The current rule is a table. `linguistic-utilities/jobs/normalize/measure/joiner_table.py`
 lists every context in
 every script (the classes of the characters before and after the joiner,
 from Unicode's `IndicSyllabicCategory.txt`). It shapes each context with and
@@ -488,11 +546,11 @@ Use this list with the steps in `MAINTAINING.md`.
 1. Prove the gap: frequency, our own coverage, the rival, the prior art.
    Run each rival on every class of input that you hold.
    Test every reader and scorer on text that you know first.
-2. Name the layer: canonical, text fold or phonetic.
+2. Name the layer: canonical, text fold, phonetic or generation.
 3. Name the answer key. Write which information it loses.
 4. Find where the oracle is wrong. Remove those cases from the answer key.
 5. Record how each source was processed.
-6. Split the data, and set aside held-out reserves. Log each held-out slice in `linguistic-utilities/eval/reads/`.
+6. Split the data, and set aside held-out reserves. Log each held-out slice in `linguistic-utilities/reads/`.
 7. Choose rules on DEV only.
 8. For each chosen rule, read its most frequent wrong merges.
 9. If a rule is local, derive it from every context with the oracle.
@@ -502,6 +560,8 @@ Use this list with the steps in `MAINTAINING.md`.
 11. Name the five shifts. Give each one a check, or write it as a gap.
 12. Read TEST once. Then read the held-out fonts and sources once.
 13. If a held-out read finds a fault, correct it. Confirm it on a reserve.
+    After each held-out read, sort the claims into deduction, induction and
+    abduction (§3, "At each milestone, sort the claims").
 14. Write the promises that strings can check as tests.
 15. Measure the gain on real text. Then export the rules file and the
     conformance file, and port to Go and TypeScript.

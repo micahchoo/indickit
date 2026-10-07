@@ -50,21 +50,62 @@ research repo, and say why in the commit.
 
 Do these steps in order. Each step ends at a point you can check.
 
-1. **Choose it.** `linguistic-utilities/opportunities.md` lists the
-   candidates with their gaps (`normalize`, shipped in v0.2.0, was #1).
-   Done when the gap is written down with the languages it covers.
-2. **Find the oracle and the rival.** The **oracle** is the existing tool
-   whose output stands in for the right answer. The rival is the best tool
-   a user would pick today. An oracle can be wrong (libindic was), so
-   check a sample of its answers against what you know of the language.
-   Done when you have both, or a written reason why there is none.
-3. **Split the data before you look at it.** Use DEV to choose rules,
-   TEST to check them, and FINAL to read **once**, at the end. Split by a
-   hash of a stable id, as `climb.py#bucket` does. Done when the split is
-   in code and `eval/reads/` has a log for the held-out slices.
+1. **Choose it, and prove the gap.** Each check below can stop the work,
+   so do them in this order, cheapest first. Write each result in the
+   candidate's **gap note** in `linguistic-utilities/opportunities.md`
+   (the template is at the top of that file). `DESIGN.md` §0 gives the
+   reasons.
+   - **Demand.** Write the demand note first (`DESIGN.md`, "Name who needs
+     it first"): who (a link), their default rival, what it costs them
+     (measured), and the delivery path. With no named user, you can spike,
+     but you cannot climb or read a held-out set.
+   - **Fit.** It is an exact function (see "What indickit is"), and you
+     can name its layer (`DESIGN.md` §1). If it must guess, stop.
+   - **Rivals, run.** Install every tool that could do the job, and run it
+     on a sample of each class of input that you hold: names, ordinary
+     words, running text, each source. Reading a tool's README is not a
+     run: a Kruti Dev converter already read Chanakya
+     (`DESIGN.md`, "Run each rival on every class of input that you hold").
+     A tool that does not install or build counts as absent; write why.
+     Run the default rival too, on the named user's task: it decides.
+   - **Frequency.** Count the problem in running text that people wrote
+     (PIB, Wikipedia), for each language. A mean hides the language where
+     the problem lives.
+   - **Our coverage.** Run the shipped utilities on the same samples. If
+     they solve most of it, ship the work inside one of them, or stop.
+
+   Done when the note names its user, has a score for each rival and for
+   the default rival, a frequency for each language, and its verdict is
+   "build".
+2. **Find the oracle, test it, and build the ceiling.** The **oracle** is
+   the program whose output stands in for the right answer, with no hand
+   labels (HarfBuzz for "looks the same"). An oracle can be wrong
+   (libindic was):
+   - Give it text whose answer you know before it measures text that you
+     do not know, and keep that check as a test
+     (`linguistic-utilities/tests/test_instrument.py`).
+   - Write down the information it loses. A rule that erases the same
+     information gets a reward it did not earn (`DESIGN.md`, "Check the
+     answer key for the bias of the rule you climb").
+   - Build the **ceiling**: the best result that any tool in the layer can
+     reach, even one too slow to ship (`DESIGN.md`, "Aim at the ceiling,
+     not only at the rival").
+     If the rival is already near the ceiling, stop.
+
+   Done when the note names the oracle, what it loses, and the rival and
+   the ceiling for each language.
+3. **Split the data before you look at it, and set reserves aside.** Use
+   DEV to choose rules, TEST to check them, and FINAL to read **once**, at
+   the end. Split by a hash of a stable id, as `lu/split.py#bucket` does. Set
+   aside reserves too: a second source, disjoint samples of each source,
+   and fonts that no step uses. One held-out read finds faults, and its
+   correction needs a fresh set (`DESIGN.md`, "Keep held-out reserves").
+   Done when the split is in code, the note lists the held-out sets, and
+   `reads/` has a log for each.
 4. **Build the reference in Python** in the research repo. Improve it on
-   DEV only. Done when it beats the rival on TEST, or you write down why
-   it does not.
+   DEV only. Done when it beats the rival on TEST and the gain holds on
+   real text (`DESIGN.md`, "Measure the gain on real text before you
+   port"), or you write down why it does not.
 5. **Export the rules file and the conformance file.** Done when both are
    in `<name>/` here.
 6. **Port to Go and TypeScript.** Copy the shape of `phonetic`: one
@@ -73,13 +114,14 @@ Do these steps in order. Each step ends at a point you can check.
    file checked in `js/check-dist.mjs`. Done when both pass the
    conformance file on every input.
 7. **Read FINAL and write the README section.** Every claim in it gets a
-   test: a number must equal the research repo's `FINAL.md`, and every
+   test: a number must equal the research repo's `jobs/<name>/reports/final.md`, and every
    code example must run and give the result the README shows (see
    `js/readme.test.ts` and `phonetic/example_test.go`). Done when a false
    claim that you plant in the README makes a test fail.
 
-A utility can use another one. Normalization belongs in the normalizer,
-and `phonetic` should then call it, not keep its own copy.
+A utility can use another one when its size budget allows. `phonetic`
+keeps its own NFC and accent removal: calling `normalize` would put the
+13 KB joiner tree into its 4 KB browser file.
 
 ## Changing rules
 

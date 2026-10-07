@@ -33,6 +33,9 @@ test("match", () => {
     ["Rāma", "राम", true], // accents are removed
     ["राम", "काम", false], // Rām is not kām
     ["Ram Singh", "राम", false], // word counts differ
+    ["Block 1", "Block 2", false], // a number is keyed by its value
+    ["Block 12", "ब्लॉक १२", true], // in any script
+    ["1", "2", false],
   ];
   for (const [a, b, want] of cases) expect([a, b, match(a, b)]).toEqual([a, b, want]);
 });
@@ -40,5 +43,7 @@ test("match", () => {
 test("nameKeys meet across scripts; the rules are versioned", () => {
   const a = new Set(nameKeys("Shri Narendra Modi (politician)"));
   expect(nameKeys("श्री नरेंद्र मोदी").some((k) => a.has(k))).toBe(true);
-  expect(RULES_VERSION).toBe("2026-10-06");
+  expect(nameKeys("Block 1")).toEqual(["plk 1"]);
+  expect(keys("॰")).toEqual([]); // no letter, no digit: no key, not ""
+  expect(RULES_VERSION).toBe("2026-10-06.1");
 });

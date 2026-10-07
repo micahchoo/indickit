@@ -172,7 +172,22 @@ function compile(rules: Rules) {
     return vs;
   }
 
+  // A word of these digits (zero, then 1-9) only is a number: १२ → "12".
+  function number(word: string): string | undefined {
+    let out = "";
+    for (let i = 0; i < word.length; i++) {
+      const o = word.charCodeAt(i);
+      const z = rules.digit_zeros.find((z) => o >= z && o <= z + 9);
+      if (z === undefined) return undefined;
+      out += String.fromCharCode(0x30 + o - z);
+    }
+    return out || undefined;
+  }
+
+  // Never holds "": a word with no letter and no number has no key.
   return function keys(word: string): string[] {
+    const n = number(word);
+    if (n !== undefined) return [n];
     const bases = [word];
     const first = word.charCodeAt(0);
     for (const sf of rules.suffixes) {
@@ -183,6 +198,7 @@ function compile(rules: Rules) {
     }
     const out = new Set<string>();
     for (const base of bases) for (const v of variants(base)) out.add(fold(v));
+    out.delete("");
     return [...out].sort();
   };
 }
@@ -207,10 +223,14 @@ export function keys(word: string): string[] {
   return w ? engine(w) : [];
 }
 
+// It splits on one character at a time (filter drops the empty words). The
+// spaces are Python's \s (str.isspace), the reference's splitter
+// (linguistic-utilities lu/names.py#words): JavaScript's \s without U+FEFF,
+// with U+001C-001F and U+0085. Go's \s is ASCII only.
 /** A name split the way nameKeys and match split it: on spaces and
  * punctuation, with anything in brackets removed. */
 export function words(name: string): string[] {
-  return name.replace(/\([^)]*\)/g, " ").split(/[\s.\-,'’]+/u).filter(Boolean);
+  return name.replace(/\([^)]*\)/g, " ").split(/[^\S\ufeff]|[\x1c-\x1f\x85.\-,'’]/u).filter(Boolean);
 }
 
 /** The keys of a whole name, one per combination of its words' keys, words

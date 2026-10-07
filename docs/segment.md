@@ -31,7 +31,10 @@ Karnataka.
 
 No other tool keeps Kannada conjuncts: `Intl.Segmenter`, `graphemer`,
 `graphemesplit`, `@marijn/find-cluster-break`, Go's `uniseg` and `uax29`,
-and Python's `regex` all split them. `indicparser` (Python) has no Kannada,
+Python's `regex` and Java's `BreakIterator` all split them. Go's `uniseg`
+and Java 21 also split conjuncts in every other Brahmic script (17% of
+Hindi words, 66% of Malayalam words), because they use rules older than
+Unicode 15.1. `indicparser` (Python) has no Kannada,
 and splits 5% of Punjabi words for other reasons (it cuts the nukta off its
 letter: ਦੇਸ਼ → ਦੇ ਸ ਼).
 

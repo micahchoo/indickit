@@ -1,6 +1,6 @@
 // phonetic/rules.json
 var rules_default = {
-  version: "2026-10-06",
+  version: "2026-10-06.1",
   folds: [
     "bn-case",
     "drop-vowels",
@@ -455,6 +455,22 @@ var rules_default = {
       also: "u"
     }
   ],
+  digit_zeros: [
+    48,
+    1632,
+    1776,
+    2406,
+    2534,
+    2662,
+    2790,
+    2918,
+    3046,
+    3174,
+    3302,
+    3430,
+    7248,
+    44016
+  ],
   max_keys: 16,
   suffixes: [
     {
@@ -736,7 +752,21 @@ function compile(rules) {
     }
     return vs;
   }
+  function number(word) {
+    let out = "";
+    for (let i = 0;i < word.length; i++) {
+      const o = word.charCodeAt(i);
+      const z = rules.digit_zeros.find((z2) => o >= z2 && o <= z2 + 9);
+      if (z === undefined)
+        return;
+      out += String.fromCharCode(48 + o - z);
+    }
+    return out || undefined;
+  }
   return function keys(word) {
+    const n = number(word);
+    if (n !== undefined)
+      return [n];
     const bases = [word];
     const first = word.charCodeAt(0);
     for (const sf of rules.suffixes) {
@@ -753,6 +783,7 @@ function compile(rules) {
     for (const base of bases)
       for (const v of variants(base))
         out.add(fold(v));
+    out.delete("");
     return [...out].sort();
   };
 }
@@ -768,7 +799,7 @@ function keys(word) {
   return w ? engine(w) : [];
 }
 function words(name) {
-  return name.replace(/\([^)]*\)/g, " ").split(/[\s.\-,'’]+/u).filter(Boolean);
+  return name.replace(/\([^)]*\)/g, " ").split(/[^\S\ufeff]|[\x1c-\x1f\x85.\-,'’]/u).filter(Boolean);
 }
 function nameKeys(name) {
   let out = [""];

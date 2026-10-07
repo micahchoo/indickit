@@ -19,6 +19,8 @@ import (
 	_ "embed"
 	"encoding/json"
 	"sort"
+
+	langtag "github.com/micahchoo/indickit/internal/lang"
 )
 
 //go:embed rules.json
@@ -76,9 +78,10 @@ func Languages() []string {
 }
 
 // Stem returns the search key of word in language lang (as bn gu hi kn ml
-// mr ne pa sa ta te ur). For any other lang it returns word unchanged.
+// mr ne pa sa ta te ur). Only the tag's language counts: "ta-IN", "TA" and
+// "tam" are "ta". For any other lang it returns word unchanged.
 func Stem(word, lang string) string {
-	t, ok := tables[lang]
+	t, ok := tables[langtag.Code(lang)]
 	if !ok {
 		return word
 	}

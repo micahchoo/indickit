@@ -9,7 +9,8 @@
 // information on purpose: apply it to a query and to an index, never to
 // stored text.
 //
-// lang is a language code ("as", "hi", ...) or "". Assamese text needs it:
+// lang is a language tag ("as", "hi", "as-IN", "asm") or "". Only its
+// language counts: case, region and script do not. Assamese text needs it:
 // after a virama, Assamese ৰ and Bengali র look alike, and each language
 // keeps its own.
 //
@@ -22,7 +23,8 @@ import (
 	"encoding/json"
 	"slices"
 
-	"golang.org/x/text/unicode/norm"
+	langtag "github.com/micahchoo/indickit/internal/lang"
+	"github.com/micahchoo/indickit/internal/unorm"
 )
 
 //go:embed rules.json
@@ -41,10 +43,10 @@ var RulesVersion = std.version
 
 // Text gives one encoding to text that looks the same; it never changes what
 // a reader sees.
-func Text(s, lang string) string { return std.fixed(std.onePass, s, lang) }
+func Text(s, lang string) string { return std.fixed(std.onePass, s, langtag.Code(lang)) }
 
 // Fold is Text, then a merge of accepted spellings of one word. For search only.
-func Fold(s, lang string) string { return std.fixed(std.foldPass, s, lang) }
+func Fold(s, lang string) string { return std.fixed(std.foldPass, s, langtag.Code(lang)) }
 
 const digits = "0123456789abcdefghijklmnopqrstuvwxyz"
 
@@ -80,6 +82,9 @@ type rawRules struct {
 		Virama   rune              `json:"virama"`
 		Anusvara rune              `json:"anusvara"`
 		Rows     [][3]rune         `json:"rows"`
+		Langs    []string          `json:"langs"`  // the step runs only for these languages
+		Before   [][2]rune         `json:"before"` // map only where the next character is in a range
+		After    [][2]rune         `json:"after"`  // map only where the previous character is in a range
 	} `json:"fold"`
 }
 
@@ -92,8 +97,10 @@ type node struct {
 }
 
 type foldStep struct {
-	mapping  map[rune][]rune
-	anusvara *struct {
+	langs         []string
+	before, after [][2]rune // the neighbours are read from the step's input
+	mapping       map[rune][]rune
+	anusvara      *struct {
 		blocks           []rune
 		virama, anusvara rune
 		rows             [][3]rune
@@ -199,7 +206,7 @@ func load(data []byte) (*engine, error) {
 		e.chillu[first(from)] = first(to)
 	}
 	for _, st := range r.Fold {
-		var fs foldStep
+		fs := foldStep{langs: st.Langs, before: st.Before, after: st.After}
 		if st.Step == "map" {
 			fs.mapping = map[rune][]rune{}
 			for from, to := range st.Map {
@@ -299,7 +306,7 @@ func (e *engine) deletes(before []rune, c rune, after []rune) bool {
 }
 
 func (e *engine) onePass(text, lang string) string {
-	s := []rune(norm.NFC.String(text))
+	s := []rune(unorm.NFC(text))
 	at := func(i int) rune { // -1 past the end
 		if i < len(s) {
 			return s[i]
@@ -360,16 +367,39 @@ func (e *engine) onePass(text, lang string) string {
 		}
 		out = append(out, c)
 	}
-	return norm.NFC.String(string(out))
+	return unorm.NFC(string(out))
+}
+
+// context reports whether s[i]'s neighbours satisfy the step's before and
+// after ranges; a missing neighbour satisfies neither.
+func (st foldStep) context(s []rune, i int) bool {
+	in := func(c rune, ranges [][2]rune) bool {
+		for _, r := range ranges {
+			if c >= r[0] && c <= r[1] {
+				return true
+			}
+		}
+		return false
+	}
+	if st.before != nil && (i+1 >= len(s) || !in(s[i+1], st.before)) {
+		return false
+	}
+	if st.after != nil && (i == 0 || !in(s[i-1], st.after)) {
+		return false
+	}
+	return true
 }
 
 func (e *engine) foldPass(text, lang string) string {
 	s := []rune(Text(text, lang))
 	for _, st := range e.fold {
+		if st.langs != nil && !slices.Contains(st.langs, lang) {
+			continue
+		}
 		out := make([]rune, 0, len(s))
 		if st.mapping != nil {
-			for _, c := range s {
-				if to, ok := st.mapping[c]; ok {
+			for i, c := range s {
+				if to, ok := st.mapping[c]; ok && st.context(s, i) {
 					out = append(out, to...)
 				} else {
 					out = append(out, c)

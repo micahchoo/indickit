@@ -35,13 +35,25 @@ chosen on:
 - **Invisible characters planted** at every position of 58,914 real words:
   72 of 3.6M variants changed their look, nearly all in Odia.
 
-`fold` merged 5.1% of the spelling variants in a held-out set, and 0.03% of
-what one search finds is a different word (Indic NLP: 5.5%, 0.07%). It
-merges only spellings of the same sounds: nasal + virama and anusvara
-(हिन्दी, हिंदी), chandrabindu, nukta, Assamese ৰ ৱ. Indic NLP's extra
-merges join different sounds, such as a final long ā in Telugu.
+`fold` was measured against the two tools a user can pick today, each with
+its best options: Indic NLP Library, and Lucene, which Elasticsearch,
+OpenSearch and Solr run. On data no rule was chosen on (rules 2026-10-07):
 
-The browser file is 13 KB gzipped.
+| | Spelling variants merged (names and words) | Spellings people typed merged (Wikipedia redirects) | Of what one search finds, a different word |
+|---|---|---|---|
+| Lucene, stock analyzer per language | 6.1% | 9.9% | 0.14% |
+| Indic NLP Library, every fold | 5.3% | 9.0% | 0.04% |
+| **fold** | **5.5%** | **10.0%** | **0.02%** |
+
+It merges only spellings of the same sounds: nasal + virama and anusvara
+(हिन्दी, हिंदी), chandrabindu, nukta, Arabic and Urdu letter forms (ي ی,
+ك ک, ه ہ), joiners that show (പുരസ്‌കാരം, പുരസ്കാരം), Assamese ৰ ৱ, Odia ଵ ୱ,
+the old and new Malayalam chillu spellings, and Urdu vowel marks. The
+rivals find more where they merge different sounds: Lucene's Hindi and
+Bengali filters make long vowels short, so की "of" and कि "that" become one
+word; Indic NLP drops a final long ā in Telugu and Kannada.
+
+The browser file is 14 KB gzipped.
 
 Known weak spots:
 
@@ -52,4 +64,11 @@ Known weak spots:
   engines.
 - **Kashmiri, Sindhi, Bodo and Maithili** had no look-alike groups in the
   held-out data. They were checked for damage only, and none was found.
+- **`fold` keeps Kashmiri and Sindhi vowel marks:** they tell words apart
+  (Sindhi هيءَ / هيءُ, "this", feminine and masculine). The rivals delete
+  them and find more there. Sindhi's held-out numbers were read before this
+  choice.
+- **`fold` merges nothing in Santali and Meetei Mayek** beyond `normalize`:
+  no rule acts on their scripts. Dogri and Bodo have no spelling data:
+  their merges in text were read (बंद / बन्द, नेईँ / नेईं), not measured.
 

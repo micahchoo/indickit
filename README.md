@@ -47,10 +47,10 @@ TypeScript, set `moduleResolution` to `nodenext` or `bundler`; the old
 In a browser, with no build step:
 
 ```js
-import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.3/dist/normalize.js";
-import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.3/dist/stem.js";
-import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.3/dist/phonetic.js";
-import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.3/dist/segment.js";
+import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.5.0/dist/normalize.js";
+import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.5.0/dist/stem.js";
+import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.5.0/dist/phonetic.js";
+import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.5.0/dist/segment.js";
 ```
 
 Each utility is its own file, so a page loads only the rules it uses.
@@ -89,12 +89,16 @@ stem(normalize("حکومتوں", "ur"), "ur"); // "حکومت"
 ```
 
 In 13 languages, a search with stems finds 6–15 points more of the right
-sentences than an exact search. It also finds some wrong ones: a stem
-merges forms by their endings, not by their meaning.
+sentences than an exact search. In a search engine over Wikipedia passages,
+it finds 2–11.5 points more in 10 of 13 test sets, and nothing more in
+Hindi or Punjabi. It also finds some wrong ones: a stem merges forms by
+their endings, not by their meaning. Do not add fuzzy matching to stems:
+together they find less than stems alone.
 
-Use `stem` or `fold`, not both: `fold` before `stem` loses 10 points in
-Assamese. `fold` alone merges accepted spellings of one word (हिन्दी and
-हिंदी) and keeps the word whole, for a search that must not merge forms:
+You need only one of `stem` and `fold`. If you use both, stem first, then
+fold: `fold` before `stem` loses 3–10 points in Assamese. `fold` alone
+merges accepted spellings of one word (हिन्दी and हिंदी) and keeps the word
+whole, for a search that must not merge forms:
 
 ```ts
 import { fold } from "indickit/normalize";
@@ -200,9 +204,9 @@ other tools tried and each weak spot are in `docs/`.
 
 | Utility | Result | Best other tool | Browser file | Details |
 |---|---|---|---|---|
-| `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 13 KB | [docs/normalize.md](docs/normalize.md) |
+| `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 14 KB | [docs/normalize.md](docs/normalize.md) |
 | `stem` | finds 6–15 points more of the right sentences than exact search, in 13 languages | ahead in 5 languages, level in 2, a trade in 4, behind in Nepali | 3 KB | [docs/stem.md](docs/stem.md) |
-| `phonetic` | finds the right person 84% of the time, in 21 languages | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu | 4 KB | [docs/phonetic.md](docs/phonetic.md) |
+| `phonetic` | finds the right person 84% of the time, in 21 languages, on clean names; 42% on a real roster as written (70% with titles and initials removed) | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu | 4 KB | [docs/phonetic.md](docs/phonetic.md) |
 | `segment` | cuts 0.05% of Kannada words wrongly | `Intl.Segmenter`: 50.3% | 9 KB | [docs/segment.md](docs/segment.md) |
 
 (Browser files are gzipped.)
@@ -211,13 +215,33 @@ other tools tried and each weak spot are in `docs/`.
 
 - **Only HarfBuzz was tested** for "looks the same" (`normalize`,
   `segment`). Windows and Apple draw text with their own engines.
+- **`phonetic` expects clean names.** Remove titles (Shri, Smt.) and
+  initials before you key a name. On one-word place names it returns many
+  wrong matches. See [docs/phonetic.md](docs/phonetic.md).
 - **Tamil is the weakest language** for `phonetic` (76%), and `stem` is
   behind Snowball's recall in Tamil.
+- **`stem` does not help passage search in Hindi or Punjabi.** Short
+  question words merge with other words (ਕਿਸ "which" with ਕਿਸਾਨ "farmer"),
+  and names lose their ends (सीता → सी). In Hindi, Lucene's analyzer finds
+  4.8 points more, from its spelling folds. See [docs/stem.md](docs/stem.md).
+- **An n-gram field can find more than `stem`** in passage search: in
+  Malayalam, Kannada, Tamil, Bengali, Marathi and Hindi, indexing each
+  word's three-letter pieces found 3–10 points more, at 2–3 times the
+  index size. See [docs/stem.md](docs/stem.md#in-a-search-engine).
 - **Some languages have no table.** `stem` covers 13 languages; Bodo,
   Dogri, Kashmiri, Konkani, Maithili, Manipuri, Odia, Santali and Sindhi
   are not among them.
 - **Go reads invalid UTF-8 as U+FFFD**, so for such input the output does
   not join back into the original bytes.
+- **"The same output" holds inside the blocks indickit reads.** Go reads
+  Unicode 15.0; TypeScript reads the Unicode data of its host (node 24:
+  17.0). A newer mark outside those blocks can give another output: "Ram"
+  plus U+0897 has the key `rn` in TypeScript and none in Go. A test checks
+  the blocks (`unicode_test.go`, `js/regression.test.ts`).
+- **Two promises have a scope.** `normalize` twice gives what `normalize`
+  once gives for text with at most 8 invisible characters; 9 BOMs before
+  ૰ need a second call. `normalize` changes no `phonetic` key of a word
+  with no invisible character; with one, it can (فاطمہ + ZWNJ).
 
 Each utility's own weak spots are at the end of its file in `docs/`.
 

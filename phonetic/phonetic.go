@@ -16,6 +16,8 @@ import (
 	"unicode"
 
 	"golang.org/x/text/unicode/norm"
+
+	"github.com/micahchoo/indickit/internal/unorm"
 )
 
 //go:embed rules.json
@@ -59,7 +61,7 @@ func normalize(word string) string {
 	if latin {
 		return strings.ToLower(plain.String())
 	}
-	return norm.NFC.String(word)
+	return unorm.NFC(word)
 }
 
 // Keys returns the sorted keys of one word. An empty result means the word
@@ -74,7 +76,10 @@ func Keys(word string) []string {
 
 var (
 	bracketed = regexp.MustCompile(`\([^)]*\)`)
-	separator = regexp.MustCompile(`[\s.\-,'’]+`)
+	// The spaces are Python's \s (str.isspace), the reference's splitter
+	// (linguistic-utilities lu/names.py#words); RE2's \s is ASCII only, and
+	// JavaScript's \s also holds U+FEFF.
+	separator = regexp.MustCompile(`[\t\n\v\f\r\x1c-\x1f \x{85}\x{a0}\x{1680}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f}\x{205f}\x{3000}.\-,'’]+`)
 )
 
 // Words splits a name the way NameKeys and Match do: on spaces and
@@ -94,29 +99,49 @@ func Words(name string) []string {
 // their NameKeys share an element, so these are what to index. At most
 // MaxNameKeys are returned.
 func NameKeys(name string) []string {
-	out := []string{""}
+	var all [][]string // the keys of each word that has a key
 	for _, w := range Words(name) {
-		ks := Keys(w)
-		if len(ks) == 0 {
-			continue
+		if ks := Keys(w); len(ks) > 0 {
+			all = append(all, ks)
 		}
-		var next []string
-		for _, prefix := range out {
-			for _, k := range ks {
-				if len(next) == MaxNameKeys {
-					break
-				}
-				if prefix == "" {
-					next = append(next, k)
-				} else {
-					next = append(next, prefix+" "+k)
-				}
-			}
-		}
-		out = next
 	}
-	if len(out) == 1 && out[0] == "" {
+	if len(all) == 0 {
 		return nil
+	}
+	// The combinations come in order, the last word changing fastest, and
+	// stop at MaxNameKeys. So only the last words whose combinations reach
+	// MaxNameKeys change; every word before them takes its first key. Each
+	// result is built once: the time is linear in the length of the result.
+	n, tail := 1, len(all)
+	for tail > 0 && n < MaxNameKeys {
+		tail--
+		n *= len(all[tail])
+	}
+	n = min(n, MaxNameKeys)
+	var b strings.Builder
+	for _, ks := range all[:tail] {
+		b.WriteString(ks[0])
+		b.WriteByte(' ')
+	}
+	head := b.String()
+	out := make([]string, n)
+	pick := make([]int, len(all)-tail) // the key chosen for each of the last words
+	for i := range out {
+		b.Reset()
+		b.WriteString(head)
+		for j, k := range pick {
+			if j > 0 {
+				b.WriteByte(' ')
+			}
+			b.WriteString(all[tail+j][k])
+		}
+		out[i] = b.String()
+		for j := len(pick) - 1; j >= 0; j-- {
+			if pick[j]++; pick[j] < len(all[tail+j]) {
+				break
+			}
+			pick[j] = 0
+		}
 	}
 	return out
 }
