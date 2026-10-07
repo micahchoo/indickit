@@ -1,20 +1,28 @@
 # indickit
 
-Small, exact utilities for text in Indian languages, for Go and
-TypeScript. Each one gives the same output in both languages, and each is
+Small, exact utilities for text in the languages of India, in Go and
+TypeScript. They fix the places where ordinary string code goes wrong on
+Indian text: a search that misses a word because it is spelled, encoded or
+inflected another way, and a letter count that cuts a letter in two.
+
+```
+stem      किताब  किताबें  किताबों              →  किताब
+phonetic  राम  ರಾಮ  രാമ  ராம  رام  Ram       →  rn
+segment   ಲಕ್ಷ್ಮಿ                              →  ಲ  ಕ್ಷ್ಮಿ
+```
+
+Each utility gives the same output in Go and in TypeScript, and each was
 measured on data that its rules were never built on.
 
-- **`phonetic`** gives a name a key that is the same in every script the
-  name is written in.
-- **`normalize`** gives one encoding to text that looks the same, and
-  never changes what a reader sees.
-- **`segment`** splits text into the letters a reader sees, Kannada and
-  Gurmukhi conjuncts included.
+## Which one you need
 
-```
-राम   ರಾಮ   രാമ   ராம   رام   Ram      →  rn
-मोहनलाल   മോഹൻലാൽ   Mohanlal          →  nhnl
-```
+| You want to | Use |
+|---|---|
+| store text so that one look has one encoding | `normalize` |
+| let a search for किताब also find किताबों | `normalize`, then `stem` |
+| let a search for हिन्दी also find हिंदी, and keep words whole | `fold` |
+| find a person's name typed in another script | `phonetic` |
+| count letters, cut at a length, or move a cursor | `segment` |
 
 ## Install
 
@@ -24,57 +32,89 @@ Go:
 go get github.com/micahchoo/indickit
 ```
 
-JavaScript or TypeScript, straight from GitHub (no npm account needed):
+JavaScript or TypeScript, from GitHub (no npm account needed):
 
 ```sh
-npm install github:micahchoo/indickit#v0.3.0
-bun add github:micahchoo/indickit#v0.3.0
+npm install github:micahchoo/indickit#v0.4.0
+bun add github:micahchoo/indickit#v0.4.0
 ```
 
-In a browser, without a build step:
+In a browser, with no build step:
 
 ```js
-import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.3.0/dist/phonetic.js";
-import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.3.0/dist/normalize.js";
-import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.3.0/dist/segment.js";
+import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.0/dist/normalize.js";
+import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.0/dist/stem.js";
+import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.0/dist/phonetic.js";
+import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.0/dist/segment.js";
 ```
 
-Each utility is its own file: a page that needs `normalize` does not load
-the `phonetic` rules.
+Each utility is its own file, so a page loads only the rules it uses.
 
-## phonetic: one key for a name in every script
+## Recipes
+
+### Store text
+
+Two strings can look the same and differ in their bytes: an invisible
+joiner, an old Malayalam chillu, a ज़ typed as one code point or two.
+`normalize` gives them one encoding, and it never changes what a reader
+sees. Store text after `normalize`.
+
+```ts
+import { normalize } from "indickit/normalize";
+
+normalize("ಸಿಕಾರ್\u200c", "kn"); // "ಸಿಕಾರ್": a ZWNJ at the end draws nothing
+normalize("അവന്\u200d", "ml"); // "അവൻ": the old chillu becomes the atomic one
+normalize("र्\u200dय", "mr"); // "र्\u200dय": eyelash ra; this ZWJ is visible, so it stays
+```
+
+### Search words in their other forms
+
+Give every word of a document a key, and give the query the same key. The
+key for a word is `stem(normalize(word, lang), lang)`:
+
+```ts
+import { normalize } from "indickit/normalize";
+import { stem } from "indickit/stem";
+
+stem(normalize("किताबों", "hi"), "hi"); // "किताब"
+stem(normalize("ஆண்டில்", "ta"), "ta"); // "ஆண்ட"
+stem(normalize("ஆண்டு", "ta"), "ta"); // "ஆண்ட"
+stem(normalize("ಸರ್ಕಾರಕ್ಕೆ", "kn"), "kn"); // "ಸರ್ಕಾರ"
+stem(normalize("حکومتوں", "ur"), "ur"); // "حکومت"
+```
+
+In 13 languages, a search with stems finds 6–15 points more of the right
+sentences than an exact search. It also finds some wrong ones: a stem
+merges forms by their endings, not by their meaning.
+
+Use `stem` or `fold`, not both: `fold` before `stem` loses 10 points in
+Assamese. `fold` alone merges accepted spellings of one word (हिन्दी and
+हिंदी) and keeps the word whole, for a search that must not merge forms:
+
+```ts
+import { fold } from "indickit/normalize";
+
+fold("हिन्दी", "hi"); // "हिंदी"
+fold("गाँव", "hi"); // "गांव"
+```
+
+### Find a name in any script
 
 One person's name is typed in Devanagari on one form, in Malayalam on a
-second and in English on a third. A plain text search finds only one of
-them. `phonetic` gives each spelling a key; equal keys mean "this sounds
-like the same name", so a search, a duplicate check or a join can find
-all three.
-
-It reads 21 Indian languages and English: Assamese, Bengali, Gujarati,
-Hindi, Kannada, Kashmiri, Konkani, Maithili, Malayalam, Manipuri (Meetei
-Mayek), Marathi, Nepali, Odia, Punjabi (Gurmukhi), Sanskrit, Santali (Ol
-Chiki), Sindhi, Tamil, Telugu, Urdu, and Latin spellings of all of them.
-
-### Use
-
-Compare two names:
-
-```go
-import "github.com/micahchoo/indickit/phonetic"
-
-phonetic.Match("Mohanlal", "മോഹൻലാൽ") // true
-phonetic.Match("राम", "काम")           // false: Rām is not kām
-```
+second, and in English on a third. `phonetic` gives each spelling a key;
+equal keys mean "this sounds like the same name".
 
 ```ts
 import { match } from "indickit/phonetic";
 
+match("Mohanlal", "മോഹൻലാൽ"); // true
 match("Mohan", "மோகன்"); // true
+match("राम", "काम"); // false: Rām is not kām
 ```
 
-Index names for search. A name can have more than one key (Tamil writes
-both k and h with க, so மோகன், Mohan, has two); store every one, and look
-up every key of the query:
+To search a list of names, store every key of each name, and look up every
+key of the query. A name can have more than one key: Tamil writes both k
+and h with க, so மோகன், Mohan, has two.
 
 ```ts
 import { nameKeys, RULES_VERSION } from "indickit/phonetic";
@@ -84,163 +124,15 @@ for (const key of nameKeys("सचिन तेंदुलकर")) db.insert({
 const hits = nameKeys(query).flatMap((key) => db.find({ key }));
 ```
 
-The functions, the same in both languages:
+Equal keys mean "sounds alike", not "the same person". Before you merge two
+records, weigh the evidence: a shared rare name says more than a shared
+common one.
 
-| Go | TypeScript | Returns |
-|---|---|---|
-| `Keys(word)` | `keys(word)` | the keys of one word |
-| `NameKeys(name)` | `nameKeys(name)` | the keys of a whole name; index these |
-| `Match(a, b)` | `match(a, b)` | same word count, and each pair of words shares a key |
-| `Words(name)` | `words(name)` | the words, split as the others split them |
-| `RulesVersion` | `RULES_VERSION` | the version of the rules |
+### Count and cut letters
 
-`phonetic` says only "these sound alike". It does not rank results, and
-it does not decide that two records are one person. A shared rare name is
-better evidence than a shared common one; weigh that yourself before you
-merge records automatically.
-
-### How good it is
-
-Measured on the names of 9,430 people never used to build the rules
-(Wikidata labels of Indian citizens; one person in ten, held out to the
-end). Each number is the share of searches that find the right person
-when the name is looked up among the held-out names of another language;
-both columns use the same searches.
-
-| Language | indickit | romanize + Soundex |
-|---|---|---|
-| Hindi | 82% | 70% |
-| Tamil | 76% | 23% |
-| Malayalam | 82% | 40% |
-| Bengali | 76% | 61% |
-| English spellings | 79% | 62% |
-| Urdu | 81% | cannot read Urdu |
-| Mean of 21 languages | **84%** | — |
-
-The table was read with rules 2026-10-05. Rules 2026-10-06 add one key to
-255 of the 195,994 test words (English spellings with a w before a
-consonant, such as Andrew) and remove none.
-
-"Romanize + Soundex" is the best off-the-shelf alternative: the strongest
-existing romanizer for each script, then English Soundex. Neither of the
-two romanizers tried reads Urdu, Sindhi or Kashmiri.
-
-Two different people who share a family name are matched by mistake
-about once in 200 pairs; two random people, almost never. Searching one
-name among 81,000 English names returns about one wrong person.
-
-One word takes 0.6 µs in Go and 0.7 µs in Node, on one core. A million
-names index in about 2 s (Go) or 3 s (Node); a search takes 2–3 µs. The
-browser file is 4 KB gzipped.
-
-Known weak spots:
-
-- **Tamil** is the weakest Indian language (76%). Tamil writes several
-  sounds with one letter.
-- **Bodo** romanization writes a vowel as w (खौ is "khwo"). Since rules
-  2026-10-06 a w before a consonant is also read as a vowel: Bodo's typed
-  spellings match 69.5% of the time (63% before), level with Soundex's 70%.
-- **A first vowel can differ.** "Imran" and عمران do not match: ع is read
-  as a.
-- **Dogri and Bodo** were measured on ordinary words only; there was no
-  set of names.
-
-## normalize: one encoding for text that looks the same
-
-Two strings can look the same and still differ in their bytes: an invisible
-joiner, an old Malayalam chillu, a ज़ typed as one code point or two. An
-exact search, a duplicate check or a join then misses one of them.
-`normalize` gives such strings one encoding, and it never changes what a
-reader sees. `fold` goes one step further, for search only: it also merges
-accepted spellings of one word.
-
-It reads the same 21 languages as `phonetic`; text in any other script
-changes only by Unicode NFC.
-
-### Use
-
-```ts
-import { normalize, fold } from "indickit/normalize";
-
-normalize("ಸಿಕಾರ್\u200c", "kn"); // "ಸಿಕಾರ್": a ZWNJ at the end draws nothing
-normalize("അവന്\u200d", "ml"); // "അവൻ": the old chillu becomes the atomic one
-normalize("र्\u200dय", "mr"); // "र्\u200dय": eyelash ra; this ZWJ is visible, so it stays
-fold("हिन्दी", "hi"); // "हिंदी"
-fold("गाँव", "hi"); // "गांव"
-```
-
-```go
-import "github.com/micahchoo/indickit/normalize"
-
-normalize.Text("അവന്\u200d", "ml") // "അവൻ"
-normalize.Fold("हिन्दी", "hi")     // "हिंदी"
-```
-
-Store text after `normalize`. Apply `fold` to a query and to an index, never
-to stored text: it loses information on purpose. The language code matters
-for Assamese: after a virama, Assamese ৰ and Bengali র look the same, and
-each language keeps its own.
-
-| Go | TypeScript | Returns |
-|---|---|---|
-| `normalize.Text(s, lang)` | `normalize(text, lang?)` | one encoding; the look never changes |
-| `normalize.Fold(s, lang)` | `fold(text, lang?)` | `normalize`, then one spelling of each word |
-| `normalize.RulesVersion` | `RULES_VERSION` | the version of the rules |
-
-### How good it is
-
-"Looks the same" is decided by HarfBuzz: two strings look the same when it
-draws the same glyphs in the same places, in Noto and in a second font
-family. Measured on 556,036 words never used to build the rules (Wikidata
-names, Aksharantar words, PIB press releases; one look-alike group in ten,
-held out to the end):
-
-| | Look-alike groups made equal | Words whose look changed |
-|---|---|---|
-| NFC | 42.3% | 0 |
-| Indic NLP Library, every option | 82.4% | 0.68% |
-| **normalize** | **88.1%** | **0** |
-| the most any such tool can reach | 93.1% | 0 |
-
-The last row asks HarfBuzz about each character of each word: too slow to
-ship, but it shows what is left. Other checks, each on data that no rule was
-chosen on:
-
-- **26 more fonts** (among them Tiro and SMC's Rachana): no word changed
-  its look.
-- **Wikipedia**, 3.9M words in 11 languages typed by other people: 8 words
-  changed their look (Indic NLP: 96,629), and 77.8% of groups were made
-  equal (the most possible: 91.5%).
-- **Invisible characters planted** at every position of 58,914 real words:
-  72 of 3.6M variants changed their look, nearly all in Odia.
-
-`fold` merged 5.1% of the spelling variants in a held-out set, and 0.03% of
-what one search finds is a different word (Indic NLP: 5.5%, 0.07%). It
-merges only spellings of the same sounds: nasal + virama and anusvara
-(हिन्दी, हिंदी), chandrabindu, nukta, Assamese ৰ ৱ. Indic NLP's extra
-merges join different sounds, such as a final long ā in Telugu.
-
-The browser file is 13 KB gzipped.
-
-Known weak spots:
-
-- **Malayalam** is furthest from the most possible (69.9% against 82.8%).
-- **The nukta merge can join two words:** राज "rule" and राज़ "secret". Many
-  writers leave the nukta out, so text often writes them alike already.
-- **Only HarfBuzz was tested.** Windows and Apple draw text with their own
-  engines.
-- **Kashmiri, Sindhi, Bodo and Maithili** had no look-alike groups in the
-  held-out data. They were checked for damage only, and none was found.
-
-## segment: the letters a reader sees
-
-A cursor, a backspace, a character count and a cut at a length limit must
-treat ಕ್ಷ್ಮಿ as one letter. Unicode's grapheme clusters do this for most
-Indian scripts, but not for Kannada or Gurmukhi: `Intl.Segmenter`, and
-every other segmenter we tried, splits ಲಕ್ಷ್ಮಿ into four pieces. `segment`
-keeps the letters whole.
-
-### Use
+A cursor, a backspace, a letter count and a cut at a length limit must
+treat ಕ್ಷ್ಮಿ as one letter. `Intl.Segmenter` splits it in Kannada and
+Gurmukhi; `segment` keeps it whole.
 
 ```ts
 import { segment, count } from "indickit/segment";
@@ -251,82 +143,97 @@ segment("ਕ੍ਕ"); // ["ਕ੍","ਕ"]: Gurmukhi shows this virama, so these 
 count("ಕನ್ನಡ"); // 3
 ```
 
-```go
-import "github.com/micahchoo/indickit/segment"
+### The same in Go
 
-segment.Segment("ಲಕ್ಷ್ಮಿ") // [ಲ ಕ್ಷ್ಮಿ]
-segment.Count("ಕನ್ನಡ")    // 3
+```go
+import (
+	"github.com/micahchoo/indickit/normalize"
+	"github.com/micahchoo/indickit/phonetic"
+	"github.com/micahchoo/indickit/segment"
+	"github.com/micahchoo/indickit/stem"
+)
+
+normalize.Text("അവന്\u200d", "ml")               // "അവൻ"
+stem.Stem(normalize.Text("किताबों", "hi"), "hi") // किताब
+phonetic.Match("Mohanlal", "മോഹൻലാൽ")            // true
+segment.Segment("ಲಕ್ಷ್ಮಿ")                       // [ಲ ಕ್ಷ್ಮಿ]
 ```
 
-Text in any other script gets Unicode 17.0's grapheme clusters, which
-indickit computes itself: every browser and every Go version gives the same
-letters.
+## Reference
 
 | Go | TypeScript | Returns |
 |---|---|---|
+| `normalize.Text(s, lang)` | `normalize(text, lang?)` | one encoding; the look never changes |
+| `normalize.Fold(s, lang)` | `fold(text, lang?)` | `normalize`, then one spelling of each word |
+| `stem.Stem(word, lang)` | `stem(word, lang)` | the search key of a word |
+| `stem.Languages()` | `LANGUAGES` | the languages with a stem table |
+| `phonetic.Keys(word)` | `keys(word)` | the keys of one word |
+| `phonetic.NameKeys(name)` | `nameKeys(name)` | the keys of a whole name; index these |
+| `phonetic.Match(a, b)` | `match(a, b)` | same word count, and each pair of words shares a key |
+| `phonetic.Words(name)` | `words(name)` | the words, split as the others split them |
 | `segment.Segment(s)` | `segment(text)` | the letters, in order; joined, they give the text back |
 | `segment.Count(s)` | `count(text)` | how many letters a reader sees |
-| `segment.RulesVersion` | `RULES_VERSION` | the version of the rules |
 
-### How good it is
+Three things hold for all of them:
 
-A letter is split wrongly when a boundary falls inside a shape that
-HarfBuzz draws as one, in Noto Sans, Noto Serif and Anek. Measured on
-Wikipedia articles never used to build the rules (share of words):
+- **Language codes** are ISO 639: `hi`, `ta`, `as`, and so on. `phonetic`
+  needs none: it reads the script. `normalize` and `fold` use the code for
+  a few rules that belong to one language (Assamese ৰ, for example). `stem`
+  needs it, and returns the word unchanged for a language with no table.
+- **Keys are not text.** A stem (ஆண்ட), a `phonetic` key (`rn`) and the
+  output of `fold` are for comparing, not for showing or storing as text.
+  Do not stem a stem: `stem` may cut it again, as other stemmers do.
+- **Rules change, and stored keys go stale.** Each utility exports
+  `RULES_VERSION` (Go: `RulesVersion`). Store it beside the keys you save,
+  and compute them again when it changes. Before 1.0, a minor version may
+  change the rules.
 
-| Language | `Intl.Segmenter` | `segment` | two shapes joined by mistake |
-|---|---|---|---|
-| Kannada | 50.3% | 0.05% | 0 |
-| Punjabi | 3.2% | 0.01% | 0 |
-| Bengali | 0.31% | 0.02% | 0 |
-| Tamil | 0.06% | 0.01% | 0 |
-| Hindi, Marathi, Gujarati, Telugu, Nepali, Malayalam, Urdu | the same | the same | 0 |
+## How good it is
 
-In Kannada text, `Intl.Segmenter` counts 17% more letters than a reader
-sees. The same holds for the other languages written in Kannada script:
-Tulu (44% of words split; 0.02% with `segment`) and Konkani as written in
-Karnataka.
+Each result is on data that no rule was chosen on. The details, the
+other tools tried and each weak spot are in `docs/`.
 
-No other tool keeps Kannada conjuncts: `Intl.Segmenter`, `graphemer`,
-`graphemesplit`, `@marijn/find-cluster-break`, Go's `uniseg` and `uax29`,
-and Python's `regex` all split them. `indicparser` (Python) has no Kannada,
-and splits 5% of Punjabi words for other reasons (it cuts the nukta off its
-letter: ਦੇਸ਼ → ਦੇ ਸ ਼).
+| Utility | Result | Best other tool | Browser file | Details |
+|---|---|---|---|---|
+| `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 13 KB | [docs/normalize.md](docs/normalize.md) |
+| `stem` | finds 6–15 points more of the right sentences than exact search, in 13 languages | ahead in 5 languages, level in 2, a trade in 4, behind in Nepali | 3 KB | [docs/stem.md](docs/stem.md) |
+| `phonetic` | finds the right person 84% of the time, in 21 languages | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu | 4 KB | [docs/phonetic.md](docs/phonetic.md) |
+| `segment` | cuts 0.05% of Kannada words wrongly | `Intl.Segmenter`: 50.3% | 9 KB | [docs/segment.md](docs/segment.md) |
 
-The browser file is 9 KB gzipped. A word takes 0.4 µs in Node (`Intl.Segmenter`:
-1.9 µs) and 0.3 µs in Go.
+(Browser files are gzipped.)
 
-Known weak spots:
+## Limits
 
-- **Malayalam ൻ്റ** is one shape in Noto, but two in the Rachana and
-  Gayathri fonts. `segment` follows Unicode and keeps it two letters.
-- **Tamil க்ஷ** stays two letters: it occurs in 0.04% of Tamil words.
-- **Only HarfBuzz was tested.** Windows and Apple draw text with their own
-  engines.
-- **Go reads invalid UTF-8 as U+FFFD**, so for such input the letters do not
-  join back into the original bytes.
+- **Only HarfBuzz was tested** for "looks the same" (`normalize`,
+  `segment`). Windows and Apple draw text with their own engines.
+- **Tamil is the weakest language** for `phonetic` (76%), and `stem` is
+  behind Snowball's recall in Tamil.
+- **Some languages have no table.** `stem` covers 13 languages; Bodo,
+  Dogri, Kashmiri, Konkani, Maithili, Manipuri, Odia, Santali and Sindhi
+  are not among them.
+- **Go reads invalid UTF-8 as U+FFFD**, so for such input the output does
+  not join back into the original bytes.
 
-## When the rules change, stored output goes stale
-
-An improvement to the rules changes some outputs: a key or a normalized
-string stored before then no longer equals one computed after. Each
-utility has its own `RULES_VERSION`; store it beside your output and
-recompute when it changes. Until 1.0, a minor version may change the rules.
+Each utility's own weak spots are at the end of its file in `docs/`.
 
 ## How it is built
 
 Every table and switch of a utility is in its rules file
-(`phonetic/rules.json`, `normalize/rules.json`, `segment/rules.json`); the
-Go and TypeScript code is a short loop over it. Both are checked against a conformance file of
-inputs with the outputs a reference implementation gave them: 195,994 words
-for `phonetic`, 345,276 inputs for `normalize`, 858,654 inputs for
-`segment` (`*/testdata/conformance.jsonl.gz`). A change that makes any one
-disagree on any input fails the build.
+(`normalize/rules.json`, `stem/rules.json`, `phonetic/rules.json`,
+`segment/rules.json`); the Go and TypeScript code is a short loop over it.
+Both are checked against a conformance file of inputs with the outputs that
+a reference implementation gave them: 345,276 inputs for `normalize`,
+418,665 for `stem`, 195,994 for `phonetic`, 858,654 for `segment`
+(`*/testdata/conformance.jsonl.gz`). A change that makes any one disagree
+on any input fails the build.
 
 ## Credits and licence
 
 MIT. The test words are Wikidata labels (CC0). The rules were tuned on
-Wikidata and checked on PIB Parallel (Press Information Bureau releases)
-and AI4Bharat's Aksharantar; neither ships here. `normalize` was also
-checked on Wikipedia text and in fonts by Google (Noto), Ek Type (Anek),
-SIL, SMC and others; none ships here.
+Wikidata and PIB Parallel (Press Information Bureau releases), and checked
+on AI4Bharat's Aksharantar and on Wikipedia text; none of them ships here.
+`normalize` and `segment` were checked in fonts by Google (Noto), Ek Type
+(Anek), SIL, SMC and others. `stem`'s endings were mined from PIB text;
+Wiktionary's inflection tables (CC BY-SA), Universal Dependencies
+treebanks and FLORES+ (CC BY-SA) were used only to measure them. It was
+compared with Snowball, Lucene and the Indic NLP Library.

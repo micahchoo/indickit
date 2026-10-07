@@ -55,3 +55,21 @@ if (bad || k < 850_000) {
   process.exit(1);
 }
 console.log(`dist/segment.js: all ${k} inputs agree (rules ${SEGMENT_VERSION})`);
+
+// dist/stem.js against stem/testdata/conformance.jsonl.gz
+const { stem, RULES_VERSION: STEM_VERSION } = await import("../dist/stem.js");
+const stems = gunzipSync(readFileSync(new URL("../stem/testdata/conformance.jsonl.gz", import.meta.url))).toString("utf8");
+let j = 0, miss = 0;
+for (const line of stems.split("\n")) {
+  if (!line) continue;
+  const [lang, word, want] = JSON.parse(line);
+  j++;
+  if (stem(word, lang) !== want) {
+    if (miss++ < 10) console.error(JSON.stringify([lang, word, want]));
+  }
+}
+if (miss || j < 400_000) {
+  console.error(`dist/stem.js: ${miss} of ${j} inputs differ`);
+  process.exit(1);
+}
+console.log(`dist/stem.js: all ${j} inputs agree (rules ${STEM_VERSION})`);

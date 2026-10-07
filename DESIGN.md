@@ -75,24 +75,35 @@ a utility.
 
 ## 1. Decide the layer first
 
-Every change that a utility makes to text is one of three kinds. Decide the
-kind before you write a rule, because each kind has a different promise and a
-different answer key.
+Every change that a utility makes to text belongs to one layer below. Decide
+the layer before you write a rule, because each layer has a different promise
+and a different answer key.
 
 | Layer | Merges | Promise | Answer key | Utility |
 |---|---|---|---|---|
 | Canonical | strings that look the same | never changes what a reader sees | the glyph run | `normalize` |
 | Text fold | accepted spellings of one word (हिन्दी / हिंदी) | output stays readable, with few wrong matches | spelling variants, and a budget of wrong hits | `fold()` in `normalize` |
 | Phonetic | names that sound alike (राम / রাম) | finds the person | people in Wikidata | `phonetic` |
+| Morphological fold | forms of one word (किताब / किताबों) | a search finds the word in its other forms, within a budget of wrong hits | search on parallel text, judged by its English side; Wiktionary's inflection tables set the cost | `stem` |
 
-Store text only after the canonical layer. The text fold and the key lose
-information on purpose, so they are for search and matching only. Apply them
+Store text only after the canonical layer. The text fold, the stem and the
+key lose information on purpose, so they are for search and matching only. Apply them
 to a query and to an index, never to stored text.
 
 A rule that breaks its layer's promise belongs in a looser layer, or
 nowhere. The Malayalam nta rule (ന്റ → ൻ്റ) passed in Noto, then changed 947
 words in the three SMC fonts. It left the canonical layer and became a
 candidate for the text fold.
+
+The morphological fold merges forms, not spellings, so its output is a key,
+not a word: ஆண்டு "year" and ஆண்டில் "in the year" both give ஆண்ட. Its first
+answer key misjudged it. On Wiktionary's tables, `stem` was 30 to 90 points
+ahead of Morfessor in Gujarati, Telugu and Malayalam; in real search,
+Morfessor found 3 to 11 points more than that version. The tables see inflection only, and a
+search user also wants derivation (विकास, विकसित). So the user's task is the
+answer key, and the tables only set the cost. The order of the layers
+matters too: `fold` before `stem` cost Assamese 10 points of recall,
+because `fold` rewrites Assamese ৰ, which the endings hold.
 
 Rules that merge *sounds* (short and long vowels, ट and त) belong only in the
 phonetic layer. Vowel length changes meaning: दिन is "day", दीन is "poor". A
