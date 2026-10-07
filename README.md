@@ -26,26 +26,31 @@ measured on data that its rules were never built on.
 
 ## Install
 
-Go:
+Go 1.22 or later:
 
 ```sh
 go get github.com/micahchoo/indickit
 ```
 
-JavaScript or TypeScript, from GitHub (no npm account needed):
+JavaScript or TypeScript, on Node 20 or later, Bun or Deno:
 
 ```sh
-npm install github:micahchoo/indickit#v0.4.2
-bun add github:micahchoo/indickit#v0.4.2
+npm install indickit
+bun add indickit
+deno add npm:indickit
 ```
+
+The package is ES modules only; `require()` works from Node 20.19. In
+TypeScript, set `moduleResolution` to `nodenext` or `bundler`; the old
+`node10` cannot find the four utilities.
 
 In a browser, with no build step:
 
 ```js
-import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.2/dist/normalize.js";
-import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.2/dist/stem.js";
-import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.2/dist/phonetic.js";
-import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.2/dist/segment.js";
+import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.3/dist/normalize.js";
+import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.3/dist/stem.js";
+import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.3/dist/phonetic.js";
+import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.4.3/dist/segment.js";
 ```
 
 Each utility is its own file, so a page loads only the rules it uses.
