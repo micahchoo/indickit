@@ -16,6 +16,7 @@
     "js/normalize.ts",
     "js/segment.ts",
     "js/stem.ts",
-    "js/romanize.ts"
+    "js/romanize.ts",
+    "js/phonetic-search.ts"
   ]
 }

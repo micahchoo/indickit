@@ -846,6 +846,7 @@ function compile(rules) {
   };
 }
 var engine = compile(rules_default);
+var _internal = { compile: (r) => compile(r), normalize: (w) => normalize(w), engine };
 var RULES_VERSION = rules_default.version;
 var MAX_NAME_KEYS = 256;
 function normalize(word) {
@@ -897,6 +898,7 @@ export {
   match,
   keys,
   joinedKeys,
+  _internal,
   RULES_VERSION,
   MAX_NAME_KEYS,
   JOINED_MIN_CLASSES

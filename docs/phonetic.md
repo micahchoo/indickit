@@ -45,7 +45,7 @@ name among 81,000 English names returns about one wrong person.
 
 One word takes 0.6 µs in Go and 0.7 µs in Node, on one core. A million
 names index in about 2 s (Go) or 3 s (Node); a search takes 2–3 µs. The
-browser file is 4 KB gzipped.
+browser file is 5 KB gzipped.
 
 Known weak spots:
 

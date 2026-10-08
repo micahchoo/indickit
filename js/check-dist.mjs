@@ -100,6 +100,31 @@ if (rmiss || rn < 2000) {
 }
 console.log(`dist/romanize.js: all ${rn} rows agree (rules ${R.RULES_VERSION})`);
 
+// dist/phonetic-search.js against phonetic/testdata/scorer-conformance.jsonl.gz, loading its
+// tables from the default place beside the bundle (../phonetic/scorer/), as jsDelivr serves it
+const PS = await import("../dist/phonetic-search.js");
+const psRows = gunzipSync(readFileSync(new URL("../phonetic/testdata/scorer-conformance.jsonl.gz", import.meta.url))).toString("utf8");
+const SCRIPTS = ["arab", "beng", "deva", "gujr", "guru", "knda", "mlym", "mtei", "olck", "orya", "taml", "telu"];
+const searches = new Map();
+let pn = 0, pmiss = 0;
+for (const line of psRows.split("\n")) {
+  if (!line) continue;
+  const r = JSON.parse(line);
+  if (r.t === "unit") continue;
+  if (!searches.has(r.lang)) searches.set(r.lang, await PS.loadSearch(r.lang, { scripts: SCRIPTS, fetcher: disk }));
+  const s = searches.get(r.lang);
+  const got = r.t === "score" ? s.score(r.q, r.c, r.profile)
+    : r.queries.map((q) => s.index(r.names, r.profile).search(q, 0).map((h) => [h.name, h.score]));
+  const want = r.t === "score" ? r.s : r.hits;
+  pn++;
+  if (JSON.stringify(got) !== JSON.stringify(want) && pmiss++ < 10) console.error(JSON.stringify([r.t, r.lang, r.q ?? r.queries[0]]));
+}
+if (pmiss || pn < 1000) {
+  console.error(`dist/phonetic-search.js: ${pmiss} of ${pn} rows differ`);
+  process.exit(1);
+}
+console.log(`dist/phonetic-search.js: all ${pn} rows agree (search ${PS.SEARCH_VERSION})`);
+
 // every package.json export points at files that exist (its JS and its types)
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 const { existsSync } = await import("node:fs");

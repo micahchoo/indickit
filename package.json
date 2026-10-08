@@ -29,6 +29,10 @@
     "./romanize": {
       "types": "./dist/types/js/romanize.d.ts",
       "default": "./dist/romanize.js"
+    },
+    "./phonetic-search": {
+      "types": "./dist/types/js/phonetic-search.d.ts",
+      "default": "./dist/phonetic-search.js"
     }
   },
   "files": [
@@ -36,7 +40,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "bun build js/phonetic.ts --outfile dist/phonetic.js --target browser --format esm && bun build js/normalize.ts --outfile dist/normalize.js --target browser --format esm && bun build js/segment.ts --outfile dist/segment.js --target browser --format esm && bun build js/stem.ts --outfile dist/stem.js --target browser --format esm && bun build js/romanize.ts --outfile dist/romanize.js --target browser --format esm && tsc -p tsconfig.json",
+    "build": "bun build js/phonetic.ts --outfile dist/phonetic.js --target browser --format esm && bun build js/normalize.ts --outfile dist/normalize.js --target browser --format esm && bun build js/segment.ts --outfile dist/segment.js --target browser --format esm && bun build js/stem.ts --outfile dist/stem.js --target browser --format esm && bun build js/romanize.ts --outfile dist/romanize.js --target browser --format esm && bun build js/phonetic-search.ts --outfile dist/phonetic-search.js --target browser --format esm && tsc -p tsconfig.json",
     "test": "bun test",
     "check-dist": "node js/check-dist.mjs"
   },

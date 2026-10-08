@@ -231,6 +231,10 @@ function compile(rules: Rules) {
 
 const engine = compile(rulesJson);
 
+/** @internal For ./phonetic-search: the engine compiler, the normalizer and the
+ * search key's engine (keys of a normalized word). Not part of the API. */
+export const _internal = { compile: (r: unknown) => compile(r as Rules), normalize: (w: string) => normalize(w), engine };
+
 /** The rules every key from this module was made with. */
 export const RULES_VERSION: string = rulesJson.version;
 
