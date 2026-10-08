@@ -79,8 +79,17 @@ beams, 8 for words and 12 for names, change the scores by less than half a
 point on the development data.)
 
 **Tools that run in a browser or in Go** (Aksharamukha, uroman, any-ascii,
-IAST, govarnam) give the right first spelling 5–36% of the time on the same
-words.
+IAST, govarnam, ICU's `Any-Latin`) give the right first spelling 5–36% of the
+time on the same words.
+
+**The best tool without a neural model** is indic-trans (LTRC, IIIT
+Hyderabad): a statistical model, about 200 MB for its 10 languages. On the
+development data, in those 10 languages, its first spelling is right for
+34.7% of the words of running text (`romanize`: 51.2%) and 38.5% of the
+names that neither the lookup nor training held (`romanize`: 46.9%;
+IndicXlit: 47.5%). It is ahead in one language: Urdu running text, 46.1%
+against 39.9%. No held-out set was read for this comparison, because no
+tool came within reach.
 
 The browser file is 5 KB gzipped. The tables load on demand, one language
 and mode at a time: about 0.4 MB for names and 1.8 MB for text in a Brahmic
@@ -88,7 +97,8 @@ language, 0.2 MB and 1.0 MB in Urdu (brotli, as jsDelivr serves them). They
 are read beside the module, else from jsDelivr at the package's version; the
 npm package carries none of them. In Go, `go get` downloads every language's
 tables once (14 MB) and a program carries only the languages it imports. One
-word takes 1–2 ms in Go.
+word takes 1–2 ms in Go, in Node and in Bun. Hindi's text tables take
+about 145 MB of memory once loaded in Node.
 
 ## Weak spots
 

@@ -252,6 +252,11 @@ other tools tried and each weak spot are in `docs/`.
 
 (Browser files are gzipped.)
 
+`romanize` is also ahead of every tool tried that runs without a neural model. The
+best of them, indic-trans (about 200 MB), gives 34.7% on running text against
+51.2%, on the development data; it is ahead only in Urdu. See
+[docs/romanize.md](docs/romanize.md).
+
 ## Limits
 
 - **Only HarfBuzz was tested** for "looks the same" (`normalize`,
