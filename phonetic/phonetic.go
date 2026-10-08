@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/text/unicode/norm"
 
@@ -145,6 +146,31 @@ func NameKeys(name string) []string {
 	}
 	return out
 }
+
+// JoinedKeys returns the keys of a name written as one word, its words
+// joined: Ram Nath and இராம்நாத் share no NameKeys, but they share a joined
+// key. Only keys of at least JoinedMinClasses classes are returned: shorter
+// ones find too many names. A search looks them up only when NameKeys find
+// nobody; Match does not use them.
+func JoinedKeys(name string) []string {
+	var b strings.Builder
+	for _, w := range Words(name) {
+		b.WriteString(normalize(w))
+	}
+	if b.Len() == 0 {
+		return nil
+	}
+	var out []string
+	for _, k := range std.keys(b.String()) {
+		if utf8.RuneCountInString(k) >= std.joinedMin {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
+// JoinedMinClasses is the length below which a joined key is not returned.
+var JoinedMinClasses = std.joinedMin
 
 // Match reports whether two names have the same number of words and every
 // pair of words, in order, shares a key.

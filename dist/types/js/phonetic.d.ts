@@ -23,6 +23,13 @@ export declare function words(name: string): string[];
  * separated by a space. Two names match when these share an element, so
  * these are what to index. At most MAX_NAME_KEYS. */
 export declare function nameKeys(name: string): string[];
+/** Joined keys shorter than this (in classes) are not returned: they find too many names. */
+export declare const JOINED_MIN_CLASSES: number;
+/** The keys of a name written as one word, its words joined: "Ram Nath" and
+ * இராம்நாத் share no nameKeys, but can share a joined key. Only keys of at
+ * least JOINED_MIN_CLASSES classes. A search looks them up only when
+ * nameKeys find nobody; match does not use them. */
+export declare function joinedKeys(name: string): string[];
 /** Whether two names have the same number of words and every pair of words,
  * in order, shares a key. */
 export declare function match(a: string, b: string): boolean;

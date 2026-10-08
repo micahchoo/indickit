@@ -1,11 +1,14 @@
 // phonetic/rules.json
 var rules_default = {
-  version: "2026-10-06.1",
+  version: "2026-10-07",
   folds: [
     "bn-case",
+    "brahmic-av-u",
     "drop-vowels",
     "drop-y",
+    "flap-r",
     "gu-case",
+    "latin-ngh",
     "latin-w-u",
     "ml-case",
     "nasal-all",
@@ -100,7 +103,13 @@ var rules_default = {
     },
     virama_offset: 77,
     candrabindu_offset: 1,
-    candrabindu_class: "ṁ"
+    candrabindu_class: "ṁ",
+    nukta_offset: 60,
+    flap_offsets: [
+      33,
+      34
+    ],
+    flap_class: "ṛ"
   },
   extra: {
     ৎ: "t",
@@ -117,7 +126,14 @@ var rules_default = {
     ൿ: "k",
     ൔ: "m",
     ൕ: "y",
-    ൖ: "l"
+    ൖ: "l",
+    ड़: "ṛ",
+    ढ़: "ṛ",
+    ড়: "ṛ",
+    ঢ়: "ṛ",
+    ଡ଼: "ṛ",
+    ଢ଼: "ṛ",
+    ੜ: "ṛ"
   },
   urdu: {
     from: 1536,
@@ -139,7 +155,7 @@ var rules_default = {
       ڈ: "ṭ",
       ذ: "c",
       ر: "r",
-      ڑ: "ṭ",
+      ڑ: "ṛ",
       ز: "c",
       ژ: "c",
       س: "s",
@@ -181,7 +197,7 @@ var rules_default = {
       ڌ: "t",
       ڍ: "ṭ",
       ڏ: "t",
-      ڙ: "ṭ",
+      ڙ: "ṛ",
       ڦ: "p",
       ڪ: "k",
       ڱ: "ṅ",
@@ -301,7 +317,7 @@ var rules_default = {
       ᱯ: "p",
       ᱰ: "ṭ",
       ᱱ: "n",
-      ᱲ: "ṭ",
+      ᱲ: "ṛ",
       ᱳ: "o",
       ᱴ: "ṭ",
       ᱵ: "p",
@@ -313,6 +329,10 @@ var rules_default = {
   },
   latin: {
     groups: [
+      [
+        "ngh",
+        "nĝ"
+      ],
       [
         "chh",
         "c"
@@ -420,9 +440,11 @@ var rules_default = {
     v: "p",
     w: "p",
     ñ: "n",
+    ĝ: "k",
     ṁ: "n",
     ṅ: "n",
     ṇ: "n",
+    ṛ: "t",
     ṭ: "t"
   },
   vowels: "aeiou",
@@ -436,6 +458,26 @@ var rules_default = {
     "drop-final-vowel": false
   },
   branches: [
+    {
+      from: 2304,
+      to: 3455,
+      class: "v",
+      also: "u",
+      after: "aṁ",
+      not_before: "aieo"
+    },
+    {
+      from: 1536,
+      to: 7295,
+      class: "ṛ",
+      also: "r"
+    },
+    {
+      from: 0,
+      to: 127,
+      class: "ĝ",
+      also: "h"
+    },
     {
       from: 0,
       to: 127,
@@ -455,6 +497,10 @@ var rules_default = {
       also: "u"
     }
   ],
+  joined: {
+    min_classes: 8,
+    when: "the strict keys find nobody"
+  },
   digit_zeros: [
     48,
     1632,
@@ -565,6 +611,7 @@ var rules_default = {
 };
 
 // js/phonetic.ts
+var DELETED = "\x00";
 function compile(rules) {
   const b = rules.brahmic;
   const byOffset = new Array(128);
@@ -588,26 +635,31 @@ function compile(rules) {
   }
   function readBrahmic(word) {
     let out = "";
+    let last = -1;
     for (let i = 0;i < word.length; i++) {
       const ch = word[i];
       const x = extra.get(ch);
       if (x !== undefined) {
         out += x;
+        last = -1;
         continue;
       }
       const o = word.charCodeAt(i);
       if (o < b.from || o > b.to)
         continue;
       const off = o & 127;
-      if (off === b.virama_offset)
-        continue;
-      if (off === b.candrabindu_offset) {
-        out += b.candrabindu_class;
-        continue;
-      }
       const c = byOffset[off];
-      if (c !== undefined)
+      if (off === b.nukta_offset && b.flap_offsets.includes(last) && out) {
+        out = out.slice(0, -1) + b.flap_class;
+      } else if (off === b.virama_offset) {} else if (off === b.candrabindu_offset) {
+        out += b.candrabindu_class;
+      } else if (c !== undefined) {
         out += c;
+      }
+      if (c !== undefined)
+        last = off;
+      else if (off !== b.nukta_offset && off !== b.virama_offset)
+        last = -1;
     }
     return out;
   }
@@ -728,6 +780,11 @@ function compile(rules) {
         runs += out[i];
     return runs;
   }
+  function fits(classes, i, br) {
+    const prev = i > 0 ? classes[i - 1] : "^";
+    const next = i + 1 < classes.length ? classes[i + 1] : "$";
+    return (br.after === undefined || br.after.includes(prev)) && (br.before === undefined || br.before.includes(next)) && !(br.not_before ?? "").includes(next);
+  }
   function variants(word) {
     const classes = read(word);
     let vs = [classes];
@@ -745,12 +802,13 @@ function compile(rules) {
       if (!inScript)
         continue;
       for (let i = 0;i < classes.length; i++) {
-        if (classes[i] === br.class && vs.length * 2 <= rules.max_keys) {
-          vs = vs.concat(vs.map((v) => v.slice(0, i) + br.also + v.slice(i + 1)));
+        if (classes[i] === br.class && vs.length * 2 <= rules.max_keys && fits(classes, i, br)) {
+          const also = br.also || DELETED;
+          vs = vs.concat(vs.map((v) => v.slice(0, i) + also + v.slice(i + 1)));
         }
       }
     }
-    return vs;
+    return vs.map((v) => v.replaceAll(DELETED, ""));
   }
   function number(word) {
     let out = "";
@@ -817,6 +875,13 @@ function nameKeys(name) {
   }
   return out[0] === "" ? [] : out;
 }
+var JOINED_MIN_CLASSES = rules_default.joined.min_classes;
+function joinedKeys(name) {
+  const joined = words(name).map(normalize).join("");
+  if (!joined)
+    return [];
+  return engine(joined).filter((k) => [...k].length >= JOINED_MIN_CLASSES);
+}
 function match(a, b) {
   const wa = words(a), wb = words(b);
   if (!wa.length || wa.length !== wb.length)
@@ -831,6 +896,8 @@ export {
   nameKeys,
   match,
   keys,
+  joinedKeys,
   RULES_VERSION,
-  MAX_NAME_KEYS
+  MAX_NAME_KEYS,
+  JOINED_MIN_CLASSES
 };

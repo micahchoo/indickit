@@ -19,6 +19,9 @@ type rawRules struct {
 		ViramaOffset      rune              `json:"virama_offset"`
 		CandrabinduOffset rune              `json:"candrabindu_offset"`
 		CandrabinduClass  string            `json:"candrabindu_class"`
+		NuktaOffset       rune              `json:"nukta_offset"`
+		FlapOffsets       []rune            `json:"flap_offsets"`
+		FlapClass         string            `json:"flap_class"`
 	} `json:"brahmic"`
 	Extra map[string]string `json:"extra"`
 	Urdu  struct {
@@ -50,11 +53,17 @@ type rawRules struct {
 	Vowels   string            `json:"vowels"`
 	Steps    map[string]bool   `json:"steps"`
 	Branches []struct {
-		From  rune   `json:"from"`
-		To    rune   `json:"to"`
-		Class string `json:"class"`
-		Also  string `json:"also"`
+		From      rune    `json:"from"`
+		To        rune    `json:"to"`
+		Class     string  `json:"class"`
+		Also      string  `json:"also"`
+		After     *string `json:"after"`
+		Before    *string `json:"before"`
+		NotBefore string  `json:"not_before"`
 	} `json:"branches"`
+	Joined struct {
+		MinClasses int `json:"min_classes"`
+	} `json:"joined"`
 	DigitZeros []rune `json:"digit_zeros"`
 	MaxKeys    int    `json:"max_keys"`
 	Suffixes   []struct {
@@ -64,10 +73,18 @@ type rawRules struct {
 	} `json:"suffixes"`
 }
 
+// A branch gives a word a second key with one class read as another (also);
+// also == 0 deletes the class. after/before name the classes that may stand
+// next to it ("^" is the word's start, "$" its end); nil means any.
 type branch struct {
-	from, to    rune
-	class, also rune
+	from, to      rune
+	class, also   rune
+	after, before *string
+	notBefore     string
 }
+
+// deleted marks a class that a branch removes, until the fold drops it.
+const deleted = rune(-1)
 
 type suffix struct {
 	from, to rune
@@ -104,6 +121,9 @@ type engine struct {
 	suffixes                 []suffix
 	digitZeros               []rune // a word of these digits (zero, then 1-9) only is a number
 	maxKeys                  int
+	nukta, flapClass         rune   // a nukta after a flap offset (ड ढ) reads it as the flap
+	flapOffsets              []rune
+	joinedMin                int // joined keys shorter than this find too many names
 }
 
 func one(s string) rune { r, _ := utf8.DecodeRuneInString(s); return r }
@@ -135,6 +155,8 @@ func load(data []byte) (*engine, error) {
 		ngK: r.Steps["ng-k"], initialVowels: r.Steps["initial-vowels-alike"],
 		dropH: r.Steps["drop-h"], dropY: r.Steps["drop-y"], dropVowels: r.Steps["drop-vowels"],
 		dropFinalVowel: r.Steps["drop-final-vowel"],
+		nukta:          r.Brahmic.NuktaOffset, flapClass: one(r.Brahmic.FlapClass),
+		flapOffsets: r.Brahmic.FlapOffsets, joinedMin: r.Joined.MinClasses,
 	}
 	for o, c := range r.Brahmic.ClassByOffset {
 		n, _ := strconv.Atoi(o)
@@ -151,7 +173,11 @@ func load(data []byte) (*engine, error) {
 		k.isVowel[v] = true
 	}
 	for _, b := range r.Branches {
-		k.branches = append(k.branches, branch{b.From, b.To, one(b.Class), one(b.Also)})
+		also := deleted
+		if b.Also != "" {
+			also = one(b.Also)
+		}
+		k.branches = append(k.branches, branch{b.From, b.To, one(b.Class), also, b.After, b.Before, b.NotBefore})
 	}
 	for _, s := range r.Suffixes {
 		k.suffixes = append(k.suffixes, suffix{s.From, s.To, s.Endings})
@@ -160,9 +186,11 @@ func load(data []byte) (*engine, error) {
 }
 
 func (k *engine) readBrahmic(word string, out []rune) []rune {
+	last := rune(-1) // offset of the last letter read, for the nukta
 	for _, ch := range word {
 		if x, ok := k.extra[ch]; ok {
 			out = append(out, x)
+			last = -1
 			continue
 		}
 		if ch < k.from || ch > k.to {
@@ -170,14 +198,30 @@ func (k *engine) readBrahmic(word string, out []rune) []rune {
 		}
 		off := ch & 0x7f
 		switch {
+		case off == k.nukta && k.isFlap(last) && len(out) > 0:
+			out[len(out)-1] = k.flapClass
 		case off == k.virama:
 		case off == k.candra:
 			out = append(out, k.candraClass)
 		case k.byOffset[off] != 0:
 			out = append(out, k.byOffset[off])
 		}
+		if k.byOffset[off] != 0 {
+			last = off
+		} else if off != k.nukta && off != k.virama {
+			last = -1
+		}
 	}
 	return out
+}
+
+func (k *engine) isFlap(off rune) bool {
+	for _, f := range k.flapOffsets {
+		if off == f {
+			return true
+		}
+	}
+	return false
 }
 
 func (k *engine) readLatin(word string, out []rune) []rune {
@@ -338,7 +382,7 @@ func (k *engine) variants(word string) [][]rune {
 			continue
 		}
 		for i, c := range classes {
-			if c == b.class && len(vs)*2 <= k.maxKeys {
+			if c == b.class && len(vs)*2 <= k.maxKeys && b.fits(classes, i) {
 				n := len(vs)
 				for _, v := range vs[:n] {
 					w := append([]rune(nil), v...)
@@ -348,7 +392,32 @@ func (k *engine) variants(word string) [][]rune {
 			}
 		}
 	}
+	for j, v := range vs { // every variant kept the reader's length; now drop the deleted
+		n := 0
+		for _, c := range v {
+			if c != deleted {
+				v[n] = c
+				n++
+			}
+		}
+		vs[j] = v[:n]
+	}
 	return vs
+}
+
+// fits reports whether position i of the reader's classes stands in the
+// branch's context (reference.py#_fits).
+func (b branch) fits(classes []rune, i int) bool {
+	prev, next := '^', '$'
+	if i > 0 {
+		prev = classes[i-1]
+	}
+	if i+1 < len(classes) {
+		next = classes[i+1]
+	}
+	return (b.after == nil || strings.ContainsRune(*b.after, prev)) &&
+		(b.before == nil || strings.ContainsRune(*b.before, next)) &&
+		!strings.ContainsRune(b.notBefore, next)
 }
 
 // number returns the value of a word of digits only, in ASCII (१२ → "12").

@@ -15,6 +15,13 @@ import rulesJson from "../phonetic/rules.json" with { type: "json" };
 
 type Rules = typeof rulesJson;
 
+// A branch gives a word a second key with one class read as another (also; ""
+// deletes it). after/before name the classes that may stand next to it ("^"
+// the word's start, "$" its end); absent means any.
+type Branch = { from: number; to: number; class: string; also: string; after?: string; before?: string; not_before?: string };
+
+const DELETED = "\u0000"; // a class a branch removes, until the fold drops it
+
 // The engine: every table and switch is in rules.json; this is only the loop.
 function compile(rules: Rules) {
   const b = rules.brahmic;
@@ -41,17 +48,26 @@ function compile(rules: Rules) {
 
   function readBrahmic(word: string): string {
     let out = "";
+    let last = -1; // offset of the last letter read, for the nukta
     for (let i = 0; i < word.length; i++) {
       const ch = word[i];
       const x = extra.get(ch);
-      if (x !== undefined) { out += x; continue; }
+      if (x !== undefined) { out += x; last = -1; continue; }
       const o = word.charCodeAt(i);
       if (o < b.from || o > b.to) continue;
       const off = o & 0x7f;
-      if (off === b.virama_offset) continue;
-      if (off === b.candrabindu_offset) { out += b.candrabindu_class; continue; }
       const c = byOffset[off];
-      if (c !== undefined) out += c;
+      if (off === b.nukta_offset && b.flap_offsets.includes(last) && out) {
+        out = out.slice(0, -1) + b.flap_class; // ड + nukta is the flap ड़
+      } else if (off === b.virama_offset) {
+        // no sound of its own
+      } else if (off === b.candrabindu_offset) {
+        out += b.candrabindu_class;
+      } else if (c !== undefined) {
+        out += c;
+      }
+      if (c !== undefined) last = off;
+      else if (off !== b.nukta_offset && off !== b.virama_offset) last = -1;
     }
     return out;
   }
@@ -152,10 +168,19 @@ function compile(rules: Rules) {
     return runs;
   }
 
+  // Does position i of the reader's classes stand in the branch's context?
+  function fits(classes: string, i: number, br: Branch): boolean {
+    const prev = i > 0 ? classes[i - 1] : "^";
+    const next = i + 1 < classes.length ? classes[i + 1] : "$";
+    return (br.after === undefined || br.after.includes(prev)) &&
+      (br.before === undefined || br.before.includes(next)) &&
+      !(br.not_before ?? "").includes(next);
+  }
+
   function variants(word: string): string[] {
     const classes = read(word);
     let vs = [classes];
-    for (const br of rules.branches) {
+    for (const br of rules.branches as Branch[]) {
       if (!classes.includes(br.class)) continue;
       let inScript = false;
       for (let i = 0; i < word.length; i++) {
@@ -164,12 +189,13 @@ function compile(rules: Rules) {
       }
       if (!inScript) continue;
       for (let i = 0; i < classes.length; i++) {
-        if (classes[i] === br.class && vs.length * 2 <= rules.max_keys) {
-          vs = vs.concat(vs.map((v) => v.slice(0, i) + br.also + v.slice(i + 1)));
+        if (classes[i] === br.class && vs.length * 2 <= rules.max_keys && fits(classes, i, br)) {
+          const also = br.also || DELETED; // every variant keeps the reader's length
+          vs = vs.concat(vs.map((v) => v.slice(0, i) + also + v.slice(i + 1)));
         }
       }
     }
-    return vs;
+    return vs.map((v) => v.replaceAll(DELETED, ""));
   }
 
   // A word of these digits (zero, then 1-9) only is a number: १२ → "12".
@@ -248,6 +274,19 @@ export function nameKeys(name: string): string[] {
     out = next;
   }
   return out[0] === "" ? [] : out;
+}
+
+/** Joined keys shorter than this (in classes) are not returned: they find too many names. */
+export const JOINED_MIN_CLASSES: number = rulesJson.joined.min_classes;
+
+/** The keys of a name written as one word, its words joined: "Ram Nath" and
+ * இராம்நாத் share no nameKeys, but can share a joined key. Only keys of at
+ * least JOINED_MIN_CLASSES classes. A search looks them up only when
+ * nameKeys find nobody; match does not use them. */
+export function joinedKeys(name: string): string[] {
+  const joined = words(name).map(normalize).join("");
+  if (!joined) return [];
+  return engine(joined).filter((k) => [...k].length >= JOINED_MIN_CLASSES);
 }
 
 /** Whether two names have the same number of words and every pair of words,

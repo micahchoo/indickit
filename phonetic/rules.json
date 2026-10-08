@@ -1,10 +1,13 @@
 {
- "version": "2026-10-06.1",
+ "version": "2026-10-07",
  "folds": [
   "bn-case",
+  "brahmic-av-u",
   "drop-vowels",
   "drop-y",
+  "flap-r",
   "gu-case",
+  "latin-ngh",
   "latin-w-u",
   "ml-case",
   "nasal-all",
@@ -99,7 +102,13 @@
   },
   "virama_offset": 77,
   "candrabindu_offset": 1,
-  "candrabindu_class": "ṁ"
+  "candrabindu_class": "ṁ",
+  "nukta_offset": 60,
+  "flap_offsets": [
+   33,
+   34
+  ],
+  "flap_class": "ṛ"
  },
  "extra": {
   "ৎ": "t",
@@ -116,7 +125,14 @@
   "ൿ": "k",
   "ൔ": "m",
   "ൕ": "y",
-  "ൖ": "l"
+  "ൖ": "l",
+  "ड़": "ṛ",
+  "ढ़": "ṛ",
+  "ড়": "ṛ",
+  "ঢ়": "ṛ",
+  "ଡ଼": "ṛ",
+  "ଢ଼": "ṛ",
+  "ੜ": "ṛ"
  },
  "urdu": {
   "from": 1536,
@@ -138,7 +154,7 @@
    "ڈ": "ṭ",
    "ذ": "c",
    "ر": "r",
-   "ڑ": "ṭ",
+   "ڑ": "ṛ",
    "ز": "c",
    "ژ": "c",
    "س": "s",
@@ -180,7 +196,7 @@
    "ڌ": "t",
    "ڍ": "ṭ",
    "ڏ": "t",
-   "ڙ": "ṭ",
+   "ڙ": "ṛ",
    "ڦ": "p",
    "ڪ": "k",
    "ڱ": "ṅ",
@@ -300,7 +316,7 @@
    "ᱯ": "p",
    "ᱰ": "ṭ",
    "ᱱ": "n",
-   "ᱲ": "ṭ",
+   "ᱲ": "ṛ",
    "ᱳ": "o",
    "ᱴ": "ṭ",
    "ᱵ": "p",
@@ -312,6 +328,10 @@
  },
  "latin": {
   "groups": [
+   [
+    "ngh",
+    "nĝ"
+   ],
    [
     "chh",
     "c"
@@ -419,9 +439,11 @@
   "v": "p",
   "w": "p",
   "ñ": "n",
+  "ĝ": "k",
   "ṁ": "n",
   "ṅ": "n",
   "ṇ": "n",
+  "ṛ": "t",
   "ṭ": "t"
  },
  "vowels": "aeiou",
@@ -435,6 +457,26 @@
   "drop-final-vowel": false
  },
  "branches": [
+  {
+   "from": 2304,
+   "to": 3455,
+   "class": "v",
+   "also": "u",
+   "after": "aṁ",
+   "not_before": "aieo"
+  },
+  {
+   "from": 1536,
+   "to": 7295,
+   "class": "ṛ",
+   "also": "r"
+  },
+  {
+   "from": 0,
+   "to": 127,
+   "class": "ĝ",
+   "also": "h"
+  },
   {
    "from": 0,
    "to": 127,
@@ -454,6 +496,10 @@
    "also": "u"
   }
  ],
+ "joined": {
+  "min_classes": 8,
+  "when": "the strict keys find nobody"
+ },
  "digit_zeros": [
   48,
   1632,

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { gunzipSync } from "node:zlib";
 import { readFileSync } from "node:fs";
-import { keys, match, nameKeys, RULES_VERSION } from "./phonetic";
+import { joinedKeys, keys, match, nameKeys, RULES_VERSION } from "./phonetic";
 
 // phonetic/testdata/conformance.jsonl.gz holds every word of the evaluation
 // data with the keys the Python reference gave it. The Go package reads the
@@ -22,6 +22,24 @@ test("every word gives the reference keys", () => {
   expect(wrong.slice(0, 10)).toEqual([]);
 });
 
+// phonetic/testdata/conformance-joined.jsonl.gz: a sample of names with the
+// joined keys the reference gave them; the Go package reads the same file.
+test("every sampled name gives the reference joined keys", () => {
+  const file = new URL("../phonetic/testdata/conformance-joined.jsonl.gz", import.meta.url);
+  const text = gunzipSync(readFileSync(file)).toString("utf8");
+  const wrong: string[] = [];
+  let n = 0;
+  for (const line of text.split("\n")) {
+    if (!line) continue;
+    const [ws, want] = JSON.parse(line) as [string[], string[]];
+    n++;
+    const got = joinedKeys(ws.join(" ")).join(" ");
+    if (got !== want.join(" ")) wrong.push(`${ws.join(" ")}: ${got} ≠ ${want.join(" ")}`);
+  }
+  expect(n).toBeGreaterThan(25_000);
+  expect(wrong.slice(0, 10)).toEqual([]);
+});
+
 test("match", () => {
   const cases: [string, string, boolean][] = [
     ["राम", "ರಾಮ", true],
@@ -36,6 +54,9 @@ test("match", () => {
     ["Block 1", "Block 2", false], // a number is keyed by its value
     ["Block 12", "ब्लॉक १२", true], // in any script
     ["1", "2", false],
+    ["Singh", "सिंह", true], // rules 2026-10-07: Latin "ngh" is anusvara + h
+    ["Bidhuri", "बिधू\u0921\u093cी", true], // the flap as NFC writes it: ड + nukta
+    ["Rao", "राव", true], // व after a is also a vowel
   ];
   for (const [a, b, want] of cases) expect([a, b, match(a, b)]).toEqual([a, b, want]);
 });
@@ -45,5 +66,8 @@ test("nameKeys meet across scripts; the rules are versioned", () => {
   expect(nameKeys("श्री नरेंद्र मोदी").some((k) => a.has(k))).toBe(true);
   expect(nameKeys("Block 1")).toEqual(["plk 1"]);
   expect(keys("॰")).toEqual([]); // no letter, no digit: no key, not ""
-  expect(RULES_VERSION).toBe("2026-10-06.1");
+  expect(joinedKeys("Ram Nath")).toEqual([]); // rnnt: 4 classes, below the floor
+  const j = new Set(joinedKeys("Subramanian Swaminathan"));
+  expect(j.size > 0 && joinedKeys("சுப்ரமணியன்சுவாமிநாதன்").some((k) => j.has(k))).toBe(true);
+  expect(RULES_VERSION).toBe("2026-10-07");
 });
