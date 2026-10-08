@@ -7,6 +7,9 @@ inflected another way, a letter count that cuts a letter in two, a name
 that must be written in Latin letters, and Latin typing that must be written
 in an Indian script.
 
+Try each utility in your browser, in all 22 languages:
+https://micahchoo.github.io/indickit/docs/demo/
+
 ```
 stem      किताब  किताबें  किताबों              →  किताब
 phonetic  राम  ರಾಮ  രാമ  ராம  رام  Ram       →  rn

@@ -1,8 +1,8 @@
 // The bench: each indickit package alone, live, one tab each.
 //
 // `kit` holds the indickit modules; `data` is out/bench.json: the words of 50
-// PIB releases by language (after normalize, with their document counts), one
-// title a language, and the slice counts the tabs quote.
+// PIB releases by language (after normalize, with their document counts) and
+// one title a language.
 
 const TOKEN = /[\p{L}\p{M}\u200C\u200D]+/gu;
 const $ = (id) => document.getElementById(id);
@@ -50,9 +50,6 @@ const vocabulary = (data, lang) => new Map(Object.entries(data.words[lang] ?? {}
 const PANELS = [
   {
     id: "normalize",
-    sig: "normalize(text, lang)",
-    job: "Gives text that looks the same one encoding, so equal text has equal bytes. It never changes a letter a reader can see.",
-    why: "Press offices type ড়, য়, ज़ and ਸ਼ as one code point or as two, and Malayalam chillu letters in an old way. To a computer, the two forms are different words.",
     render(root, { kit }) {
       const list = [
         { label: "হয়েছে", lang: "bn", note: "Bengali য়, one code point (111 times here)", text: "হয়েছে" },
@@ -87,17 +84,9 @@ const PANELS = [
       $("nz-lang").addEventListener("change", show);
       apply(list[0]);
     },
-    measured: ({ counts }) => {
-      const c = counts.c1_c3;
-      const n = (l) => `${LANG_NAMES[l]} ${c[l].docs_normalize_changed} of ${c[l].docs}`;
-      return `In the 50 releases: <strong>${n("bn")}, ${n("mni")}, ${n("pa")}</strong> documents change; Marathi ${c.mr.docs_normalize_changed} of ${c.mr.docs}. Held out: 88.1% of look-alike groups made byte-equal, 0 words changed in look (<code>docs/normalize.md</code>).`;
-    },
   },
   {
     id: "fold",
-    sig: "fold(text, lang)",
-    job: "Makes a search key: two spellings a reader treats as one word get one key. Use it for an index, not for storage.",
-    why: "हिंदी and हिन्दी are both correct, and so are यहाँ and यहां. A search for one spelling misses documents that use the other.",
     render(root, { kit, data }) {
       const list = [
         { a: "केन्द्रीय", b: "केंद्रीय", lang: "hi", label: "केन्द्रीय · केंद्रीय", note: "half n or anusvara" },
@@ -134,16 +123,9 @@ const PANELS = [
       $("fd-lang").addEventListener("change", show);
       apply(list[0]);
     },
-    measured: ({ counts }) => {
-      const c = counts.c1_c3;
-      return `In the 50 releases, fold changes <strong>${c.as.tokens_fold_pct}% of Assamese words</strong>, ${c.ml.tokens_fold_pct}% of Malayalam, ${c.hi.tokens_fold_pct}% of Hindi. Fold rules were chosen against Lucene and Indic NLP on three answer keys; rules that merged different frequent words were dropped (माल / मॉल).`;
-    },
   },
   {
     id: "stem",
-    sig: "stem(word, lang)",
-    job: "Cuts the case and number endings off a word, so किताब, किताबें and किताबों share one index key.",
-    why: "Indian languages put grammar on the end of the word. A search for योजना (scheme) misses योजनाओं (schemes) unless the index stores one stem for both.",
     render(root, { kit, data }) {
       const list = [
         { w: "योजनाओं", lang: "hi", note: "Hindi: schemes" },
@@ -180,16 +162,9 @@ const PANELS = [
       $("st-lang").addEventListener("change", show);
       apply(list[0]);
     },
-    measured: ({ counts }) => {
-      const c = counts.c1_c3;
-      return `In the 50 releases: Hindi <strong>${fmt(c.hi.types)} word forms → ${fmt(c.hi.stems)} stems</strong>, Gujarati ${fmt(c.gu.types)} → ${fmt(c.gu.stems)}. On Wiktionary's answer key, stems found 6–15 points more of the right sentences in 13 languages, nothing more in Hindi or Punjabi. A stem can be too short: Tamil செய்தி (news) and செய்து (did) share one.`;
-    },
   },
   {
     id: "segment",
-    sig: "segment(text)",
-    job: "Splits text into the letters a reader sees, so a cursor, a letter count or a cut at a length never splits one letter in two.",
-    why: "ಕ್ಷ್ಮಿ is one letter made of six code points. String.slice counts code units, and Intl.Segmenter splits some conjuncts in Kannada and Gurmukhi.",
     render(root, { kit }) {
       const list = [
         { t: "ಲಕ್ಷ್ಮಿ", note: "Kannada: Lakshmi" },
@@ -229,17 +204,9 @@ const PANELS = [
       $("sg-n").addEventListener("input", show);
       apply(list[0]);
     },
-    measured: ({ counts }) => {
-      const c = counts.c7;
-      const cut = Object.keys(c).filter((l) => l !== "ur" && c[l].slice_pct !== undefined && LANG_NAMES[l] && c[l].cuts >= 20).map((l) => c[l].slice_pct);
-      return `Snippets cut at 120 units from the 50 releases: <code>slice</code> split a letter in <strong>${Math.min(...cut)}–${Math.max(...cut)}%</strong> of them in Indian scripts; <code>Intl.Segmenter</code> in ${c.kn.intl_pct}% of Kannada and ${c.pa.intl_pct}% of Punjabi snippets. segment's own held-out error: 0.05% of Kannada words.`;
-    },
   },
   {
     id: "phonetic",
-    sig: "match(a, b) · keys(word)",
-    job: "Gives a name the same short key in any of 22 scripts or in Latin letters, so a name typed one way finds it written another way.",
-    why: "राजनाथ, ರಾಜನಾಥ್, راجناتھ and Rajnath are one name. No two of them share a letter.",
     render(root, { kit }) {
       const list = [
         { a: "Narendra Modi", b: "நரேந்திர மோடி", note: "Latin and Tamil" },
@@ -267,13 +234,9 @@ const PANELS = [
       for (const id of ["ph-a", "ph-b"]) $(id).addEventListener("input", show);
       apply(list[0]);
     },
-    measured: () => `Held out (Wikidata names, 21 languages): <strong>83.6%</strong> of name pairs match; the best romanizer + Soundex gets 23–80%. On real lists as written (Lok Sabha roster, villages) the key alone finds 42–73%: use <code>phonetic-search</code> for those. See all 22 scripts in the language table below.`,
   },
   {
     id: "phonetic-search",
-    sig: "loadSearch(lang).index(words, \"text\").search(q)",
-    job: "Finds a name among many words and scores each candidate from 0 to 100. The key finds candidates; a scorer learned from data ranks them.",
-    why: "A key says only yes or no, and a common key says yes to too much. A list of 5,000 word forms needs a ranking and a threshold.",
     render(root, { kit, data }) {
       const langs = Object.keys(data.words).filter((l) => LANG_NAMES[l] && l !== "kha").sort();
       const list = [
@@ -322,13 +285,9 @@ const PANELS = [
       $("ps-lang").addEventListener("change", show);
       apply(list[0]);
     },
-    measured: () => `Held out (PIB July 2019, 10 languages): a name in running text found <strong>66%</strong> at threshold 80, <strong>78%</strong> at 70; romanize + fuzzy match 31% and 46%. Lok Sabha list 86%, villages 85%. A score ranks the candidates of one search; do not compare scores across searches.`,
   },
   {
     id: "romanize",
-    sig: "load(lang, mode).text(s) · .word(w, n)",
-    job: "Writes Indian text in Latin letters the way people spell it (लक्ष्मी → lakshmi, not lakṣmī), with a ranked list of spellings for each word.",
-    why: "A transliteration scheme gives one exact spelling that nobody types. People write Laxmi, Lakshmi, Luxmi: the useful answer is the likely spellings, in order.",
     render(root, { kit, data }) {
       const langs = kit.romanize.languages("words").concat(kit.romanize.languages("names")).filter((v, i, a) => a.indexOf(v) === i).sort();
       const title = (lang) => data.titles[lang];
@@ -367,13 +326,9 @@ const PANELS = [
       for (const id of ["rm-lang", "rm-mode"]) $(id).addEventListener("change", show);
       apply(list[0]);
     },
-    measured: () => `Held out: running text spelled as its writers spell it <strong>48.9%</strong> of words (IndicXlit 37.9%; ahead in all 11 languages); names <strong>71.3%</strong> (IndicXlit 49.0%). Behind on places and rare single words. Tables load on demand: 0.2–1.8 MB a language.`,
   },
   {
     id: "deromanize",
-    sig: "load(lang, mode).text(s) · .word(w, n)",
-    job: "Writes Latin typing in an Indian script (namaste → नमस्ते), with a ranked list of spellings for each word. New in 0.8.0.",
-    why: "Most people type Indian languages on an English keyboard. A search box, a form or a chat must turn \"yojana\" into योजना before any other step can run.",
     render(root, { kit }) {
       const langs = kit.deromanize.languages("words").concat(kit.deromanize.languages("names")).filter((v, i, a) => a.indexOf(v) === i).sort();
       const list = [
@@ -412,23 +367,14 @@ const PANELS = [
       for (const id of ["dr-lang", "dr-mode"]) $(id).addEventListener("change", show);
       apply(list[0]);
     },
-    measured: () => `Held out: Hindi news <strong>87.1%</strong> of words right (IndicXlit 86.1%); names <strong>69.7%</strong> (66.4%). Behind IndicXlit on unseen names (−2.8 points) and rare isolated words (−10.1). In names mode the first spelling is sometimes cut short while the full one is second or third: see the language table.`,
   },
 ];
 
+// The tabs and panes are in the page's HTML (their text is there, for readers
+// without JavaScript and for search engines); this adds each pane's live demo,
+// built the first time its tab opens.
 export function initBench(ctx) {
-  const tabs = $("bench-tabs"), panes = $("bench-panes");
-  tabs.innerHTML = PANELS.map((p, i) => `<button type="button" role="tab" id="tab-${p.id}" aria-controls="pane-${p.id}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}"><code>${p.id}</code></button>`).join("");
-  panes.innerHTML = PANELS.map((p, i) => `
-    <section role="tabpanel" id="pane-${p.id}" aria-labelledby="tab-${p.id}" class="pane" ${i ? "hidden" : ""}>
-      <div class="pane-head">
-        <p class="sig"><code>${esc(p.sig)}</code></p>
-        <p class="job">${p.job}</p>
-        <p class="why">${p.why}</p>
-      </div>
-      <div class="pane-body" id="body-${p.id}"></div>
-      <p class="measured">${p.measured(ctx)}</p>
-    </section>`).join("");
+  const tabs = $("bench-tabs");
   const done = new Set();
   const select = (id, focus) => {
     for (const p of PANELS) {

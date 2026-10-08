@@ -2,8 +2,26 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>indickit, live</title>
-<meta name="description" content="Each indickit package run live in the browser, and its coverage of the 22 languages of India's Eighth Schedule.">
+<title>indickit live demo: text utilities for 22 Indian languages</title>
+<meta name="description" content="Try indickit in your browser: Unicode normalization, search folding, stemming, grapheme segmentation, phonetic name matching, and transliteration to and from Latin letters for Hindi, Bengali, Tamil and 19 more Indian languages.">
+<link rel="canonical" href="https://micahchoo.github.io/indickit/docs/demo/">
+<meta name="theme-color" content="#1d5c4a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231d5c4a'/%3E%3Ctext x='16' y='23' font-family='sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='%23fff'%3E%E0%A4%95%3C/text%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="indickit">
+<meta property="og:title" content="indickit live demo: text utilities for 22 Indian languages">
+<meta property="og:description" content="Try indickit in your browser: Unicode normalization, search folding, stemming, grapheme segmentation, phonetic name matching, and transliteration to and from Latin letters for Hindi, Bengali, Tamil and 19 more Indian languages.">
+<meta property="og:url" content="https://micahchoo.github.io/indickit/docs/demo/">
+<meta property="og:image" content="https://micahchoo.github.io/indickit/docs/demo/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The indickit demo: the normalize tab, with a Bengali word typed and stored, and its code points">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="indickit live demo: text utilities for 22 Indian languages">
+<meta name="twitter:description" content="Try indickit in your browser: Unicode normalization, search folding, stemming, grapheme segmentation, phonetic name matching, and transliteration to and from Latin letters for Hindi, Bengali, Tamil and 19 more Indian languages.">
+<meta name="twitter:image" content="https://micahchoo.github.io/indickit/docs/demo/og.png">
+<noscript><style>.pane[hidden] { display: grid !important; } .tabs { display: none; }</style></noscript>
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "WebPage", "@id": "https://micahchoo.github.io/indickit/docs/demo/", "url": "https://micahchoo.github.io/indickit/docs/demo/", "name": "indickit live demo: text utilities for 22 Indian languages", "description": "Try indickit in your browser: Unicode normalization, search folding, stemming, grapheme segmentation, phonetic name matching, and transliteration to and from Latin letters for Hindi, Bengali, Tamil and 19 more Indian languages.", "inLanguage": "en", "isPartOf": {"@id": "https://github.com/micahchoo/indickit"}, "about": {"@id": "https://github.com/micahchoo/indickit"}}, {"@type": "SoftwareSourceCode", "@id": "https://github.com/micahchoo/indickit", "name": "indickit", "description": "Small, exact utilities for text in the languages of India, in Go and TypeScript: normalize, fold, stem, segment, phonetic, phonetic-search, romanize, deromanize.", "codeRepository": "https://github.com/micahchoo/indickit", "programmingLanguage": ["TypeScript", "Go"], "runtimePlatform": ["Node.js", "Bun", "Deno", "Browser", "Go"], "license": "https://opensource.org/licenses/MIT", "version": "0.8.0", "author": {"@type": "Person", "name": "Micah"}, "keywords": ["Indic", "Indian languages", "transliteration", "romanization", "Unicode normalization", "grapheme segmentation", "stemming", "phonetic matching", "Hindi", "Bengali", "Tamil", "Telugu", "Urdu"]}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans:wght@400;600&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Bengali:wght@400;600&family=Noto+Sans+Gujarati:wght@400;600&family=Noto+Sans+Gurmukhi:wght@400;600&family=Noto+Sans+Kannada:wght@400;600&family=Noto+Sans+Malayalam:wght@400;600&family=Noto+Sans+Oriya:wght@400;600&family=Noto+Sans+Tamil:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&family=Noto+Naskh+Arabic:wght@400;600&display=swap">
@@ -94,6 +112,9 @@ code, .mono { font-family: var(--mono); font-size: 0.86em; }
 .tabs [role=tab]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .pane { background: var(--sheet); border: 1px solid var(--rule); border-top: 0; border-radius: 0 0 6px 6px; padding: 18px; display: grid; gap: 16px; }
 .pane-head { display: grid; gap: 6px; max-width: 78ch; }
+.pane-head h3 { font: 700 19px/1.3 var(--display); }
+.pane-head h3 code { font-size: 0.8em; color: var(--accent); margin-right: 4px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .sig code { font-size: 13px; color: var(--accent); }
 .job { font: 600 17px/1.4 var(--display); }
 .why { font-size: 14px; color: var(--ink-2); }
@@ -173,10 +194,11 @@ table.langs { border-collapse: collapse; width: 100%; min-width: 880px; font-siz
 
 <div class="wrap">
   <header class="mast">
-    <h1>indickit, live</h1>
-    <p class="lede">Eight small utilities for text in the 22 languages of India's Eighth Schedule. Each one fixes one place where ordinary string code goes wrong on Indian text. Every result on this page is computed in your browser by <a href="https://github.com/micahchoo/indickit">indickit</a> <span id="kit-version">0.8.0</span>, with examples from real government press releases.</p>
+    <h1>indickit, live: text utilities for 22 Indian languages</h1>
+    <p class="lede">Eight small utilities, in TypeScript and Go, for text in the 22 languages of India's Eighth Schedule: Hindi, Bengali, Tamil, Telugu, Marathi, Urdu, Gujarati, Kannada, Malayalam, Odia, Punjabi and the rest. Each one fixes one place where ordinary string code goes wrong on Indian text: Unicode normalization, search folding, stemming, letter (grapheme) segmentation, phonetic name matching, and transliteration to and from Latin letters. Every result on this page is computed in your browser by <a href="https://github.com/micahchoo/indickit">indickit</a> <span id="kit-version">0.8.0</span>, with examples from real government press releases.</p>
     <ul class="lede-list" aria-label="Sections">
       <li><a href="#bench-h">Each package alone</a></li>
+      <li><a href="https://github.com/micahchoo/indickit">Source and install</a></li>
       <li><a href="#cover-h">22 languages</a></li>
       <li><a href="#limits-h">Where it fails</a></li>
     </ul>
@@ -185,8 +207,99 @@ table.langs { border-collapse: collapse; width: 100%; min-width: 880px; font-siz
 
   <section class="bench" aria-labelledby="bench-h">
     <h2 id="bench-h">Each package alone</h2>
-    <div class="tabs" role="tablist" id="bench-tabs" aria-label="Packages"></div>
-    <div id="bench-panes"></div>
+    <noscript><p class="mode-note">The live demos need JavaScript; the text below says what each package does and how it was measured.</p></noscript>
+    <div class="tabs" role="tablist" id="bench-tabs" aria-label="Packages">
+      <button type="button" role="tab" id="tab-normalize" aria-controls="pane-normalize" aria-selected="true" tabindex="0"><code>normalize</code></button>
+      <button type="button" role="tab" id="tab-fold" aria-controls="pane-fold" aria-selected="false" tabindex="-1"><code>fold</code></button>
+      <button type="button" role="tab" id="tab-stem" aria-controls="pane-stem" aria-selected="false" tabindex="-1"><code>stem</code></button>
+      <button type="button" role="tab" id="tab-segment" aria-controls="pane-segment" aria-selected="false" tabindex="-1"><code>segment</code></button>
+      <button type="button" role="tab" id="tab-phonetic" aria-controls="pane-phonetic" aria-selected="false" tabindex="-1"><code>phonetic</code></button>
+      <button type="button" role="tab" id="tab-phonetic-search" aria-controls="pane-phonetic-search" aria-selected="false" tabindex="-1"><code>phonetic-search</code></button>
+      <button type="button" role="tab" id="tab-romanize" aria-controls="pane-romanize" aria-selected="false" tabindex="-1"><code>romanize</code></button>
+      <button type="button" role="tab" id="tab-deromanize" aria-controls="pane-deromanize" aria-selected="false" tabindex="-1"><code>deromanize</code></button>
+    </div>
+    <div id="bench-panes">
+    <section role="tabpanel" id="pane-normalize" aria-labelledby="tab-normalize" class="pane">
+      <div class="pane-head">
+        <h3><code>normalize</code> One encoding for text that looks the same</h3>
+        <p class="sig"><code>normalize(text, lang)</code></p>
+        <p class="job">Gives text that looks the same one encoding, so equal text has equal bytes. It never changes a letter a reader can see.</p>
+        <p class="why">Press offices type ড়, য়, ज़ and ਸ਼ as one code point or as two, and Malayalam chillu letters in an old way. To a computer, the two forms are different words.</p>
+      </div>
+      <div class="pane-body" id="body-normalize"><p class="also">The live demo needs JavaScript.</p></div>
+      <p class="measured">In the 50 releases: <strong>Bengali 51 of 51, Manipuri 50 of 50, Punjabi 48 of 50</strong> documents change; Marathi 0 of 50. Held out: 88.1% of look-alike groups made byte-equal, 0 words changed in look (<code>docs/normalize.md</code>).</p>
+    </section>
+    <section role="tabpanel" id="pane-fold" aria-labelledby="tab-fold" class="pane" hidden>
+      <div class="pane-head">
+        <h3><code>fold</code> One search key for spellings readers treat as one word</h3>
+        <p class="sig"><code>fold(text, lang)</code></p>
+        <p class="job">Makes a search key: two spellings a reader treats as one word get one key. Use it for an index, not for storage.</p>
+        <p class="why">हिंदी and हिन्दी are both correct, and so are यहाँ and यहां. A search for one spelling misses documents that use the other.</p>
+      </div>
+      <div class="pane-body" id="body-fold"><p class="also">The live demo needs JavaScript.</p></div>
+      <p class="measured">In the 50 releases, fold changes <strong>58% of Assamese words</strong>, 22.5% of Malayalam, 3.8% of Hindi. Fold rules were chosen against Lucene and Indic NLP on three answer keys; rules that merged different frequent words were dropped (माल / मॉल).</p>
+    </section>
+    <section role="tabpanel" id="pane-stem" aria-labelledby="tab-stem" class="pane" hidden>
+      <div class="pane-head">
+        <h3><code>stem</code> One index key for the forms of a word</h3>
+        <p class="sig"><code>stem(word, lang)</code></p>
+        <p class="job">Cuts the case and number endings off a word, so किताब, किताबें and किताबों share one index key.</p>
+        <p class="why">Indian languages put grammar on the end of the word. A search for योजना (scheme) misses योजनाओं (schemes) unless the index stores one stem for both.</p>
+      </div>
+      <div class="pane-body" id="body-stem"><p class="also">The live demo needs JavaScript.</p></div>
+      <p class="measured">In the 50 releases: Hindi <strong>4,438 word forms → 3,462 stems</strong>, Gujarati 6,216 → 3,784. On Wiktionary's answer key, stems found 6–15 points more of the right sentences in 13 languages, nothing more in Hindi or Punjabi. A stem can be too short: Tamil செய்தி (news) and செய்து (did) share one.</p>
+    </section>
+    <section role="tabpanel" id="pane-segment" aria-labelledby="tab-segment" class="pane" hidden>
+      <div class="pane-head">
+        <h3><code>segment</code> Count and cut letters as a reader sees them</h3>
+        <p class="sig"><code>segment(text)</code></p>
+        <p class="job">Splits text into the letters a reader sees, so a cursor, a letter count or a cut at a length never splits one letter in two.</p>
+        <p class="why">ಕ್ಷ್ಮಿ is one letter made of six code points. String.slice counts code units, and Intl.Segmenter splits some conjuncts in Kannada and Gurmukhi.</p>
+      </div>
+      <div class="pane-body" id="body-segment"><p class="also">The live demo needs JavaScript.</p></div>
+      <p class="measured">Snippets cut at 120 units from the 50 releases: <code>slice</code> split a letter in <strong>20–48%</strong> of them in Indian scripts; <code>Intl.Segmenter</code> in 22% of Kannada and 2% of Punjabi snippets. segment's own held-out error: 0.05% of Kannada words.</p>
+    </section>
+    <section role="tabpanel" id="pane-phonetic" aria-labelledby="tab-phonetic" class="pane" hidden>
+      <div class="pane-head">
+        <h3><code>phonetic</code> Match a name across 22 scripts and Latin letters</h3>
+        <p class="sig"><code>match(a, b) · keys(word)</code></p>
+        <p class="job">Gives a name the same short key in any of 22 scripts or in Latin letters, so a name typed one way finds it written another way.</p>
+        <p class="why">राजनाथ, ರಾಜನಾಥ್, راجناتھ and Rajnath are one name. No two of them share a letter.</p>
+      </div>
+      <div class="pane-body" id="body-phonetic"><p class="also">The live demo needs JavaScript.</p></div>
+      <p class="measured">Held out (Wikidata names, 21 languages): <strong>83.6%</strong> of name pairs match; the best romanizer + Soundex gets 23–80%. On real lists as written (Lok Sabha roster, villages) the key alone finds 42–73%: use <code>phonetic-search</code> for those. See all 22 scripts in the language table below.</p>
+    </section>
+    <section role="tabpanel" id="pane-phonetic-search" aria-labelledby="tab-phonetic-search" class="pane" hidden>
+      <div class="pane-head">
+        <h3><code>phonetic-search</code> Find and rank a name among many words</h3>
+        <p class="sig"><code>loadSearch(lang).index(words, "text").search(q)</code></p>
+        <p class="job">Finds a name among many words and scores each candidate from 0 to 100. The key finds candidates; a scorer learned from data ranks them.</p>
+        <p class="why">A key says only yes or no, and a common key says yes to too much. A list of 5,000 word forms needs a ranking and a threshold.</p>
+      </div>
+      <div class="pane-body" id="body-phonetic-search"><p class="also">The live demo needs JavaScript.</p></div>
+      <p class="measured">Held out (PIB July 2019, 10 languages): a name in running text found <strong>66%</strong> at threshold 80, <strong>78%</strong> at 70; romanize + fuzzy match 31% and 46%. Lok Sabha list 86%, villages 85%. A score ranks the candidates of one search; do not compare scores across searches.</p>
+    </section>
+    <section role="tabpanel" id="pane-romanize" aria-labelledby="tab-romanize" class="pane" hidden>
+      <div class="pane-head">
+        <h3><code>romanize</code> Transliterate Indian text into Latin letters, as people spell it</h3>
+        <p class="sig"><code>load(lang, mode).text(s) · .word(w, n)</code></p>
+        <p class="job">Writes Indian text in Latin letters the way people spell it (लक्ष्मी → lakshmi, not lakṣmī), with a ranked list of spellings for each word.</p>
+        <p class="why">A transliteration scheme gives one exact spelling that nobody types. People write Laxmi, Lakshmi, Luxmi: the useful answer is the likely spellings, in order.</p>
+      </div>
+      <div class="pane-body" id="body-romanize"><p class="also">The live demo needs JavaScript.</p></div>
+      <p class="measured">Held out: running text spelled as its writers spell it <strong>48.9%</strong> of words (IndicXlit 37.9%; ahead in all 11 languages); names <strong>71.3%</strong> (IndicXlit 49.0%). Behind on places and rare single words. Tables load on demand: 0.2–1.8 MB a language.</p>
+    </section>
+    <section role="tabpanel" id="pane-deromanize" aria-labelledby="tab-deromanize" class="pane" hidden>
+      <div class="pane-head">
+        <h3><code>deromanize</code> Transliterate Latin typing into an Indian script</h3>
+        <p class="sig"><code>load(lang, mode).text(s) · .word(w, n)</code></p>
+        <p class="job">Writes Latin typing in an Indian script (namaste → नमस्ते), with a ranked list of spellings for each word. New in 0.8.0.</p>
+        <p class="why">Most people type Indian languages on an English keyboard. A search box, a form or a chat must turn "yojana" into योजना before any other step can run.</p>
+      </div>
+      <div class="pane-body" id="body-deromanize"><p class="also">The live demo needs JavaScript.</p></div>
+      <p class="measured">Held out: Hindi news <strong>87.1%</strong> of words right (IndicXlit 86.1%); names <strong>69.7%</strong> (66.4%). Behind IndicXlit on unseen names (−2.8 points) and rare isolated words (−10.1). In names mode the first spelling is sometimes cut short while the full one is second or third: see the language table.</p>
+    </section>
+    </div>
   </section>
 
   <section class="cover" aria-labelledby="cover-h">
@@ -200,7 +313,34 @@ table.langs { border-collapse: collapse; width: 100%; min-width: 880px; font-siz
       </form>
     </div>
     <p class="status" id="cover-status"></p>
-    <div class="table-wrap"><table class="langs" id="cover-table"></table></div>
+    <div class="table-wrap"><table class="langs" id="cover-table">
+      <caption class="sr">The 22 languages of the Eighth Schedule and what indickit does in each</caption>
+      <thead><tr><th scope="col">Language</th><th scope="col"><code>deromanize</code> <span id="cover-name">the name</span></th><th scope="col"><code>segment</code> letters</th><th scope="col"><code>phonetic</code> key, match</th><th scope="col"><code>romanize</code> back</th><th scope="col">back = typed?</th><th scope="col"><code>stem</code></th><th scope="col"><code>phonetic-search</code></th></tr></thead>
+      <tbody>
+        <tr data-lang="as"><th scope="row" class="lname"><strong>Assamese</strong><small>as · Bengali-Assamese</small></th><td class="native" lang="as"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="bn"><th scope="row" class="lname"><strong>Bengali</strong><small>bn · Bengali-Assamese</small></th><td class="native" lang="bn"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="brx"><th scope="row" class="lname"><strong>Bodo</strong><small>brx · Devanagari</small></th><td class="native" lang="brx"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="dim">–</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="doi"><th scope="row" class="lname"><strong>Dogri</strong><small>doi · Devanagari</small></th><td class="native" lang="doi"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="dim">–</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="gu"><th scope="row" class="lname"><strong>Gujarati</strong><small>gu · Gujarati</small></th><td class="native" lang="gu"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="hi"><th scope="row" class="lname"><strong>Hindi</strong><small>hi · Devanagari</small></th><td class="native" lang="hi"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="kn"><th scope="row" class="lname"><strong>Kannada</strong><small>kn · Kannada</small></th><td class="native" lang="kn"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="ks"><th scope="row" class="lname"><strong>Kashmiri</strong><small>ks · Perso-Arabic</small></th><td class="native" lang="ks" dir="rtl"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="dim">–</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="gom"><th scope="row" class="lname"><strong>Konkani</strong><small>gom · Devanagari</small></th><td class="native" lang="gom"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="dim">–</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="mai"><th scope="row" class="lname"><strong>Maithili</strong><small>mai · Devanagari</small></th><td class="native" lang="mai"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="dim">–</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="ml"><th scope="row" class="lname"><strong>Malayalam</strong><small>ml · Malayalam</small></th><td class="native" lang="ml"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="mni"><th scope="row" class="lname"><strong>Manipuri</strong><small>mni · Meetei Mayek</small></th><td class="native" lang="mni"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="dim">–</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="mr"><th scope="row" class="lname"><strong>Marathi</strong><small>mr · Devanagari</small></th><td class="native" lang="mr"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="ne"><th scope="row" class="lname"><strong>Nepali</strong><small>ne · Devanagari</small></th><td class="native" lang="ne"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="or"><th scope="row" class="lname"><strong>Odia</strong><small>or · Odia</small></th><td class="native" lang="or"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="dim">–</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="pa"><th scope="row" class="lname"><strong>Punjabi</strong><small>pa · Gurmukhi</small></th><td class="native" lang="pa"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="sa"><th scope="row" class="lname"><strong>Sanskrit</strong><small>sa · Devanagari</small></th><td class="native" lang="sa"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="sat"><th scope="row" class="lname"><strong>Santali</strong><small>sat · Ol Chiki</small></th><td class="native" lang="sat"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="dim">–</span></td><td><span class="dim">keys only</span></td></tr>
+        <tr data-lang="sd"><th scope="row" class="lname"><strong>Sindhi</strong><small>sd · Perso-Arabic</small></th><td class="native" lang="sd" dir="rtl"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="dim">–</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="ta"><th scope="row" class="lname"><strong>Tamil</strong><small>ta · Tamil</small></th><td class="native" lang="ta"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="te"><th scope="row" class="lname"><strong>Telugu</strong><small>te · Telugu</small></th><td class="native" lang="te"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+        <tr data-lang="ur"><th scope="row" class="lname"><strong>Urdu</strong><small>ur · Perso-Arabic</small></th><td class="native" lang="ur" dir="rtl"></td><td class="num"></td><td class="k"></td><td class="latin"></td><td class="rt"></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+      </tbody>
+    </table></div>
   </section>
 
   <section class="limits" aria-labelledby="limits-h">
@@ -231,8 +371,6 @@ import * as phoneticSearch from "../../dist/phonetic-search.js";
 import { initBench, LANG_NAMES as NAMES, loadDeromanizer, loadRomanizer } from "./bench.js";
 
 const kit = { normalize, fold, stem, STEM_LANGUAGES, keys, words, match, segment, romanize, deromanize, phoneticSearch };
-const SCRIPTS = { as: "Bengali-Assamese", bn: "Bengali-Assamese", brx: "Devanagari", doi: "Devanagari", gu: "Gujarati", hi: "Devanagari", kn: "Kannada", ks: "Perso-Arabic", gom: "Devanagari", mai: "Devanagari", ml: "Malayalam", mni: "Meetei Mayek", mr: "Devanagari", ne: "Devanagari", or: "Odia", pa: "Gurmukhi", sa: "Devanagari", sat: "Ol Chiki", sd: "Perso-Arabic", ta: "Tamil", te: "Telugu", ur: "Perso-Arabic" };
-const RTL = new Set(["ur", "ks", "sd"]);
 
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => n.toLocaleString("en-IN");
@@ -246,34 +384,33 @@ const intl = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 let coverName = null;
 const live = new Map(); // `${lang}\t${name}` → [native, latin], for typed names
 
-function coverRow(lang, name) {
-  const row = coverage.rows[lang];
+// Fills the live cells of one language's row; the row and its fixed cells are in the HTML.
+function fillRow(tr, name) {
+  const lang = tr.dataset.lang, row = coverage.rows[lang];
   const got = coverage.names.includes(name) ? row.names[name] : live.get(`${lang}\t${name}`);
-  const support = `<td>${STEM_LANGUAGES.includes(lang) ? '<span class="ok">✓</span>' : '<span class="dim">–</span>'}</td>
-    <td>${lang === "sat" ? '<span class="dim">keys only</span>' : '<span class="ok">✓</span>'}</td>`;
-  const head = `<th scope="row" class="lname"><strong>${NAMES[lang]}</strong><small>${lang} · ${SCRIPTS[lang]}</small></th>`;
+  const [nativeTd, numTd, keyTd, latinTd, rtTd] = tr.querySelectorAll("td");
   if (!got) {
-    return `<tr>${head}<td colspan="4"><button type="button" data-load="${lang}">Load ${NAMES[lang]}</button> <span class="dim">tables 0.2–7 MB</span></td><td></td>${support}</tr>`;
+    nativeTd.innerHTML = `<button type="button" data-load="${lang}">Load ${NAMES[lang]}</button> <span class="dim">0.2–7 MB</span>`;
+    for (const td of [numTd, keyTd, latinTd, rtTd]) td.innerHTML = "";
+    return;
   }
   const [native, latin] = got;
   const ours = segment(native).length, theirs = [...intl.segment(native)].length;
   const m = native && match(name, native);
   const k = words(native).map((w) => keys(w)[0] ?? "").join(" ");
   const rt = latin && match(name, latin);
-  return `<tr>${head}
-    <td class="native" lang="${lang}" ${RTL.has(lang) ? 'dir="rtl"' : ""}>${esc(native)} <span class="mode">${row.deromanize}</span></td>
-    <td class="num">${ours}${theirs !== ours ? ` <span class="bad" title="Intl.Segmenter counts ${theirs}">(Intl ${theirs})</span>` : ""}</td>
-    <td class="k"><code>${esc(k)}</code> ${m ? '<span class="ok" title="phonetic match with the typed name">✓</span>' : '<span class="bad" title="no phonetic match with the typed name">✗</span>'}</td>
-    <td class="latin">${esc(latin)} <span class="mode">${row.romanize}</span></td>
-    <td>${rt ? '<span class="ok" title="the Latin spelling matches the typed name by sound">✓</span>' : '<span class="bad" title="the Latin spelling no longer matches the typed name">✗</span>'}</td>
-    ${support}</tr>`;
+  nativeTd.innerHTML = `${esc(native)} <span class="mode">${row.deromanize}</span>`;
+  numTd.innerHTML = `${ours}${theirs !== ours ? ` <span class="bad" title="Intl.Segmenter counts ${theirs}">(Intl ${theirs})</span>` : ""}`;
+  keyTd.innerHTML = `<code>${esc(k)}</code> ${m ? '<span class="ok" title="phonetic match with the typed name">✓</span>' : '<span class="bad" title="no phonetic match with the typed name">✗</span>'}`;
+  latinTd.innerHTML = `${esc(latin)} <span class="mode">${row.romanize}</span>`;
+  rtTd.innerHTML = rt ? '<span class="ok" title="the Latin spelling matches the typed name by sound">✓</span>' : '<span class="bad" title="the Latin spelling no longer matches the typed name">✗</span>';
 }
 
 function renderCover(name) {
   coverName = name;
   const langs = Object.keys(coverage.rows);
-  $("cover-table").innerHTML = `<thead><tr><th>Language</th><th><code>deromanize</code> “${esc(name)}”</th><th><code>segment</code> letters</th><th><code>phonetic</code> key, match</th><th><code>romanize</code> back</th><th>back = typed?</th><th><code>stem</code></th><th><code>phonetic-search</code></th></tr></thead>
-    <tbody>${langs.map((l) => coverRow(l, name)).join("")}</tbody>`;
+  $("cover-name").textContent = `“${name}”`;
+  for (const tr of document.querySelectorAll("#cover-table tbody tr")) fillRow(tr, name);
   const done = langs.filter((l) => coverage.names.includes(name) || live.has(`${l}\t${name}`));
   const broken = done.filter((l) => {
     const [n] = coverage.names.includes(name) ? coverage.rows[l].names[name] : live.get(`${l}\t${name}`);
@@ -282,7 +419,6 @@ function renderCover(name) {
   $("cover-status").innerHTML = done.length
     ? `<b>${done.length}</b> of 22 languages written; <code>phonetic</code> matches the typed name in <b>${done.length - broken.length}</b>.${broken.length ? ` No match: ${broken.map((l) => NAMES[l]).join(", ")}.` : ""}${coverage.names.includes(name) ? ` Written ahead of time with indickit ${coverage.indickit}; the other columns are live.` : ""}`
     : "Load a language to write the name in it, or load all 22 (about 60 MB).";
-  for (const b of document.querySelectorAll("[data-load]")) b.addEventListener("click", () => loadCover([b.dataset.load], name));
 }
 
 async function loadCover(langs, name) {
@@ -303,6 +439,10 @@ async function loadCover(langs, name) {
 }
 
 function initCover() {
+  $("cover-table").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-load]");
+    if (b) loadCover([b.dataset.load], coverName);
+  });
   $("cover-presets").innerHTML = coverage.names.map((n, i) => `<button type="button" class="preset" data-i="${i}"><span>${esc(n)}</span><small>${i === 0 ? "one word" : i === 4 ? "a mission, not a person" : "a public name"}</small></button>`).join("");
   $("cover-presets").addEventListener("click", (e) => {
     const b = e.target.closest(".preset");
@@ -324,7 +464,7 @@ try {
     fetch("./coverage.json").then((r) => r.json()),
   ]);
   $("dateline").innerHTML = `<span>Press Information Bureau · August 2023</span><span>${data.releases} releases</span><span>${fmt(data.docs)} documents</span><span>${Object.keys(data.words).length} languages</span><span>indickit ${coverage.indickit}</span>`;
-  initBench({ kit, data, counts: data.counts });
+  initBench({ kit, data });
   initCover();
 } catch (err) {
   $("dateline").innerHTML = `<span>The examples did not load (${esc(err.message)}). Reload the page to try again.</span>`;
