@@ -73,3 +73,40 @@ if (miss || j < 400_000) {
   process.exit(1);
 }
 console.log(`dist/stem.js: all ${j} inputs agree (rules ${STEM_VERSION})`);
+
+// dist/romanize.js against romanize/testdata/conformance.jsonl.gz, loading its data from the
+// default place beside the bundle (../romanize/lang/), as jsDelivr serves it
+const R = await import("../dist/romanize.js");
+const disk = async (url) => { const b = readFileSync(url); return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength); };
+const romRows = gunzipSync(readFileSync(new URL("../romanize/testdata/conformance.jsonl.gz", import.meta.url))).toString("utf8");
+const loaded = new Map();
+let rn = 0, rmiss = 0;
+for (const line of romRows.split("\n")) {
+  if (!line) continue;
+  const [fam, lang, word, want] = JSON.parse(line);
+  const mode = fam === "names-lookup" ? "names" : fam;
+  const key = `${lang}.${mode}`;
+  if (!loaded.has(key)) loaded.set(key, await R.load(lang, mode, { fetch: disk }));
+  const r = loaded.get(key);
+  const got = fam === "names-lookup" ? r.word(word, 4) : R._decode(r, word, 4);
+  rn++;
+  if (JSON.stringify(got) !== JSON.stringify(want)) {
+    if (rmiss++ < 10) console.error(JSON.stringify([fam, lang, word, want, got]));
+  }
+}
+if (rmiss || rn < 2000) {
+  console.error(`dist/romanize.js: ${rmiss} of ${rn} rows differ`);
+  process.exit(1);
+}
+console.log(`dist/romanize.js: all ${rn} rows agree (rules ${R.RULES_VERSION})`);
+
+// every package.json export points at files that exist (its JS and its types)
+const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+const { existsSync } = await import("node:fs");
+const missing = Object.entries(pkg.exports).flatMap(([name, e]) =>
+  [e.types, e.default].filter((f) => !existsSync(new URL(`../${f}`, import.meta.url))).map((f) => `${name}: ${f}`));
+if (missing.length) {
+  console.error(`package.json exports point at missing files: ${missing.join(", ")}`);
+  process.exit(1);
+}
+console.log(`package.json: all ${Object.keys(pkg.exports).length} exports have their JS and types`);

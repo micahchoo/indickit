@@ -3,12 +3,14 @@
 Small, exact utilities for text in the languages of India, in Go and
 TypeScript. They fix the places where ordinary string code goes wrong on
 Indian text: a search that misses a word because it is spelled, encoded or
-inflected another way, and a letter count that cuts a letter in two.
+inflected another way, a letter count that cuts a letter in two, and a name
+that must be written in Latin letters.
 
 ```
 stem      किताब  किताबें  किताबों              →  किताब
 phonetic  राम  ರಾಮ  രാമ  ராம  رام  Ram       →  rn
 segment   ಲಕ್ಷ್ಮಿ                              →  ಲ  ಕ್ಷ್ಮಿ
+romanize  लक्ष्मी  ലക്ഷ്മി  லக்ஷ்மி              →  lakshmi
 ```
 
 Each utility gives the same output in Go and in TypeScript, and each was
@@ -23,6 +25,7 @@ measured on data that its rules were never built on.
 | let a search for हिन्दी also find हिंदी, and keep words whole | `fold` |
 | find a person's name typed in another script | `phonetic` |
 | count letters, cut at a length, or move a cursor | `segment` |
+| write a name or a text in Latin letters (लक्ष्मी → lakshmi) | `romanize` |
 
 ## Install
 
@@ -47,13 +50,20 @@ TypeScript, set `moduleResolution` to `nodenext` or `bundler`; the old
 In a browser, with no build step:
 
 ```js
-import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.5.0/dist/normalize.js";
-import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.5.0/dist/stem.js";
-import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.5.0/dist/phonetic.js";
-import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.5.0/dist/segment.js";
+import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.6.0/dist/normalize.js";
+import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.6.0/dist/stem.js";
+import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.6.0/dist/phonetic.js";
+import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.6.0/dist/segment.js";
+import { load } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.6.0/dist/romanize.js";
 ```
 
 Each utility is its own file, so a page loads only the rules it uses.
+`romanize` also loads one language's tables when you ask for them (0.2–1.8
+MB). The npm package carries no tables: `load()` reads them beside the
+module (a jsDelivr or GitHub-tag install), else from jsDelivr at the same
+version. Offline, pass your own `fetch`. In Go, `go get` downloads the
+tables of every language once (14 MB); a program carries only the languages
+it imports.
 
 ## Recipes
 
@@ -152,6 +162,33 @@ segment("ਕ੍ਕ"); // ["ਕ੍","ਕ"]: Gurmukhi shows this virama, so these 
 count("ಕನ್ನಡ"); // 3
 ```
 
+### Write it in Latin letters
+
+`romanize` gives a ranked list of spellings, most likely first. Use the
+`"words"` mode for text and the `"names"` mode for a field that holds a
+person's name:
+
+```ts
+import { load } from "indickit/romanize";
+
+const hi = await load("hi");          // fetches the Hindi tables
+hi.word("लक्ष्मी", 2);                 // ["lakshmi","laxmi"]
+hi.text("भारत के प्रधानमंत्री");          // "bharat ke pradhaanmantri"
+const ur = await load("ur", "names");
+ur.word("پرویز", 1);                   // ["parvez"]
+```
+
+In Go, import the languages you need; a program carries only their tables:
+
+```go
+import (
+	"github.com/micahchoo/indickit/romanize"
+	_ "github.com/micahchoo/indickit/romanize/lang/hi"
+)
+
+romanize.Word("लक्ष्मी", "hi", romanize.Words, 2) // [lakshmi laxmi]
+```
+
 ### The same in Go
 
 ```go
@@ -182,6 +219,9 @@ segment.Segment("ಲಕ್ಷ್ಮಿ")                       // [ಲ ಕ್ಷ
 | `phonetic.Words(name)` | `words(name)` | the words, split as the others split them |
 | `segment.Segment(s)` | `segment(text)` | the letters, in order; joined, they give the text back |
 | `segment.Count(s)` | `count(text)` | how many letters a reader sees |
+| `romanize.Word(w, lang, mode, n)` | `(await load(lang, mode)).word(w, n?)` | up to n spellings, most likely first |
+| `romanize.Text(s, lang, mode)` | `(await load(lang, mode)).text(text)` | each word of the language's script in Latin letters |
+| `romanize.Languages(mode)` | `languages(mode)` | the languages with tables (Go: those imported) |
 
 Three things hold for all of them:
 
@@ -208,6 +248,7 @@ other tools tried and each weak spot are in `docs/`.
 | `stem` | finds 6–15 points more of the right sentences than exact search, in 13 languages | ahead in 5 languages, level in 2, a trade in 4, behind in Nepali | 3 KB | [docs/stem.md](docs/stem.md) |
 | `phonetic` | finds the right person 84% of the time, in 21 languages, on clean names; 42% on a real roster as written (70% with titles and initials removed) | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu | 4 KB | [docs/phonetic.md](docs/phonetic.md) |
 | `segment` | cuts 0.05% of Kannada words wrongly | `Intl.Segmenter`: 50.3% | 9 KB | [docs/segment.md](docs/segment.md) |
+| `romanize` | writes 48.9% of the words of running text as people typed them, in 11 languages; 71.3% of names (tables: 0.2–1.8 MB a language) | IndicXlit (Python, a 119 MB model): 37.9% and 49.0% | 5 KB | [docs/romanize.md](docs/romanize.md) |
 
 (Browser files are gzipped.)
 
@@ -231,6 +272,9 @@ other tools tried and each weak spot are in `docs/`.
 - **Some languages have no table.** `stem` covers 13 languages; Bodo,
   Dogri, Kashmiri, Konkani, Maithili, Manipuri, Odia, Santali and Sindhi
   are not among them.
+- **`romanize` is behind IndicXlit on places and on rare single words**
+  (by 7–13 and 5.5 points). Santali has names only; Bodo and Dogri have
+  text only. See [docs/romanize.md](docs/romanize.md).
 - **Go reads invalid UTF-8 as U+FFFD**, so for such input the output does
   not join back into the original bytes.
 - **"The same output" holds inside the blocks indickit reads.** Go reads
@@ -249,10 +293,12 @@ Each utility's own weak spots are at the end of its file in `docs/`.
 
 Every table and switch of a utility is in its rules file
 (`normalize/rules.json`, `stem/rules.json`, `phonetic/rules.json`,
-`segment/rules.json`); the Go and TypeScript code is a short loop over it.
+`segment/rules.json`; `romanize/rules.json` and its tables in
+`romanize/lang/`); the Go and TypeScript code is a short loop over it.
 Both are checked against a conformance file of inputs with the outputs that
 a reference implementation gave them: 345,276 inputs for `normalize`,
-418,665 for `stem`, 195,994 for `phonetic`, 858,654 for `segment`
+418,665 for `stem`, 195,994 for `phonetic`, 858,654 for `segment`, 2,397
+for `romanize`
 (`*/testdata/conformance.jsonl.gz`). A change that makes any one disagree
 on any input fails the build.
 

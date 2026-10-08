@@ -328,7 +328,7 @@ about the utility in one of three lists:
 The lists show what the README may claim (the deductions, and the inductions
 with their scope), and which test widens the claim most for the least cost
 (the weakest induction that a user depends on). The romanizer's first sort:
-`linguistic-utilities/research/romanize/claims.md`.
+`linguistic-utilities/jobs/romanize/reports/07-claims.md`.
 
 ### Report the number that hurts
 

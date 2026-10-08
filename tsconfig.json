@@ -11,5 +11,11 @@
     "outDir": "dist/types",
     "skipLibCheck": true
   },
-  "files": ["js/phonetic.ts", "js/normalize.ts", "js/segment.ts", "js/stem.ts"]
+  "files": [
+    "js/phonetic.ts",
+    "js/normalize.ts",
+    "js/segment.ts",
+    "js/stem.ts",
+    "js/romanize.ts"
+  ]
 }

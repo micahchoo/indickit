@@ -1,0 +1,383 @@
+{
+ "beam": {
+  "names": 12,
+  "words": 8
+ },
+ "bos": "<s>",
+ "eos": "</s>",
+ "families": {
+  "names": {
+   "as": {
+    "file": "as.names.bin",
+    "group": "brahmic",
+    "lookup": 669,
+    "pooled": "names-brahmic.bin",
+    "tag": "as"
+   },
+   "bn": {
+    "file": "bn.names.bin",
+    "group": "brahmic",
+    "lookup": 1785,
+    "pooled": "names-brahmic.bin",
+    "tag": "bn"
+   },
+   "gom": {
+    "file": "gom.names.bin",
+    "group": "brahmic",
+    "lookup": 17,
+    "pooled": "names-brahmic.bin",
+    "tag": "gom"
+   },
+   "gu": {
+    "file": "gu.names.bin",
+    "group": "brahmic",
+    "lookup": 131,
+    "pooled": "names-brahmic.bin",
+    "tag": "gu"
+   },
+   "hi": {
+    "file": "hi.names.bin",
+    "group": "brahmic",
+    "lookup": 1152,
+    "pooled": "names-brahmic.bin",
+    "tag": "hi"
+   },
+   "kn": {
+    "file": "kn.names.bin",
+    "group": "brahmic",
+    "lookup": 448,
+    "pooled": "names-brahmic.bin",
+    "tag": "kn"
+   },
+   "ks": {
+    "file": "ks.names.bin",
+    "group": "arabic",
+    "lookup": 130,
+    "pooled": "names-arabic.bin",
+    "tag": "ks"
+   },
+   "mai": {
+    "file": "mai.names.bin",
+    "group": "brahmic",
+    "lookup": 150,
+    "pooled": "names-brahmic.bin",
+    "tag": "mai"
+   },
+   "ml": {
+    "file": "ml.names.bin",
+    "group": "brahmic",
+    "lookup": 908,
+    "pooled": "names-brahmic.bin",
+    "tag": "ml"
+   },
+   "mni": {
+    "file": "mni.names.bin",
+    "group": "meetei",
+    "lookup": 253,
+    "pooled": "names-meetei.bin",
+    "tag": "mni"
+   },
+   "mr": {
+    "file": "mr.names.bin",
+    "group": "brahmic",
+    "lookup": 716,
+    "pooled": "names-brahmic.bin",
+    "tag": "mr"
+   },
+   "ne": {
+    "file": "ne.names.bin",
+    "group": "brahmic",
+    "lookup": 146,
+    "pooled": "names-brahmic.bin",
+    "tag": "ne"
+   },
+   "or": {
+    "file": "or.names.bin",
+    "group": "brahmic",
+    "lookup": 610,
+    "pooled": "names-brahmic.bin",
+    "tag": "or"
+   },
+   "pa": {
+    "file": "pa.names.bin",
+    "group": "brahmic",
+    "lookup": 996,
+    "pooled": "names-brahmic.bin",
+    "tag": "pa"
+   },
+   "sa": {
+    "file": "sa.names.bin",
+    "group": "brahmic",
+    "lookup": 66,
+    "pooled": "names-brahmic.bin",
+    "tag": "sa"
+   },
+   "sat": {
+    "file": "sat.names.bin",
+    "group": "olchiki",
+    "lookup": 407,
+    "pooled": "names-olchiki.bin",
+    "tag": "sat"
+   },
+   "sd": {
+    "file": "sd.names.bin",
+    "group": "arabic",
+    "lookup": 72,
+    "pooled": "names-arabic.bin",
+    "tag": "sd"
+   },
+   "ta": {
+    "file": "ta.names.bin",
+    "group": "brahmic",
+    "lookup": 3961,
+    "pooled": "names-brahmic.bin",
+    "tag": "ta"
+   },
+   "te": {
+    "file": "te.names.bin",
+    "group": "brahmic",
+    "lookup": 2126,
+    "pooled": "names-brahmic.bin",
+    "tag": "te"
+   },
+   "ur": {
+    "file": "ur.names.bin",
+    "group": "arabic",
+    "lookup": 1961,
+    "pooled": "names-arabic.bin",
+    "tag": "ur"
+   }
+  },
+  "words": {
+   "as": {
+    "file": "as.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "as:w"
+   },
+   "bn": {
+    "file": "bn.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "bn:w"
+   },
+   "brx": {
+    "file": "brx.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "brx:w"
+   },
+   "doi": {
+    "file": "doi.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "doi:w"
+   },
+   "gom": {
+    "file": "gom.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "gom:w"
+   },
+   "gu": {
+    "file": "gu.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "gu:w"
+   },
+   "hi": {
+    "file": "hi.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "hi:w"
+   },
+   "kn": {
+    "file": "kn.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "kn:w"
+   },
+   "ks": {
+    "file": "ks.words.bin",
+    "group": "arabic",
+    "lookup": 0,
+    "pooled": "words-arabic.bin",
+    "tag": "ks:w"
+   },
+   "mai": {
+    "file": "mai.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "mai:w"
+   },
+   "ml": {
+    "file": "ml.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "ml:w"
+   },
+   "mni": {
+    "file": "mni.words.bin",
+    "group": "meetei",
+    "lookup": 0,
+    "pooled": "words-meetei.bin",
+    "tag": "mni:w"
+   },
+   "mr": {
+    "file": "mr.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "mr:w"
+   },
+   "ne": {
+    "file": "ne.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "ne:w"
+   },
+   "or": {
+    "file": "or.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "or:w"
+   },
+   "pa": {
+    "file": "pa.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "pa:w"
+   },
+   "sa": {
+    "file": "sa.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "sa:w"
+   },
+   "sd": {
+    "file": "sd.words.bin",
+    "group": "arabic",
+    "lookup": 0,
+    "pooled": "words-arabic.bin",
+    "tag": "sd:w"
+   },
+   "ta": {
+    "file": "ta.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "ta:w"
+   },
+   "te": {
+    "file": "te.words.bin",
+    "group": "brahmic",
+    "lookup": 0,
+    "pooled": "words-brahmic.bin",
+    "tag": "te:w"
+   },
+   "ur": {
+    "file": "ur.words.bin",
+    "group": "arabic",
+    "lookup": 0,
+    "pooled": "words-arabic.bin",
+    "tag": "ur:w"
+   }
+  }
+ },
+ "files": {
+  "as.names.bin": 89974,
+  "as.words.bin": 235757,
+  "bn.names.bin": 182011,
+  "bn.words.bin": 377491,
+  "brx.words.bin": 208654,
+  "doi.words.bin": 48681,
+  "gom.names.bin": 9361,
+  "gom.words.bin": 324293,
+  "gu.names.bin": 38634,
+  "gu.words.bin": 370117,
+  "hi.names.bin": 162471,
+  "hi.words.bin": 468425,
+  "kn.names.bin": 73095,
+  "kn.words.bin": 273776,
+  "ks.names.bin": 36223,
+  "ks.words.bin": 445883,
+  "mai.names.bin": 40421,
+  "mai.words.bin": 381362,
+  "ml.names.bin": 133130,
+  "ml.words.bin": 342656,
+  "mni.names.bin": 12382,
+  "mni.words.bin": 133350,
+  "mr.names.bin": 119082,
+  "mr.words.bin": 327753,
+  "names-arabic.bin": 188775,
+  "names-brahmic.bin": 594055,
+  "names-meetei.bin": 43805,
+  "names-olchiki.bin": 97591,
+  "ne.names.bin": 37468,
+  "ne.words.bin": 297072,
+  "or.names.bin": 83867,
+  "or.words.bin": 285972,
+  "pa.names.bin": 140045,
+  "pa.words.bin": 419426,
+  "sa.names.bin": 24600,
+  "sa.words.bin": 243993,
+  "sat.names.bin": 73397,
+  "sd.names.bin": 11896,
+  "sd.words.bin": 463475,
+  "ta.names.bin": 295030,
+  "ta.words.bin": 244532,
+  "te.names.bin": 229077,
+  "te.words.bin": 295013,
+  "ur.names.bin": 192400,
+  "ur.words.bin": 540255,
+  "words-arabic.bin": 1182486,
+  "words-brahmic.bin": 2542643,
+  "words-meetei.bin": 198229,
+  "words-olchiki.bin": 61705
+ },
+ "groups": {
+  "arabic": [
+   1536,
+   1791
+  ],
+  "brahmic": [
+   2304,
+   3455
+  ],
+  "meetei": [
+   43744,
+   44031
+  ],
+  "olchiki": [
+   7248,
+   7295
+  ]
+ },
+ "max_n": 3,
+ "order": 3,
+ "rules_version": "2026-10-07",
+ "unify": {
+  "from": [
+   2432,
+   3455
+  ],
+  "mask": 127,
+  "to_block": 2304
+ },
+ "unknown_penalty": 20.0,
+ "version": 1
+}
