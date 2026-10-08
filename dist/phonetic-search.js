@@ -49,7 +49,7 @@ var fine2_default = {
   suffixes: []
 };
 // package.json
-var version = "0.7.0";
+var version = "0.8.0";
 // phonetic/rules.json
 var rules_default = {
   version: "2026-10-07",

@@ -6,6 +6,7 @@ import { fold, normalize } from "./normalize";
 import { count, segment } from "./segment";
 import { stem } from "./stem";
 import { load, type Mode } from "./romanize";
+import { load as loadDeromanize, type Mode as DMode } from "./deromanize";
 
 // romanize's tables, from disk, as load() fetches them beside the module
 const disk = async (url: URL) => {
@@ -13,6 +14,7 @@ const disk = async (url: URL) => {
   return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
 };
 const romanizer = (lang: string, mode: Mode = "words") => load(lang, mode, { fetch: disk });
+const deromanizer = (lang: string, mode: DMode = "words") => loadDeromanize(lang, mode, { fetch: disk });
 const scriptLang = (w: string) => {
   const cp = w.codePointAt(0)!;
   return cp >= 0x0d00 ? "ml" : cp >= 0x0b80 ? "ta" : "hi"; // the picture's three scripts
@@ -27,7 +29,7 @@ const readme = read("../README.md");
 test("each line of the README's first picture is what its utility gives", async () => {
   const picture = readme.match(/```\n([\s\S]*?)```/)![1];
   const lines = picture.split("\n").filter((l) => l.includes("→"));
-  expect(lines.map((l) => l.split(/\s+/)[0])).toEqual(["stem", "phonetic", "segment", "romanize"]);
+  expect(lines.map((l) => l.split(/\s+/)[0])).toEqual(["stem", "phonetic", "segment", "romanize", "deromanize"]);
   for (const line of lines) {
     const [left, right] = line.split("→").map((s) => s.trim());
     const [name, ...inputs] = left.split(/\s+/);
@@ -36,6 +38,7 @@ test("each line of the README's first picture is what its utility gives", async 
       if (name === "phonetic") expect([w, keys(w)]).toEqual([w, [right]]);
       if (name === "segment") expect([w, segment(w)]).toEqual([w, right.split(/\s+/)]);
       if (name === "romanize") expect([w, (await romanizer(scriptLang(w))).word(w, 1)]).toEqual([w, [right]]);
+      if (name === "deromanize") expect([w, (await deromanizer("hi")).word(w, 1)]).toEqual([w, [right]]);
     }
   }
 });
@@ -84,7 +87,7 @@ test("every segment(...) and count(...) example returns what its comment says", 
 // same size.
 test("each browser file is as small as the README says, and docs/ agrees", () => {
   const rows = [...readme.matchAll(/^\| `(\w+)` \|.*\| (\d+) KB \| \[(docs\/\w+\.md)\]/gm)];
-  expect(rows.map((r) => r[1]).sort()).toEqual(["normalize", "phonetic", "romanize", "segment", "stem"]);
+  expect(rows.map((r) => r[1]).sort()).toEqual(["deromanize", "normalize", "phonetic", "romanize", "segment", "stem"]);
   for (const [, name, kb, doc] of rows) {
     const gz = gzipSync(readFileSync(new URL(`../dist/${name}.js`, import.meta.url))).length;
     expect(gz).toBeLessThan((Number(kb) + 0.5) * 1024);
@@ -97,7 +100,7 @@ test("each browser file is as small as the README says, and docs/ agrees", () =>
 // repo's results (linguistic-utilities tests/test_*_readme.py).
 test("every number in the README's summary rows is in its docs file", () => {
   const rows = [...readme.matchAll(/^\| `(\w+)` \|(.*)\| \d+ KB \| \[(docs\/\w+\.md)\]/gm)];
-  expect(rows).toHaveLength(5);
+  expect(rows).toHaveLength(6);
   for (const [, name, cells, doc] of rows) {
     const text = read(`../${doc}`).replace(/\s+/g, " ");
     const numbers = [...cells.matchAll(/\d+(?:\.\d+)?(?:–\d+)?(?:%| points)/g)].map((m) => m[0]);
@@ -115,7 +118,7 @@ test("every version tag in the README is package.json's version", () => {
 });
 
 test("every romanize example in the recipe returns what its comment says", async () => {
-  const recipe = readme.slice(readme.indexOf("### Write it in Latin letters"), readme.indexOf("### The same in Go"));
+  const recipe = readme.slice(readme.indexOf("### Write it in Latin letters"), readme.indexOf("### Write Latin typing in an Indian script"));
   const tables: Record<string, Promise<Awaited<ReturnType<typeof romanizer>>>> = {
     hi: romanizer("hi"),
     ur: romanizer("ur", "names"),
@@ -130,3 +133,20 @@ test("every romanize example in the recipe returns what its comment says", async
     expect([v, input, (await tables[v]).text(JSON.parse(input))]).toEqual([v, input, JSON.parse(want)]);
   }
 });
+
+test("every deromanize example in the recipe returns what its comment says", async () => {
+  const recipe = readme.slice(readme.indexOf("### Write Latin typing in an Indian script"), readme.indexOf("### The same in Go"));
+  const tables: Record<string, Promise<Awaited<ReturnType<typeof deromanizer>>>> = {
+    hi: deromanizer("hi"),
+    ur: deromanizer("ur", "names"),
+  };
+  const words = [...recipe.matchAll(/^(\w+)\.word\(("[^"]*"), (\d+)\);\s*\/\/ (\[[^\]]*\])/gm)];
+  const texts = [...recipe.matchAll(/^(\w+)\.text\(("[^"]*")\);\s*\/\/ ("[^"]*")/gm)];
+  expect(words.length + texts.length).toBeGreaterThan(2);
+  for (const [, v, input, n, want] of words) {
+    expect([v, input, (await tables[v]).word(JSON.parse(input), Number(n))]).toEqual([v, input, JSON.parse(want)]);
+  }
+  for (const [, v, input, want] of texts) {
+    expect([v, input, (await tables[v]).text(JSON.parse(input))]).toEqual([v, input, JSON.parse(want)]);
+  }
+}, 120_000);

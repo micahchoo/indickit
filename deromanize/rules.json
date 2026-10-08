@@ -1,0 +1,502 @@
+{
+ "alpha": {
+  "names": 0.5,
+  "words": 1.0
+ },
+ "beam": 40,
+ "blocks": {
+  "as": 2432,
+  "bn": 2432,
+  "gu": 2688,
+  "kn": 3200,
+  "ml": 3328,
+  "mni": 2432,
+  "or": 2816,
+  "pa": 2560,
+  "ta": 2944,
+  "te": 3072
+ },
+ "bos": "<s>",
+ "eos": "</s>",
+ "families": {
+  "names": {
+   "as": {
+    "file": "as.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "as"
+   },
+   "bn": {
+    "file": "bn.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "bn"
+   },
+   "gom": {
+    "file": "gom.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "gom"
+   },
+   "gu": {
+    "file": "gu.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "gu"
+   },
+   "hi": {
+    "file": "hi.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "hi"
+   },
+   "kn": {
+    "file": "kn.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "kn"
+   },
+   "ks": {
+    "file": "ks.names.bin",
+    "group": "arabic",
+    "pooled": "names-arabic.bin",
+    "tag": "ks"
+   },
+   "mai": {
+    "file": "mai.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "mai"
+   },
+   "ml": {
+    "file": "ml.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "ml"
+   },
+   "mni": {
+    "file": "mni.names.bin",
+    "group": "meetei",
+    "pooled": "names-meetei.bin",
+    "tag": "mni"
+   },
+   "mr": {
+    "file": "mr.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "mr"
+   },
+   "ne": {
+    "file": "ne.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "ne"
+   },
+   "or": {
+    "file": "or.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "or"
+   },
+   "pa": {
+    "file": "pa.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "pa"
+   },
+   "sa": {
+    "file": "sa.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "sa"
+   },
+   "sat": {
+    "file": "sat.names.bin",
+    "group": "olchiki",
+    "pooled": "names-olchiki.bin",
+    "tag": "sat"
+   },
+   "sd": {
+    "file": "sd.names.bin",
+    "group": "arabic",
+    "pooled": "names-arabic.bin",
+    "tag": "sd"
+   },
+   "ta": {
+    "file": "ta.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "ta"
+   },
+   "te": {
+    "file": "te.names.bin",
+    "group": "brahmic",
+    "pooled": "names-brahmic.bin",
+    "tag": "te"
+   },
+   "ur": {
+    "file": "ur.names.bin",
+    "group": "arabic",
+    "pooled": "names-arabic.bin",
+    "tag": "ur"
+   }
+  },
+  "words": {
+   "as": {
+    "file": "as.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "as:w"
+   },
+   "bn": {
+    "file": "bn.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "bn:w"
+   },
+   "brx": {
+    "file": "brx.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "brx:w"
+   },
+   "doi": {
+    "file": "doi.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "doi:w"
+   },
+   "gom": {
+    "file": "gom.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "gom:w"
+   },
+   "gu": {
+    "file": "gu.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "gu:w"
+   },
+   "hi": {
+    "file": "hi.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "hi:w"
+   },
+   "kn": {
+    "file": "kn.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "kn:w"
+   },
+   "ks": {
+    "file": "ks.words.bin",
+    "group": "arabic",
+    "pooled": "words-arabic.bin",
+    "tag": "ks:w"
+   },
+   "mai": {
+    "file": "mai.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "mai:w"
+   },
+   "ml": {
+    "file": "ml.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "ml:w"
+   },
+   "mni": {
+    "file": "mni.words.bin",
+    "group": "meetei",
+    "pooled": "words-meetei.bin",
+    "tag": "mni:w"
+   },
+   "mr": {
+    "file": "mr.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "mr:w"
+   },
+   "ne": {
+    "file": "ne.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "ne:w"
+   },
+   "or": {
+    "file": "or.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "or:w"
+   },
+   "pa": {
+    "file": "pa.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "pa:w"
+   },
+   "sa": {
+    "file": "sa.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "sa:w"
+   },
+   "sd": {
+    "file": "sd.words.bin",
+    "group": "arabic",
+    "pooled": "words-arabic.bin",
+    "tag": "sd:w"
+   },
+   "ta": {
+    "file": "ta.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "ta:w"
+   },
+   "te": {
+    "file": "te.words.bin",
+    "group": "brahmic",
+    "pooled": "words-brahmic.bin",
+    "tag": "te:w"
+   },
+   "ur": {
+    "file": "ur.words.bin",
+    "group": "arabic",
+    "pooled": "words-arabic.bin",
+    "tag": "ur:w"
+   }
+  }
+ },
+ "files": {
+  "as.list.bin": 968637,
+  "as.names-list.bin": 36290,
+  "as.names.bin": 56650,
+  "as.words.bin": 176986,
+  "bn.list.bin": 3079000,
+  "bn.names-list.bin": 80018,
+  "bn.names.bin": 93290,
+  "bn.words.bin": 274214,
+  "brx.list.bin": 1380902,
+  "brx.words.bin": 178898,
+  "doi.list.bin": 130906,
+  "doi.words.bin": 31566,
+  "gom.list.bin": 539579,
+  "gom.names-list.bin": 2161,
+  "gom.names.bin": 8019,
+  "gom.words.bin": 213860,
+  "gu.list.bin": 1340814,
+  "gu.names-list.bin": 14290,
+  "gu.names.bin": 28406,
+  "gu.words.bin": 269838,
+  "hi.list.bin": 2135004,
+  "hi.names-list.bin": 67117,
+  "hi.names.bin": 95894,
+  "hi.words.bin": 346268,
+  "kn.list.bin": 5503072,
+  "kn.names-list.bin": 31357,
+  "kn.names.bin": 49035,
+  "kn.words.bin": 180882,
+  "ks.list.bin": 79144,
+  "ks.names-list.bin": 9689,
+  "ks.names.bin": 25155,
+  "ks.words.bin": 282541,
+  "mai.list.bin": 300299,
+  "mai.names-list.bin": 15030,
+  "mai.names.bin": 30010,
+  "mai.words.bin": 265014,
+  "ml.list.bin": 7515032,
+  "ml.names-list.bin": 54838,
+  "ml.names.bin": 77706,
+  "ml.words.bin": 216480,
+  "mni.list.bin": 143844,
+  "mni.names-list.bin": 5010,
+  "mni.names.bin": 5929,
+  "mni.words.bin": 124789,
+  "mr.list.bin": 2490422,
+  "mr.names-list.bin": 52737,
+  "mr.names.bin": 73778,
+  "mr.words.bin": 227461,
+  "names-arabic.bin": 150824,
+  "names-brahmic.bin": 453871,
+  "names-meetei.bin": 47333,
+  "names-olchiki.bin": 108903,
+  "ne.list.bin": 1360103,
+  "ne.names-list.bin": 13305,
+  "ne.names.bin": 28449,
+  "ne.words.bin": 218450,
+  "or.list.bin": 875046,
+  "or.names-list.bin": 33026,
+  "or.names.bin": 49200,
+  "or.words.bin": 198961,
+  "pa.list.bin": 1194784,
+  "pa.names-list.bin": 59690,
+  "pa.names.bin": 75324,
+  "pa.words.bin": 289107,
+  "sa.list.bin": 1837666,
+  "sa.names-list.bin": 6983,
+  "sa.names.bin": 20106,
+  "sa.words.bin": 169505,
+  "sat.list.bin": 484539,
+  "sat.names-list.bin": 34457,
+  "sat.names.bin": 65022,
+  "sd.list.bin": 402905,
+  "sd.names-list.bin": 2602,
+  "sd.names.bin": 8121,
+  "sd.words.bin": 327439,
+  "ta.list.bin": 5456850,
+  "ta.names-list.bin": 115847,
+  "ta.names.bin": 118779,
+  "ta.words.bin": 178395,
+  "te.list.bin": 2904372,
+  "te.names-list.bin": 114224,
+  "te.names.bin": 119410,
+  "te.words.bin": 199661,
+  "ur.list.bin": 1546931,
+  "ur.names-list.bin": 61255,
+  "ur.names.bin": 99309,
+  "ur.words.bin": 380888,
+  "words-arabic.bin": 858744,
+  "words-brahmic.bin": 1682820,
+  "words-meetei.bin": 204368,
+  "words-olchiki.bin": 70815
+ },
+ "groups": {
+  "arabic": [
+   [
+    1536,
+    1791
+   ],
+   [
+    1872,
+    1919
+   ],
+   [
+    64336,
+    65023
+   ]
+  ],
+  "brahmic": [
+   [
+    2304,
+    3455
+   ]
+  ],
+  "meetei": [
+   [
+    43744,
+    44031
+   ]
+  ],
+  "olchiki": [
+   [
+    7248,
+    7295
+   ]
+  ]
+ },
+ "lists": {
+  "as": {
+   "names": "as.names-list.bin",
+   "words": "as.list.bin"
+  },
+  "bn": {
+   "names": "bn.names-list.bin",
+   "words": "bn.list.bin"
+  },
+  "brx": {
+   "words": "brx.list.bin"
+  },
+  "doi": {
+   "words": "doi.list.bin"
+  },
+  "gom": {
+   "names": "gom.names-list.bin",
+   "words": "gom.list.bin"
+  },
+  "gu": {
+   "names": "gu.names-list.bin",
+   "words": "gu.list.bin"
+  },
+  "hi": {
+   "names": "hi.names-list.bin",
+   "words": "hi.list.bin"
+  },
+  "kn": {
+   "names": "kn.names-list.bin",
+   "words": "kn.list.bin"
+  },
+  "ks": {
+   "names": "ks.names-list.bin",
+   "words": "ks.list.bin"
+  },
+  "mai": {
+   "names": "mai.names-list.bin",
+   "words": "mai.list.bin"
+  },
+  "ml": {
+   "names": "ml.names-list.bin",
+   "words": "ml.list.bin"
+  },
+  "mni": {
+   "names": "mni.names-list.bin",
+   "words": "mni.list.bin"
+  },
+  "mr": {
+   "names": "mr.names-list.bin",
+   "words": "mr.list.bin"
+  },
+  "ne": {
+   "names": "ne.names-list.bin",
+   "words": "ne.list.bin"
+  },
+  "or": {
+   "names": "or.names-list.bin",
+   "words": "or.list.bin"
+  },
+  "pa": {
+   "names": "pa.names-list.bin",
+   "words": "pa.list.bin"
+  },
+  "sa": {
+   "names": "sa.names-list.bin",
+   "words": "sa.list.bin"
+  },
+  "sat": {
+   "names": "sat.names-list.bin",
+   "words": "sat.list.bin"
+  },
+  "sd": {
+   "names": "sd.names-list.bin",
+   "words": "sd.list.bin"
+  },
+  "ta": {
+   "names": "ta.names-list.bin",
+   "words": "ta.list.bin"
+  },
+  "te": {
+   "names": "te.names-list.bin",
+   "words": "te.list.bin"
+  },
+  "ur": {
+   "names": "ur.names-list.bin",
+   "words": "ur.list.bin"
+  }
+ },
+ "max_n": 3,
+ "nbest": 16,
+ "order": 3,
+ "rules_version": "2026-10-08",
+ "unify": {
+  "from": [
+   2432,
+   3455
+  ],
+  "mask": 127,
+  "to_block": 2304
+ },
+ "unknown_penalty": 20.0,
+ "version": 1
+}

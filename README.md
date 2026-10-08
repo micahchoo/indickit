@@ -3,14 +3,16 @@
 Small, exact utilities for text in the languages of India, in Go and
 TypeScript. They fix the places where ordinary string code goes wrong on
 Indian text: a search that misses a word because it is spelled, encoded or
-inflected another way, a letter count that cuts a letter in two, and a name
-that must be written in Latin letters.
+inflected another way, a letter count that cuts a letter in two, a name
+that must be written in Latin letters, and Latin typing that must be written
+in an Indian script.
 
 ```
 stem      किताब  किताबें  किताबों              →  किताब
 phonetic  राम  ರಾಮ  രാമ  ராம  رام  Ram       →  rn
 segment   ಲಕ್ಷ್ಮಿ                              →  ಲ  ಕ್ಷ್ಮಿ
 romanize  लक्ष्मी  ലക്ഷ്മി  லக்ஷ்மி              →  lakshmi
+deromanize  namaste                         →  नमस्ते
 ```
 
 Each utility gives the same output in Go and in TypeScript, and each was
@@ -27,6 +29,7 @@ measured on data that its rules were never built on.
 | find a name in a long list, as people write it (titles, initials), or in running text | `phonetic-search` |
 | count letters, cut at a length, or move a cursor | `segment` |
 | write a name or a text in Latin letters (लक्ष्मी → lakshmi) | `romanize` |
+| write Latin typing in an Indian script (namaste → नमस्ते) | `deromanize` |
 
 ## Install
 
@@ -51,21 +54,23 @@ TypeScript, set `moduleResolution` to `nodenext` or `bundler`; the old
 In a browser, with no build step:
 
 ```js
-import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.7.0/dist/normalize.js";
-import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.7.0/dist/stem.js";
-import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.7.0/dist/phonetic.js";
-import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.7.0/dist/segment.js";
-import { load } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.7.0/dist/romanize.js";
-import { loadSearch } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.7.0/dist/phonetic-search.js";
+import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.8.0/dist/normalize.js";
+import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.8.0/dist/stem.js";
+import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.8.0/dist/phonetic.js";
+import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.8.0/dist/segment.js";
+import { load } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.8.0/dist/romanize.js";
+import { loadSearch } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.8.0/dist/phonetic-search.js";
+import { load as loadDeromanize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.8.0/dist/deromanize.js";
 ```
 
 Each utility is its own file, so a page loads only the rules it uses.
 `romanize` also loads one language's tables when you ask for them (0.2–1.8
-MB), and `phonetic-search` one language's table (2–6 KB). The npm package carries no tables: `load()` reads them beside the
+MB), `deromanize` one language's tables and word list (0.3–3.1 MB), and
+`phonetic-search` one language's table (2–6 KB). The npm package carries no tables: `load()` reads them beside the
 module (a jsDelivr or GitHub-tag install), else from jsDelivr at the same
 version. Offline, pass your own `fetch`. In Go, `go get` downloads the
-tables of every language once (14 MB); a program carries only the languages
-it imports.
+tables of every language once (`romanize` 14 MB, `deromanize` 52 MB); a
+program carries only the languages it imports.
 
 ## Recipes
 
@@ -211,6 +216,34 @@ import (
 romanize.Word("लक्ष्मी", "hi", romanize.Words, 2) // [lakshmi laxmi]
 ```
 
+### Write Latin typing in an Indian script
+
+`deromanize` is the reverse: it gives a ranked list of native spellings for
+a Latin-typed word, most likely first. It writes every word it is given in
+the Indian script, English words too: in mixed text, find each word's
+language first.
+
+```ts
+import { load } from "indickit/deromanize";
+
+const hi = await load("hi");          // fetches the Hindi tables and word list
+hi.word("namaste", 1);                // ["नमस्ते"]
+hi.text("bharat ke pradhanmantri");   // "भारत के प्रधानमंत्री"
+const ur = await load("ur", "names");
+ur.word("ahmad", 1);                  // ["احمد"]
+```
+
+In Go:
+
+```go
+import (
+	"github.com/micahchoo/indickit/deromanize"
+	_ "github.com/micahchoo/indickit/deromanize/lang/hi"
+)
+
+deromanize.Word("namaste", "hi", deromanize.Words, 1) // [नमस्ते]
+```
+
 ### The same in Go
 
 ```go
@@ -249,6 +282,9 @@ segment.Segment("ಲಕ್ಷ್ಮಿ")                       // [ಲ ಕ್ಷ
 | `romanize.Word(w, lang, mode, n)` | `(await load(lang, mode)).word(w, n?)` | up to n spellings, most likely first |
 | `romanize.Text(s, lang, mode)` | `(await load(lang, mode)).text(text)` | each word of the language's script in Latin letters |
 | `romanize.Languages(mode)` | `languages(mode)` | the languages with tables (Go: those imported) |
+| `deromanize.Word(latin, lang, mode, n)` | `(await load(lang, mode)).word(latin, n?)` | up to n native spellings, most likely first |
+| `deromanize.Text(s, lang, mode)` | `(await load(lang, mode)).text(text)` | each run of Latin letters in the language's script |
+| `deromanize.Languages(mode)` | `languages(mode)` | the languages with tables (Go: those imported) |
 
 Three things hold for all of them:
 
@@ -276,6 +312,7 @@ other tools tried and each weak spot are in `docs/`.
 | `phonetic` | finds the right person 84% of the time, in 21 languages, on clean names; 42% on a real roster as written (70% with titles and initials removed); with `phonetic-search`, 86% of a real roster as written and 85% of villages | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu; ICU + fuzzy match: 78% and 65% | 5 KB | [docs/phonetic.md](docs/phonetic.md) |
 | `segment` | cuts 0.05% of Kannada words wrongly | `Intl.Segmenter`: 50.3% | 9 KB | [docs/segment.md](docs/segment.md) |
 | `romanize` | writes 48.9% of the words of running text as people typed them, in 11 languages; 71.3% of names (tables: 0.2–1.8 MB a language) | IndicXlit (Python, a 119 MB model): 37.9% and 49.0% | 5 KB | [docs/romanize.md](docs/romanize.md) |
+| `deromanize` | writes the right word first for 87.1% of the words of Hindi news typed in Latin, and in four for 97.4%; 69.7% of names in 19 languages (tables: 0.3–3.1 MB a language) | IndicXlit: 86.1%, 89.7% and 66.4%; behind on rare words out of context | 20 KB | [docs/deromanize.md](docs/deromanize.md) |
 
 (Browser files are gzipped.)
 
@@ -286,6 +323,10 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
 
 ## Limits
 
+- **`deromanize` writes English words in the Indian script too.** About 8%
+  of the words of romanized Hinglish are English; find each word's language
+  first. On rare words out of context it is 10 points behind IndicXlit. See
+  [docs/deromanize.md](docs/deromanize.md).
 - **Only HarfBuzz was tested** for "looks the same" (`normalize`,
   `segment`). Windows and Apple draw text with their own engines.
 - **The `phonetic` key expects clean names.** Remove titles (Shri, Smt.)

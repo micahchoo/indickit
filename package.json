@@ -1,6 +1,6 @@
 {
   "name": "indickit",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Small, exact utilities for text in Indian languages: a phonetic key that matches a name across 21 Indian scripts and English, a normalizer that gives text that looks the same one encoding, a segmenter for the letters a reader sees, and a stemmer for search.",
   "license": "MIT",
   "packageManager": "bun@1.3.14",
@@ -33,6 +33,10 @@
     "./phonetic-search": {
       "types": "./dist/types/js/phonetic-search.d.ts",
       "default": "./dist/phonetic-search.js"
+    },
+    "./deromanize": {
+      "types": "./dist/types/js/deromanize.d.ts",
+      "default": "./dist/deromanize.js"
     }
   },
   "files": [
@@ -40,7 +44,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "bun build js/phonetic.ts --outfile dist/phonetic.js --target browser --format esm && bun build js/normalize.ts --outfile dist/normalize.js --target browser --format esm && bun build js/segment.ts --outfile dist/segment.js --target browser --format esm && bun build js/stem.ts --outfile dist/stem.js --target browser --format esm && bun build js/romanize.ts --outfile dist/romanize.js --target browser --format esm && bun build js/phonetic-search.ts --outfile dist/phonetic-search.js --target browser --format esm && tsc -p tsconfig.json",
+    "build": "bun build js/phonetic.ts --outfile dist/phonetic.js --target browser --format esm && bun build js/normalize.ts --outfile dist/normalize.js --target browser --format esm && bun build js/segment.ts --outfile dist/segment.js --target browser --format esm && bun build js/stem.ts --outfile dist/stem.js --target browser --format esm && bun build js/romanize.ts --outfile dist/romanize.js --target browser --format esm && bun build js/phonetic-search.ts --outfile dist/phonetic-search.js --target browser --format esm && bun build js/deromanize.ts --outfile dist/deromanize.js --target browser --format esm && tsc -p tsconfig.json",
     "test": "bun test",
     "check-dist": "node js/check-dist.mjs"
   },

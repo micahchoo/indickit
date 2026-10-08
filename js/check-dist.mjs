@@ -100,6 +100,29 @@ if (rmiss || rn < 2000) {
 }
 console.log(`dist/romanize.js: all ${rn} rows agree (rules ${R.RULES_VERSION})`);
 
+// dist/deromanize.js against deromanize/testdata/conformance.jsonl.gz, loading its data from
+// the default place beside the bundle (../deromanize/lang/), as jsDelivr serves it
+const D = await import("../dist/deromanize.js");
+const derRows = gunzipSync(readFileSync(new URL("../deromanize/testdata/conformance.jsonl.gz", import.meta.url))).toString("utf8");
+const dloaded = new Map();
+let dn = 0, dmiss = 0;
+for (const line of derRows.split("\n")) {
+  if (!line) continue;
+  const [mode, lang, latin, want] = JSON.parse(line);
+  const key = `${lang}.${mode}`;
+  if (!dloaded.has(key)) dloaded.set(key, await D.load(lang, mode, { fetch: disk }));
+  const got = dloaded.get(key).word(latin, 4);
+  dn++;
+  if (JSON.stringify(got) !== JSON.stringify(want)) {
+    if (dmiss++ < 10) console.error(JSON.stringify([mode, lang, latin, want, got]));
+  }
+}
+if (dmiss || dn < 2000) {
+  console.error(`dist/deromanize.js: ${dmiss} of ${dn} rows differ`);
+  process.exit(1);
+}
+console.log(`dist/deromanize.js: all ${dn} rows agree (rules ${D.RULES_VERSION})`);
+
 // dist/phonetic-search.js against phonetic/testdata/scorer-conformance.jsonl.gz, loading its
 // tables from the default place beside the bundle (../phonetic/scorer/), as jsDelivr serves it
 const PS = await import("../dist/phonetic-search.js");
