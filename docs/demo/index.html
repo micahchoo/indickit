@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>indickit, live</title>
+<meta name="description" content="Each indickit package run live in the browser, and its coverage of the 22 languages of India's Eighth Schedule.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans:wght@400;600&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Bengali:wght@400;600&family=Noto+Sans+Gujarati:wght@400;600&family=Noto+Sans+Gurmukhi:wght@400;600&family=Noto+Sans+Kannada:wght@400;600&family=Noto+Sans+Malayalam:wght@400;600&family=Noto+Sans+Oriya:wght@400;600&family=Noto+Sans+Tamil:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&family=Noto+Naskh+Arabic:wght@400;600&display=swap">
+<style>
+/* Layout: one column, in the reader's order: what each package does alone
+   (tabs), which languages it covers (one table), then where it fails. */
+:root {
+  --paper: #f5f6f4;
+  --sheet: #ffffff;
+  --ink: #18201c;
+  --ink-2: #4a5550;
+  --rule: #d8ddd9;
+  --accent: #1d5c4a;
+  --accent-soft: #e2eee9;
+  --form: #5b4a9e;
+  --form-soft: #ebe7f7;
+  --sound: #9a5a00;
+  --sound-soft: #f8ecd8;
+  --latin: #1f6a8f;
+  --latin-soft: #e0eef5;
+  --cut: #b42318;
+  --cut-soft: #fbe6e3;
+  --mark: #fff0a8;
+  --display: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Noto Sans", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Gujarati", "Noto Sans Gurmukhi", "Noto Sans Kannada", "Noto Sans Malayalam", "Noto Sans Oriya", "Noto Sans Tamil", "Noto Sans Telugu", "Noto Naskh Arabic", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121614; --sheet: #1a201d; --ink: #e6ebe8; --ink-2: #a3aea8; --rule: #2e3833;
+    --accent: #7cc7ad; --accent-soft: #1f3a31;
+    --form: #b7a8f0; --form-soft: #2c2645; --sound: #e9b05c; --sound-soft: #3d2c12;
+    --latin: #7cc0e3; --latin-soft: #16313f; --cut: #ff8a7a; --cut-soft: #45201b; --mark: #5a4b10;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #121614; --sheet: #1a201d; --ink: #e6ebe8; --ink-2: #a3aea8; --rule: #2e3833;
+  --accent: #7cc7ad; --accent-soft: #1f3a31;
+  --form: #b7a8f0; --form-soft: #2c2645; --sound: #e9b05c; --sound-soft: #3d2c12;
+  --latin: #7cc0e3; --latin-soft: #16313f; --cut: #ff8a7a; --cut-soft: #45201b; --mark: #5a4b10;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; } /* .pane and others set display; hidden must still hide */
+body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.55 var(--body); }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 28px 20px 64px; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+h2 { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+p { margin: 0; }
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+
+.mast { display: grid; gap: 10px; border-bottom: 2px solid var(--ink); padding-bottom: 18px; }
+.mast .lede { max-width: 66ch; font-size: 16px; color: var(--ink-2); }
+.dateline { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 500 12px/1.4 var(--mono); color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.measured { font-size: 12.5px; color: var(--ink-2); border-top: 1px dashed var(--rule); padding-top: 8px; }
+.measured strong { color: var(--ink); font-weight: 600; }
+
+.mode-note { font-size: 13px; color: var(--ink-2); max-width: 75ch; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.preset { display: grid; gap: 1px; text-align: left; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); color: var(--ink); cursor: pointer; font: 15px/1.3 var(--body); }
+.preset small { font: 12px/1.3 var(--body); color: var(--ink-2); }
+.preset:hover { border-color: var(--ink-2); }
+.preset:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.status { font-size: 14px; color: var(--ink-2); min-height: 1.5em; }
+.status b { color: var(--ink); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+.cutmark { color: var(--cut); background: var(--cut-soft); font: 600 11px/1 var(--mono); padding: 2px 4px; border-radius: 3px; vertical-align: middle; white-space: nowrap; }
+
+.limits { display: grid; gap: 12px; border-top: 2px solid var(--ink); padding-top: 18px; }
+.limits ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 80ch; }
+
+/* The bench: one tab per package. */
+.lede-list { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.lede-list a { font: 500 12.5px/1 var(--mono); padding: 6px 8px; border: 1px solid var(--rule); border-radius: 4px; color: var(--ink); text-decoration: none; background: var(--sheet); }
+.lede-list a:hover { border-color: var(--ink-2); }
+.bench { display: grid; gap: 10px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1.5px solid var(--ink); }
+.tabs [role=tab] { font: 500 14px/1 var(--mono); padding: 12px 14px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--ink-2); cursor: pointer; margin-bottom: -1.5px; }
+.tabs [role=tab] code { font-size: 1em; }
+.tabs [role=tab][aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.tabs [role=tab]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.pane { background: var(--sheet); border: 1px solid var(--rule); border-top: 0; border-radius: 0 0 6px 6px; padding: 18px; display: grid; gap: 16px; }
+.pane-head { display: grid; gap: 6px; max-width: 78ch; }
+.sig code { font-size: 13px; color: var(--accent); }
+.job { font: 600 17px/1.4 var(--display); }
+.why { font-size: 14px; color: var(--ink-2); }
+.pane-body { display: grid; gap: 12px; min-width: 0; }
+.try { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.field { display: grid; gap: 4px; flex: 1 1 240px; min-width: 0; font-size: 12.5px; color: var(--ink-2); }
+.field.narrow { flex: 0 1 190px; }
+.field input[type=text], .field select { font: 17px/1.3 var(--body); padding: 9px 11px; border: 1.5px solid var(--ink-2); border-radius: 6px; background: var(--paper); color: var(--ink); min-width: 0; width: 100%; }
+.field select { font-size: 14px; padding: 11px 8px; }
+.field input:focus-visible, .field select:focus-visible { outline: 3px solid var(--accent-soft); border-color: var(--accent); }
+.field input[type=range] { width: 100%; accent-color: var(--accent); }
+.out { display: grid; gap: 10px; min-width: 0; border-top: 1px dashed var(--rule); padding-top: 12px; }
+.pair { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; min-width: 0; }
+.pair.col { flex-direction: column; align-items: stretch; }
+.tag { font: 600 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-2); min-width: 7.5em; }
+.big { font-size: 22px; line-height: 1.5; overflow-wrap: anywhere; }
+.big.key { background: var(--form-soft); color: var(--form); padding: 0 8px; border-radius: 4px; }
+.big.latin { font-family: var(--mono); font-size: 17px; color: var(--latin); }
+.arrow { color: var(--ink-2); }
+.cps { display: flex; flex-wrap: wrap; gap: 3px; }
+.cp { font: 11.5px/1 var(--mono); padding: 4px 5px; border-radius: 3px; background: var(--paper); color: var(--ink-2); border: 1px solid var(--rule); }
+.cp.diff { background: var(--mark); color: var(--ink); border-color: transparent; }
+.verdict { font-size: 14.5px; font-weight: 600; color: var(--ink-2); }
+.verdict.good { color: var(--accent); }
+.also { font-size: 13.5px; color: var(--ink-2); line-height: 2; }
+.word { display: inline-flex; align-items: baseline; gap: 3px; padding: 0 6px; border: 1px solid var(--rule); border-radius: 4px; font-size: 15px; color: var(--ink); }
+.word small { font: 10.5px/1 var(--mono); color: var(--ink-2); }
+.hitrow .word { border: 0; padding: 0; }
+.seg { display: grid; grid-template-columns: 9.5em 2.5em 1fr; gap: 10px; align-items: center; min-width: 0; }
+@media (max-width: 560px) { .seg { grid-template-columns: 1fr auto; } .seg > :nth-child(3) { grid-column: 1 / -1; } }
+.seg .num, .hitrow .num { font: 600 18px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.seg .note, .hitrow .note { font-size: 12.5px; color: var(--ink-2); }
+.letters { display: flex; flex-wrap: wrap; gap: 4px; }
+.letter { font-size: 22px; line-height: 1.3; padding: 2px 8px; border: 1.5px solid var(--ink-2); border-radius: 4px; background: var(--paper); }
+.cut { font-size: 20px; }
+.keys { display: flex; flex-wrap: wrap; gap: 8px; }
+.kw { display: inline-flex; gap: 6px; align-items: baseline; padding: 4px 8px; border-radius: 4px; background: var(--sound-soft); }
+.kw code { color: var(--sound); font-weight: 500; }
+.hitrow { display: grid; grid-template-columns: minmax(6em, 12em) 1fr 2.5em 4.5em; gap: 10px; align-items: center; }
+@media (max-width: 560px) { .hitrow { grid-template-columns: 1fr 2.5em; } .hitrow .meter { grid-column: 1 / -1; grid-row: 2; } .hitrow .note { display: none; } }
+.meter { position: relative; height: 10px; background: var(--paper); border: 1px solid var(--rule); border-radius: 5px; }
+.meter span { position: absolute; inset: 0 auto 0 0; border-radius: 5px; background: var(--ink-2); }
+.hitrow.strict .meter span { background: var(--accent); }
+.hitrow.loose .meter span { background: var(--sound); }
+.meter i { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); opacity: 0.5; }
+.cands { display: grid; gap: 6px; }
+.cands > div { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+.cands code { font-size: 14px; padding: 2px 6px; border-radius: 3px; background: var(--paper); border: 1px solid var(--rule); }
+.cands code.first { background: var(--latin-soft); border-color: var(--latin); color: var(--latin); }
+.action { justify-self: start; font: 600 14px/1.3 var(--display); padding: 10px 14px; border: 1.5px solid var(--ink); border-radius: 6px; background: var(--ink); color: var(--paper); cursor: pointer; }
+.action.quiet { background: var(--sheet); color: var(--ink); }
+.action:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.action:disabled { opacity: 0.5; cursor: progress; }
+
+/* The language table: one name through every package, 22 rows. */
+.cover { display: grid; gap: 12px; }
+.cover-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); }
+table.langs { border-collapse: collapse; width: 100%; min-width: 880px; font-size: 14px; }
+.langs th, .langs td { padding: 8px 10px; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: middle; }
+.langs thead th { font: 600 11.5px/1.3 var(--mono); color: var(--ink-2); background: var(--paper); position: sticky; top: 0; }
+.langs thead th code { color: var(--ink); }
+.langs tbody tr:last-child td { border-bottom: 0; }
+.langs .lname strong { font-family: var(--display); display: block; }
+.langs .lname small { font: 11px/1.2 var(--mono); color: var(--ink-2); }
+.langs .native { font-size: 19px; line-height: 1.4; }
+.langs .num { font: 500 14px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.langs .bad { color: var(--cut); }
+.langs .ok { color: var(--accent); }
+.langs .dim { color: var(--ink-2); font-size: 12.5px; }
+.langs .latin { font: 13.5px/1.3 var(--mono); color: var(--latin); }
+.langs .k code { color: var(--sound); }
+.mode { white-space: nowrap; font: 500 10.5px/1 var(--mono); padding: 2px 4px; border-radius: 3px; background: var(--paper); color: var(--ink-2); border: 1px solid var(--rule); vertical-align: middle; }
+.langs button { font: 600 12.5px/1 var(--display); padding: 7px 10px; border: 1px solid var(--ink-2); border-radius: 4px; background: var(--sheet); color: var(--ink); cursor: pointer; }
+.langs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <h1>indickit, live</h1>
+    <p class="lede">Eight small utilities for text in the 22 languages of India's Eighth Schedule. Each one fixes one place where ordinary string code goes wrong on Indian text. Every result on this page is computed in your browser by <a href="https://github.com/micahchoo/indickit">indickit</a> <span id="kit-version">0.8.0</span>, with examples from real government press releases.</p>
+    <ul class="lede-list" aria-label="Sections">
+      <li><a href="#bench-h">Each package alone</a></li>
+      <li><a href="#cover-h">22 languages</a></li>
+      <li><a href="#limits-h">Where it fails</a></li>
+    </ul>
+    <div class="dateline" id="dateline"><span>Press Information Bureau · August 2023</span><span>Loading…</span></div>
+  </header>
+
+  <section class="bench" aria-labelledby="bench-h">
+    <h2 id="bench-h">Each package alone</h2>
+    <div class="tabs" role="tablist" id="bench-tabs" aria-label="Packages"></div>
+    <div id="bench-panes"></div>
+  </section>
+
+  <section class="cover" aria-labelledby="cover-h">
+    <h2 id="cover-h">22 languages</h2>
+    <p class="mode-note">One name, typed in Latin letters, through every package in every language: <code>deromanize</code> writes it in the language's script, <code>segment</code> counts its letters, <code>phonetic</code> checks that the written name still matches what was typed, and <code>romanize</code> writes it back in Latin letters. A red cross marks a step that broke the name: the native spelling, or the Latin one written back, no longer matches what was typed.</p>
+    <div class="cover-bar">
+      <div class="presets" id="cover-presets"></div>
+      <form class="try" id="cover-form" style="flex:1 1 300px">
+        <label class="field"><span>Or type a name</span><input id="cover-in" type="text" spellcheck="false" autocomplete="off" placeholder="Sachin Tendulkar"></label>
+        <button class="action quiet" type="submit">Write it in 22 languages</button>
+      </form>
+    </div>
+    <p class="status" id="cover-status"></p>
+    <div class="table-wrap"><table class="langs" id="cover-table"></table></div>
+  </section>
+
+  <section class="limits" aria-labelledby="limits-h">
+    <h2 id="limits-h">Where it fails</h2>
+    <ul id="limits">
+      <li><strong>deromanize cuts some names short.</strong> In names mode the first spelling is sometimes only the start of the name, while the full spelling is second or third: Malayalam “murmu” gives മു first, Kashmiri “Rajnath” gives راج, Urdu “Chandrayaan” gives ان. Words mode writes these whole. The language table shows every case.</li>
+      <li><strong>Manipuri in Latin letters.</strong> <code>romanize</code> drops syllables of Manipuri written in Bengali script (রামেন becomes “en”).</li>
+      <li><strong>A joiner inside a Hindi word.</strong> When a press office types an invisible joiner after a virama (प्राप्&#x200D;त), <code>romanize</code> keeps only the end of the word (“the”). 212 Hindi words of the 50 releases do this.</li>
+      <li><strong>Common words in Latin letters.</strong> <code>romanize</code> gives some frequent words an English look-alike: एक becomes “ac”, देकर becomes “decker”.</li>
+      <li><strong>Singh, fixed, at a cost.</strong> In 0.6.0, Hindi सिंह (no g) did not match “Singh”. 0.8.0 reads Latin “ngh” as anusvara + h: they match now, and “Singh” also matches “Sinha”. Bengali and Assamese write সিং, with no h, and that still misses “Singh” (the language table shows it). In <code>phonetic-search</code>, Hindi “singh” ranks संघ (union) above सिंह.</li>
+      <li><strong>Tamil spells some sounds its own way.</strong> Tamil writes Lakshmi as லட்சுமி (ட்சு for க்ஷ), so its sound key differs from “Lakshmi”.</li>
+      <li><strong>Too short a stem.</strong> <code>stem</code> gives Tamil செய்தி (news) and செய்து (did) one stem, so a word search for one finds the other.</li>
+    </ul>
+    <p class="fine">How this was measured: the 50 releases are a held-out slice of the August 2023 month of <a href="https://huggingface.co/datasets/micahchoo/pib-parallel">pib-parallel</a>, chosen by a hash of the release ID before anyone read them. No indickit rule was chosen on this text. The counts on this page were fixed before the text was read, and read once. The language table's preset names were written ahead of time by <code>deromanize</code> and <code>romanize</code>, since their tables for 22 languages weigh about 60 MB. Everything else runs live in this page. Text: Press Information Bureau, Government of India.</p>
+  </section>
+</div>
+
+<script type="module">
+// Paths are the GitHub Pages layout: this page at docs/demo/ of the indickit
+// repo, the modules in dist/ and their tables beside it (serve.ts copies it).
+import { normalize, fold } from "../../dist/normalize.js";
+import { stem, LANGUAGES as STEM_LANGUAGES } from "../../dist/stem.js";
+import { keys, words, match } from "../../dist/phonetic.js";
+import { segment } from "../../dist/segment.js";
+import * as romanize from "../../dist/romanize.js";
+import * as deromanize from "../../dist/deromanize.js";
+import * as phoneticSearch from "../../dist/phonetic-search.js";
+import { initBench, LANG_NAMES as NAMES, loadDeromanizer, loadRomanizer } from "./bench.js";
+
+const kit = { normalize, fold, stem, STEM_LANGUAGES, keys, words, match, segment, romanize, deromanize, phoneticSearch };
+const SCRIPTS = { as: "Bengali-Assamese", bn: "Bengali-Assamese", brx: "Devanagari", doi: "Devanagari", gu: "Gujarati", hi: "Devanagari", kn: "Kannada", ks: "Perso-Arabic", gom: "Devanagari", mai: "Devanagari", ml: "Malayalam", mni: "Meetei Mayek", mr: "Devanagari", ne: "Devanagari", or: "Odia", pa: "Gurmukhi", sa: "Devanagari", sat: "Ol Chiki", sd: "Perso-Arabic", ta: "Tamil", te: "Telugu", ur: "Perso-Arabic" };
+const RTL = new Set(["ur", "ks", "sd"]);
+
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => n.toLocaleString("en-IN");
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+let data, coverage;
+
+// ---- the language table ----------------------------------------------------------
+
+const intl = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+let coverName = null;
+const live = new Map(); // `${lang}\t${name}` → [native, latin], for typed names
+
+function coverRow(lang, name) {
+  const row = coverage.rows[lang];
+  const got = coverage.names.includes(name) ? row.names[name] : live.get(`${lang}\t${name}`);
+  const support = `<td>${STEM_LANGUAGES.includes(lang) ? '<span class="ok">✓</span>' : '<span class="dim">–</span>'}</td>
+    <td>${lang === "sat" ? '<span class="dim">keys only</span>' : '<span class="ok">✓</span>'}</td>`;
+  const head = `<th scope="row" class="lname"><strong>${NAMES[lang]}</strong><small>${lang} · ${SCRIPTS[lang]}</small></th>`;
+  if (!got) {
+    return `<tr>${head}<td colspan="4"><button type="button" data-load="${lang}">Load ${NAMES[lang]}</button> <span class="dim">tables 0.2–7 MB</span></td><td></td>${support}</tr>`;
+  }
+  const [native, latin] = got;
+  const ours = segment(native).length, theirs = [...intl.segment(native)].length;
+  const m = native && match(name, native);
+  const k = words(native).map((w) => keys(w)[0] ?? "").join(" ");
+  const rt = latin && match(name, latin);
+  return `<tr>${head}
+    <td class="native" lang="${lang}" ${RTL.has(lang) ? 'dir="rtl"' : ""}>${esc(native)} <span class="mode">${row.deromanize}</span></td>
+    <td class="num">${ours}${theirs !== ours ? ` <span class="bad" title="Intl.Segmenter counts ${theirs}">(Intl ${theirs})</span>` : ""}</td>
+    <td class="k"><code>${esc(k)}</code> ${m ? '<span class="ok" title="phonetic match with the typed name">✓</span>' : '<span class="bad" title="no phonetic match with the typed name">✗</span>'}</td>
+    <td class="latin">${esc(latin)} <span class="mode">${row.romanize}</span></td>
+    <td>${rt ? '<span class="ok" title="the Latin spelling matches the typed name by sound">✓</span>' : '<span class="bad" title="the Latin spelling no longer matches the typed name">✗</span>'}</td>
+    ${support}</tr>`;
+}
+
+function renderCover(name) {
+  coverName = name;
+  const langs = Object.keys(coverage.rows);
+  $("cover-table").innerHTML = `<thead><tr><th>Language</th><th><code>deromanize</code> “${esc(name)}”</th><th><code>segment</code> letters</th><th><code>phonetic</code> key, match</th><th><code>romanize</code> back</th><th>back = typed?</th><th><code>stem</code></th><th><code>phonetic-search</code></th></tr></thead>
+    <tbody>${langs.map((l) => coverRow(l, name)).join("")}</tbody>`;
+  const done = langs.filter((l) => coverage.names.includes(name) || live.has(`${l}\t${name}`));
+  const broken = done.filter((l) => {
+    const [n] = coverage.names.includes(name) ? coverage.rows[l].names[name] : live.get(`${l}\t${name}`);
+    return !(n && match(name, n));
+  });
+  $("cover-status").innerHTML = done.length
+    ? `<b>${done.length}</b> of 22 languages written; <code>phonetic</code> matches the typed name in <b>${done.length - broken.length}</b>.${broken.length ? ` No match: ${broken.map((l) => NAMES[l]).join(", ")}.` : ""}${coverage.names.includes(name) ? ` Written ahead of time with indickit ${coverage.indickit}; the other columns are live.` : ""}`
+    : "Load a language to write the name in it, or load all 22 (about 60 MB).";
+  for (const b of document.querySelectorAll("[data-load]")) b.addEventListener("click", () => loadCover([b.dataset.load], name));
+}
+
+async function loadCover(langs, name) {
+  for (const lang of langs) {
+    const row = coverage.rows[lang];
+    $("cover-status").textContent = `Loading ${NAMES[lang]}…`;
+    try {
+      const d = await loadDeromanizer(kit, lang, row.deromanize);
+      const native = d.text(name);
+      const r = row.romanize ? await loadRomanizer(kit, lang, row.romanize) : null;
+      live.set(`${lang}\t${name}`, [native, r && native ? r.text(native) : ""]);
+    } catch (e) {
+      $("cover-status").textContent = `${NAMES[lang]} did not load (${e.message}).`;
+      return;
+    }
+    if (coverName === name) renderCover(name);
+  }
+}
+
+function initCover() {
+  $("cover-presets").innerHTML = coverage.names.map((n, i) => `<button type="button" class="preset" data-i="${i}"><span>${esc(n)}</span><small>${i === 0 ? "one word" : i === 4 ? "a mission, not a person" : "a public name"}</small></button>`).join("");
+  $("cover-presets").addEventListener("click", (e) => {
+    const b = e.target.closest(".preset");
+    if (b) { $("cover-in").value = ""; renderCover(coverage.names[+b.dataset.i]); }
+  });
+  $("cover-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("cover-in").value.trim();
+    if (!name) return;
+    renderCover(name);
+    if (!coverage.names.includes(name)) loadCover(Object.keys(coverage.rows), name);
+  });
+  renderCover(coverage.names[1]);
+}
+
+try {
+  [data, coverage] = await Promise.all([
+    fetch("./bench.json").then((r) => r.json()),
+    fetch("./coverage.json").then((r) => r.json()),
+  ]);
+  $("dateline").innerHTML = `<span>Press Information Bureau · August 2023</span><span>${data.releases} releases</span><span>${fmt(data.docs)} documents</span><span>${Object.keys(data.words).length} languages</span><span>indickit ${coverage.indickit}</span>`;
+  initBench({ kit, data, counts: data.counts });
+  initCover();
+} catch (err) {
+  $("dateline").innerHTML = `<span>The examples did not load (${esc(err.message)}). Reload the page to try again.</span>`;
+  console.error(err);
+}
+</script>
