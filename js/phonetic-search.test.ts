@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { gunzipSync } from "node:zlib";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { loadSearch, THRESHOLDS, type Search } from "./phonetic-search";
 
@@ -41,4 +42,29 @@ test("a Latin name finds its native spelling first", async () => {
   const s = await loadSearch("hi", { fetcher: local });
   const hits = s.index(["नरेश मोदी", "नरेंद्र मोदी", "सुरेंद्र मोदी"]).search("Narendra Modi", THRESHOLDS.names);
   expect(hits[0]).toEqual({ name: 1, score: 100 });
+});
+
+// README "Search a list of names": the example must give what the README shows.
+test("the README example", async () => {
+  const s = await loadSearch("hi", { fetcher: local });
+  const ix = s.index(["नरेश मोदी", "नरेंद्र मोदी", "मनमोहन सिंह"]);
+  expect(ix.search("Narendra Modi", THRESHOLDS.names)).toEqual([{ name: 1, score: 100 }]);
+  expect(ix.search("Manmohan Singh", THRESHOLDS.names)).toEqual([{ name: 2, score: 96 }]);
+});
+
+// docs/phonetic.md, "Search": the sizes and the small-list example.
+test("the docs' claims about size and small lists hold", async () => {
+  const docs = readFileSync(new URL("../docs/phonetic.md", import.meta.url), "utf8").replace(/\s+/g, " ");
+  const gz = gzipSync(readFileSync(new URL("../dist/phonetic-search.js", import.meta.url))).length;
+  expect(docs).toContain("The browser file is 17 KB gzipped, and a language's table 2–6 KB more");
+  expect(gz).toBeLessThan(17.5 * 1024);
+  const dir = new URL("../phonetic/scorer/latin/", import.meta.url);
+  for (const f of readdirSync(dir)) {
+    const kb = gzipSync(readFileSync(new URL(f, dir))).length / 1024;
+    expect([f, kb >= 1.5 && kb < 6.5]).toEqual([f, true]);
+  }
+  const s = await loadSearch("hi", { fetcher: local });
+  const four = s.index(["श्री नरेंद्र मोदी", "नरेश मोदी", "सुरेंद्र मोदी", "डॉ. मनमोहन सिंह"]);
+  expect(four.search("Narendra Modi", 0)[0]).toEqual({ name: 0, score: 73 });
+  expect(docs).toContain(`"Narendra Modi" scores 73 against "श्री नरेंद्र मोदी" in a list of four names`);
 });

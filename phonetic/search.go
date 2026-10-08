@@ -30,6 +30,7 @@ const (
 type profile struct {
 	Key, Cost, Vowel, Div int
 	StopPermille         *int `json:"stop_permille"`
+	StopMinNames         int  `json:"stop_min_names"` // no stop share in a smaller index
 	Round                bool
 }
 
@@ -601,7 +602,7 @@ func NewIndex(names []string, lang, profileName string) *Index {
 
 func (ix *Index) common(k string) bool {
 	s := ix.profile.StopPermille
-	return s != nil && ix.df[k]*1000 > ix.n*int64(*s)
+	return s != nil && ix.n >= int64(ix.profile.StopMinNames) && ix.df[k]*1000 > ix.n*int64(*s)
 }
 
 func (ix *Index) weight(w string) int64 {

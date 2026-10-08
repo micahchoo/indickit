@@ -1,7 +1,7 @@
 // phonetic/scorer/search.json
 var search_default = {
   version: "2026-10-08",
-  profiles: { names: { key: 2, cost: 1, vowel: 1, div: 4, stop_permille: 20, round: true }, text: { key: 1, cost: 2, vowel: 2, div: 5, stop_permille: null, round: false } },
+  profiles: { names: { key: 2, cost: 1, vowel: 1, div: 4, stop_permille: 20, stop_min_names: 100, round: true }, text: { key: 1, cost: 2, vowel: 2, div: 5, stop_permille: null, stop_min_names: 0, round: false } },
   posterior_temperature: 2,
   deletion_min_classes: 3,
   loose_joined_min_classes: 4,
@@ -49,7 +49,7 @@ var fine2_default = {
   suffixes: []
 };
 // package.json
-var version = "0.6.0";
+var version = "0.7.0";
 // phonetic/rules.json
 var rules_default = {
   version: "2026-10-07",
@@ -1231,7 +1231,7 @@ class Index {
   }
   common(k) {
     const s = this.p.stop_permille;
-    return s !== null && (this.df.get(k) ?? 0) * 1000 > this.n * s;
+    return s !== null && this.n >= this.p.stop_min_names && (this.df.get(k) ?? 0) * 1000 > this.n * s;
   }
   weight(w) {
     let best = 0;

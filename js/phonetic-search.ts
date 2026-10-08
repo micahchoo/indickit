@@ -25,7 +25,7 @@ import { _internal, JOINED_MIN_CLASSES, MAX_NAME_KEYS, words } from "./phonetic"
 /** "names": a list of names; "text": a name among a text's words. */
 export type Profile = "names" | "text";
 
-type ProfileRules = { key: number; cost: number; vowel: number; div: number; stop_permille: number | null; round: boolean };
+type ProfileRules = { key: number; cost: number; vowel: number; div: number; stop_permille: number | null; stop_min_names: number; round: boolean };
 const R = searchJson as unknown as {
   version: string; profiles: Record<Profile, ProfileRules>; posterior_temperature: number;
   deletion_min_classes: number; loose_joined_min_classes: number; thresholds: Record<string, number>;
@@ -318,8 +318,8 @@ export class Index {
   }
 
   private common(k: string): boolean {
-    const s = this.p.stop_permille;
-    return s !== null && (this.df.get(k) ?? 0) * 1000 > this.n * s;
+    const s = this.p.stop_permille; // no stop share in an index smaller than the smallest measured pool
+    return s !== null && this.n >= this.p.stop_min_names && (this.df.get(k) ?? 0) * 1000 > this.n * s;
   }
 
   private weight(w: string): number {

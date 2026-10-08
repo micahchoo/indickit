@@ -383,7 +383,7 @@ var rules_default = {
   version: 1
 };
 // package.json
-var version = "0.6.0";
+var version = "0.7.0";
 
 // js/lang.ts
 var ISO_639_2 = "asm as ben bn guj gu hin hi kan kn kas ks mal ml mar mr nep ne ori or pan pa san sa snd sd tam ta tel te urd ur ";

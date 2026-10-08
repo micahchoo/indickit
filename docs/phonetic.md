@@ -59,6 +59,52 @@ Known weak spots:
 - **Dogri and Bodo** were measured on ordinary words only; there was no
   set of names.
 
+## Search (`phonetic-search`)
+
+`phonetic-search` finds a name among many. The key finds the candidates,
+and a scorer learned from data gives each one a score from 0 to 100. Use it
+for a long list, for names written with titles, initials or joined words,
+and for a name in running text.
+
+Measured on data that no rule, table or threshold was set on (search
+2026-10-08, rules 2026-10-07). Each list number is the share of English
+names that find the right entry among the native-script names, at the
+threshold for that use.
+
+| Task | phonetic-search | the key alone | best alternative |
+|---|---|---|---|
+| Lok Sabha members, as written (161 names) | 86% | 70% | 78% (ICU + fuzzy match) |
+| Village names, 10 languages (7,985) | 85% | 79% | 65% (ICU + fuzzy match) |
+| A name in running text, at most 10% of hits wrong (1,083) | 66% | — | 31% (romanize + fuzzy match) |
+| the same, at most 20% of hits wrong | 78% | — | 46% (ICU + fuzzy match) |
+
+The lists are the held-out FINAL slices of the two lists above; the text is
+PIB press releases of July 2019 (names in English and in 10 Indian
+languages). On names that the scorer never saw, the text numbers hold: 67%
+and 78%.
+
+- **Thresholds.** 74 for names in a list, 72 for village names, 80 for a
+  name in text when at most 10% of hits may be wrong, 70 for 20%. At 74, a
+  search of the Lok Sabha list returns about one wrong name in 20 searches.
+- **A score belongs to its search.** It is relative to the other
+  candidates the key found, so compare scores within one search, not across
+  searches.
+- **One language per index.** The tables that compare English letters with
+  a script are per language. For names in two Indian scripts, load the
+  tables between them: `loadSearch("hi", { scripts: ["deva", "arab"] })`.
+- **Small lists.** In a list of fewer than 100 names every key counts, and
+  a title weighs as much as a name: "Narendra Modi" scores 73 against
+  "श्री नरेंद्र मोदी" in a list of four names. Remove titles in small lists.
+- **Size.** The browser file is 17 KB gzipped, and a language's table 2–6
+  KB more, loaded when you call `loadSearch`.
+
+Weak spots: Urdu (41%) and Malayalam (53%) names in text at the strict
+threshold; Tamil village names (66%). At the very strictest thresholds (one
+wrong village in 10,000 names) the search keeps fewer than the key alone.
+Not measured on held-out data: names between two Indian scripts (on the
+development data, every one of 17 languages is ahead of the key alone) and
+ordinary words typed in English letters.
+
 ## On lists as people write them
 
 Two real lists: the Lok Sabha member list (sansad.in), with each name in
@@ -80,8 +126,10 @@ In the second row, only indickit's input changes. The fuzzy match reads
 the names as written, with a looser threshold that gives the same number
 of wrong names.
 
-- **Remove titles and initials before you key a name.** indickit does not
-  remove them. Shri against nothing, or "M" against एम, is a miss.
+- **Remove titles and initials before you key a name**, or use
+  `phonetic-search` (above), which finds 86% of the same list as written.
+  The key does not remove them: Shri against nothing, or "M" against एम, is
+  a miss.
 - **Fuzzy matching does as well on these lists.** ICU transliteration then
   the same fuzzy match finds 78% of villages. What indickit adds is an
   index: one lookup per name, from any script to any script. A fuzzy match

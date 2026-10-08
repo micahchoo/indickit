@@ -32,3 +32,13 @@ func ExampleNameKeys() {
 	// Output:
 	// [cn tntlkr]
 }
+
+func ExampleIndex_Search() {
+	// The key finds candidates; the scorer ranks them, 0..100.
+	ix := phonetic.NewIndex([]string{"नरेश मोदी", "नरेंद्र मोदी", "मनमोहन सिंह"}, "hi", phonetic.ProfileNames)
+	fmt.Println(ix.Search("Narendra Modi", phonetic.Thresholds["names"]))
+	fmt.Println(ix.Search("Manmohan Singh", phonetic.Thresholds["names"]))
+	// Output:
+	// [{1 100}]
+	// [{2 96}]
+}

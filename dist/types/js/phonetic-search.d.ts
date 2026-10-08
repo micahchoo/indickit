@@ -23,6 +23,7 @@ type ProfileRules = {
     vowel: number;
     div: number;
     stop_permille: number | null;
+    stop_min_names: number;
     round: boolean;
 };
 /** Changes whenever any score changes. */

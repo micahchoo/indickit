@@ -24,6 +24,7 @@ measured on data that its rules were never built on.
 | let a search for किताब also find किताबों | `normalize`, then `stem` |
 | let a search for हिन्दी also find हिंदी, and keep words whole | `fold` |
 | find a person's name typed in another script | `phonetic` |
+| find a name in a long list, as people write it (titles, initials), or in running text | `phonetic-search` |
 | count letters, cut at a length, or move a cursor | `segment` |
 | write a name or a text in Latin letters (लक्ष्मी → lakshmi) | `romanize` |
 
@@ -50,16 +51,17 @@ TypeScript, set `moduleResolution` to `nodenext` or `bundler`; the old
 In a browser, with no build step:
 
 ```js
-import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.6.0/dist/normalize.js";
-import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.6.0/dist/stem.js";
-import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.6.0/dist/phonetic.js";
-import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.6.0/dist/segment.js";
-import { load } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.6.0/dist/romanize.js";
+import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.7.0/dist/normalize.js";
+import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.7.0/dist/stem.js";
+import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.7.0/dist/phonetic.js";
+import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.7.0/dist/segment.js";
+import { load } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.7.0/dist/romanize.js";
+import { loadSearch } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.7.0/dist/phonetic-search.js";
 ```
 
 Each utility is its own file, so a page loads only the rules it uses.
 `romanize` also loads one language's tables when you ask for them (0.2–1.8
-MB). The npm package carries no tables: `load()` reads them beside the
+MB), and `phonetic-search` one language's table (2–6 KB). The npm package carries no tables: `load()` reads them beside the
 module (a jsDelivr or GitHub-tag install), else from jsDelivr at the same
 version. Offline, pass your own `fetch`. In Go, `go get` downloads the
 tables of every language once (14 MB); a program carries only the languages
@@ -147,6 +149,26 @@ Equal keys mean "sounds alike", not "the same person". Before you merge two
 records, weigh the evidence: a shared rare name says more than a shared
 common one.
 
+### Search a list of names
+
+`phonetic-search` uses the keys to find candidates, and a scorer learned
+from data to rank them from 0 to 100. It finds names as people write them,
+with titles, initials and joined words, and names in running text.
+
+```ts
+import { loadSearch, THRESHOLDS } from "indickit/phonetic-search";
+
+const s = await loadSearch("hi"); // fetches the Hindi table (3 KB)
+const ix = s.index(["नरेश मोदी", "नरेंद्र मोदी", "मनमोहन सिंह"]);
+ix.search("Narendra Modi", THRESHOLDS.names); // [{ name: 1, score: 100 }]
+ix.search("Manmohan Singh", THRESHOLDS.names); // [{ name: 2, score: 96 }]
+```
+
+Use the threshold for your task: `THRESHOLDS.names` (74) for a list of
+people, `THRESHOLDS.villages` (72) for place names, `THRESHOLDS.text_10`
+(80) or `text_20` (70) with `s.index(words, "text")` for a name among the
+words of a text. A score is relative to the other candidates of its search.
+
 ### Count and cut letters
 
 A cursor, a backspace, a letter count and a cut at a length limit must
@@ -202,6 +224,7 @@ import (
 normalize.Text("അവന്\u200d", "ml")               // "അവൻ"
 stem.Stem(normalize.Text("किताबों", "hi"), "hi") // किताब
 phonetic.Match("Mohanlal", "മോഹൻലാൽ")            // true
+phonetic.NewIndex(names, "hi", phonetic.ProfileNames).Search("Narendra Modi", phonetic.Thresholds["names"])
 segment.Segment("ಲಕ್ಷ್ಮಿ")                       // [ಲ ಕ್ಷ್ಮಿ]
 ```
 
@@ -217,6 +240,10 @@ segment.Segment("ಲಕ್ಷ್ಮಿ")                       // [ಲ ಕ್ಷ
 | `phonetic.NameKeys(name)` | `nameKeys(name)` | the keys of a whole name; index these |
 | `phonetic.Match(a, b)` | `match(a, b)` | same word count, and each pair of words shares a key |
 | `phonetic.Words(name)` | `words(name)` | the words, split as the others split them |
+| `phonetic.JoinedKeys(name)` | `joinedKeys(name)` | the keys of the name with its words joined (8+ classes) |
+| `phonetic.NewIndex(names, lang, profile)` | `(await loadSearch(lang)).index(names, profile?)` | names keyed once for searching |
+| `ix.Search(query, threshold)` | `ix.search(query, threshold?)` | the names scoring at least threshold, best first |
+| `phonetic.Score(query, names, lang, profile)` | `(await loadSearch(lang)).score(query, names, profile?)` | one score (0..100) per candidate |
 | `segment.Segment(s)` | `segment(text)` | the letters, in order; joined, they give the text back |
 | `segment.Count(s)` | `count(text)` | how many letters a reader sees |
 | `romanize.Word(w, lang, mode, n)` | `(await load(lang, mode)).word(w, n?)` | up to n spellings, most likely first |
@@ -246,7 +273,7 @@ other tools tried and each weak spot are in `docs/`.
 |---|---|---|---|---|
 | `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 14 KB | [docs/normalize.md](docs/normalize.md) |
 | `stem` | finds 6–15 points more of the right sentences than exact search, in 13 languages | ahead in 5 languages, level in 2, a trade in 4, behind in Nepali | 3 KB | [docs/stem.md](docs/stem.md) |
-| `phonetic` | finds the right person 84% of the time, in 21 languages, on clean names; 42% on a real roster as written (70% with titles and initials removed) | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu | 5 KB | [docs/phonetic.md](docs/phonetic.md) |
+| `phonetic` | finds the right person 84% of the time, in 21 languages, on clean names; 42% on a real roster as written (70% with titles and initials removed); with `phonetic-search`, 86% of a real roster as written and 85% of villages | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu; ICU + fuzzy match: 78% and 65% | 5 KB | [docs/phonetic.md](docs/phonetic.md) |
 | `segment` | cuts 0.05% of Kannada words wrongly | `Intl.Segmenter`: 50.3% | 9 KB | [docs/segment.md](docs/segment.md) |
 | `romanize` | writes 48.9% of the words of running text as people typed them, in 11 languages; 71.3% of names (tables: 0.2–1.8 MB a language) | IndicXlit (Python, a 119 MB model): 37.9% and 49.0% | 5 KB | [docs/romanize.md](docs/romanize.md) |
 
@@ -261,9 +288,10 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
 
 - **Only HarfBuzz was tested** for "looks the same" (`normalize`,
   `segment`). Windows and Apple draw text with their own engines.
-- **`phonetic` expects clean names.** Remove titles (Shri, Smt.) and
-  initials before you key a name. On one-word place names it returns many
-  wrong matches. See [docs/phonetic.md](docs/phonetic.md).
+- **The `phonetic` key expects clean names.** Remove titles (Shri, Smt.)
+  and initials before you key a name, or use `phonetic-search`. On one-word
+  place names the key alone returns many wrong matches. See
+  [docs/phonetic.md](docs/phonetic.md).
 - **Tamil is the weakest language** for `phonetic` (76%), and `stem` is
   behind Snowball's recall in Tamil.
 - **`stem` does not help passage search in Hindi or Punjabi.** Short
