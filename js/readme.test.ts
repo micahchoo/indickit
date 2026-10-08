@@ -4,7 +4,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { keys, match } from "./phonetic";
 import { fold, normalize } from "./normalize";
 import { count, segment } from "./segment";
-import { stem } from "./stem";
+import { LANGUAGES as STEM_LANGUAGES, stem } from "./stem";
+import { languages as romanizeLanguages } from "./romanize";
+import deromanizeRules from "../deromanize/rules.json" with { type: "json" };
 import { load, type Mode } from "./romanize";
 import { load as loadDeromanize, type Mode as DMode } from "./deromanize";
 
@@ -150,3 +152,24 @@ test("every deromanize example in the recipe returns what its comment says", asy
     expect([v, input, (await tables[v]).text(JSON.parse(input))]).toEqual([v, input, JSON.parse(want)]);
   }
 }, 120_000);
+
+// "## Languages": each cell is what the code holds, for all 22 languages.
+test("the languages table is what each utility's tables cover", () => {
+  const section = readme.slice(readme.indexOf("## Languages"), readme.indexOf("## Install"));
+  const rows = section.split("\n").filter((l) => /^\| [A-Z]/.test(l) && !l.startsWith("| Language"))
+    .map((l) => l.split("|").slice(1, -1).map((c) => c.trim()));
+  expect(rows).toHaveLength(22);
+  const modes = (has: (m: "words" | "names") => boolean) => (["words", "names"] as const).filter(has).join(", ");
+  const der = deromanizeRules.families as Record<string, Record<string, unknown>>;
+  for (const [, code, , stemCell, searchCell, romCell, derCell] of rows) {
+    const c = code.replace(/`/g, "");
+    const latinTable = existsSync(new URL(`../phonetic/scorer/latin/${c}.json`, import.meta.url));
+    expect([c, stemCell, searchCell, romCell, derCell]).toEqual([
+      c,
+      STEM_LANGUAGES.includes(c) ? "✓" : "–",
+      latinTable ? "✓" : "keys only",
+      modes((m) => romanizeLanguages(m).includes(c)),
+      modes((m) => c in der[m]),
+    ]);
+  }
+});

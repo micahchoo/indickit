@@ -15,7 +15,7 @@ async function get(lang: string, mode: Mode): Promise<Deromanizer> {
   return cache.get(k)!;
 }
 
-// First in the file: load() caches files for the module's life.
+// First in the file: load() caches files for the module's life, and Sindhi is loaded nowhere else.
 test("without the tables beside it, load() asks jsDelivr at this package's version", async () => {
   const { CDN } = await import("./deromanize");
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
@@ -29,9 +29,11 @@ test("without the tables beside it, load() asks jsDelivr at this package's versi
     return new Response(readFileSync(new URL(`../deromanize/lang/${url.slice(CDN.length)}`, import.meta.url)));
   }) as typeof fetch;
   try {
-    const d = await load("sd"); // the first load in this file: nothing is cached yet
+    const d = await load("sd"); // no other test loads Sindhi, so its own files are fetched here
     expect(d.word("sindh").length).toBeGreaterThan(0);
-    for (const f of ["arabic/words-arabic.bin", "sd/sd.words.bin", "sd/sd.list.bin"]) {
+    // the script group's pooled file may already be cached by another test file in this
+    // process (the README test loads Urdu); it is fetched once a page
+    for (const f of ["sd/sd.words.bin", "sd/sd.list.bin"]) {
       const tries = asked.filter((u) => u.endsWith(`/${f}`));
       expect([f, tries.length]).toEqual([f, 2]);
       expect(tries[0].startsWith(CDN)).toBe(false);

@@ -31,6 +31,43 @@ measured on data that its rules were never built on.
 | write a name or a text in Latin letters (लक्ष्मी → lakshmi) | `romanize` |
 | write Latin typing in an Indian script (namaste → नमस्ते) | `deromanize` |
 
+## Languages
+
+The 22 languages of the Eighth Schedule. `normalize`, `fold`, `segment` and
+`phonetic` read every script below, so they serve every language; the
+others hold tables for some languages only.
+
+| Language | Code | Script | `stem` | `phonetic-search` | `romanize` | `deromanize` |
+|---|---|---|---|---|---|---|
+| Assamese | `as` | Bengali-Assamese | ✓ | ✓ | words, names | words, names |
+| Bengali | `bn` | Bengali-Assamese | ✓ | ✓ | words, names | words, names |
+| Bodo | `brx` | Devanagari | – | ✓ | words | words |
+| Dogri | `doi` | Devanagari | – | ✓ | words | words |
+| Gujarati | `gu` | Gujarati | ✓ | ✓ | words, names | words, names |
+| Hindi | `hi` | Devanagari | ✓ | ✓ | words, names | words, names |
+| Kannada | `kn` | Kannada | ✓ | ✓ | words, names | words, names |
+| Kashmiri | `ks` | Perso-Arabic | – | ✓ | words, names | words, names |
+| Konkani | `gom` | Devanagari | – | ✓ | words, names | words, names |
+| Maithili | `mai` | Devanagari | – | ✓ | words, names | words, names |
+| Malayalam | `ml` | Malayalam | ✓ | ✓ | words, names | words, names |
+| Manipuri | `mni` | Meetei Mayek | – | ✓ | words, names | words, names |
+| Marathi | `mr` | Devanagari | ✓ | ✓ | words, names | words, names |
+| Nepali | `ne` | Devanagari | ✓ | ✓ | words, names | words, names |
+| Odia | `or` | Odia | – | ✓ | words, names | words, names |
+| Punjabi | `pa` | Gurmukhi | ✓ | ✓ | words, names | words, names |
+| Sanskrit | `sa` | Devanagari | ✓ | ✓ | words, names | words, names |
+| Santali | `sat` | Ol Chiki | – | keys only | names | names |
+| Sindhi | `sd` | Perso-Arabic | – | ✓ | words, names | words, names |
+| Tamil | `ta` | Tamil | ✓ | ✓ | words, names | words, names |
+| Telugu | `te` | Telugu | ✓ | ✓ | words, names | words, names |
+| Urdu | `ur` | Perso-Arabic | ✓ | ✓ | words, names | words, names |
+
+"words" and "names" are the two modes of `romanize` and `deromanize`. In
+`deromanize`, the names mode of Bodo and Dogri uses their words tables.
+Santali has no words tables: no dataset of Santali words in Latin letters
+was found. `phonetic-search` in Santali ranks by the keys alone. Measured
+quality differs by language; see `docs/` for each utility.
+
 ## Install
 
 Go 1.22 or later:
@@ -49,7 +86,7 @@ deno add npm:indickit
 
 The package is ES modules only; `require()` works from Node 20.19. In
 TypeScript, set `moduleResolution` to `nodenext` or `bundler`; the old
-`node10` cannot find the four utilities.
+`node10` cannot find the utilities.
 
 In a browser, with no build step:
 
@@ -368,21 +405,32 @@ Each utility's own weak spots are at the end of its file in `docs/`.
 Every table and switch of a utility is in its rules file
 (`normalize/rules.json`, `stem/rules.json`, `phonetic/rules.json`,
 `segment/rules.json`; `romanize/rules.json` and its tables in
-`romanize/lang/`); the Go and TypeScript code is a short loop over it.
+`romanize/lang/`; `deromanize/rules.json` and its tables and word lists in
+`deromanize/lang/`; `phonetic-search`'s tables in `phonetic/scorer/`); the
+Go and TypeScript code is a short loop over it.
 Both are checked against a conformance file of inputs with the outputs that
 a reference implementation gave them: 345,276 inputs for `normalize`,
 418,665 for `stem`, 195,994 for `phonetic`, 858,654 for `segment`, 2,397
-for `romanize`
-(`*/testdata/conformance.jsonl.gz`). A change that makes any one disagree
+for `romanize`, 2,818 for `deromanize`, and 1,021 search rows for
+`phonetic-search` (`*/testdata/*conformance.jsonl.gz`). A change that makes any one disagree
 on any input fails the build.
 
 ## Credits and licence
 
 MIT. The test words are Wikidata labels (CC0). The rules were tuned on
 Wikidata and PIB Parallel (Press Information Bureau releases), and checked
-on AI4Bharat's Aksharantar and on Wikipedia text; none of them ships here.
+on AI4Bharat's Aksharantar and on Wikipedia text. No text of theirs ships
+here, except `deromanize`'s word counts (below).
 `normalize` and `segment` were checked in fonts by Google (Noto), Ek Type
 (Anek), SIL, SMC and others. `stem`'s endings were mined from PIB text;
 Wiktionary's inflection tables (CC BY-SA), Universal Dependencies
 treebanks and FLORES+ (CC BY-SA) were used only to measure them. It was
 compared with Snowball, Lucene and the Indic NLP Library.
+
+`romanize` and `deromanize` learned from AI4Bharat's Aksharantar (CC BY for
+its hand-collected pairs, CC0 for its mined pairs), Wikidata labels (CC0),
+and IndicXlit's romanizations (MIT) of frequent Wikipedia words.
+`deromanize`'s tables hold word lists: counts of the words of Wikipedia
+(text CC BY-SA 4.0) and, for Bodo and Dogri, of IndicCorp v2 (CC0). Both
+were measured against IndicXlit, on Google's Dakshina (CC BY-SA 4.0) and,
+for `deromanize`, on COMI-LINGUA (CC BY 4.0), used only to measure.
