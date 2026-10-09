@@ -8,7 +8,7 @@ version, and compare `RULES_VERSION` (or `SEARCH_VERSION`) to know which
 rows. A version whose rules line equals the one before it gives every
 input the same output.
 
-## Unreleased
+## 0.9.0 (2026-10-09)
 
 Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-09, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-08
 

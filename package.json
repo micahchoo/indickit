@@ -1,6 +1,6 @@
 {
   "name": "indickit",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Small, exact utilities for text in Indian languages: a phonetic key that matches a name across 21 Indian scripts and English, a normalizer that gives text that looks the same one encoding, a segmenter for the letters a reader sees, and a stemmer for search.",
   "license": "MIT",
   "packageManager": "bun@1.3.14",
