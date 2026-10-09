@@ -24,13 +24,18 @@ A piece may write nothing: the "a" of "kamal" is the inherent vowel. A
 spelling that writes nothing for a consonant is cut short ("murmu" → മു,
 with nothing for "mur"), and a short, common string would take the list's
 bonus and come first; names mode did this in v0.8.0. Since rules 2026-10-09
-a cut-short spelling is ranked as if it were not in the list. The letters
-that may write nothing are the vowels, h (aspiration is written with the
-consonant before it), y and w (a glide fuses into a vowel sign), and the
-second letter of a double ("dutt": one sound). On the development names
-this moved the first answer from 68.1% to 69.3% right (19 languages), and
-the held-out numbers below are from the rules before it: a held-out set is
-read once (`MAINTAINING.md`, "Changing rules").
+the **names mode** ranks a cut-short spelling as if it were not in the list.
+The letters that may write nothing are the vowels, h (aspiration is written
+with the consonant before it), y and w (a glide fuses into a vowel sign),
+and the second letter of a double ("dutt": one sound). On the development
+names this moved the first answer from 68.1% to 69.2% right (19 languages).
+The rule is for names only: in words mode it cost Tamil 2 points on
+development text, so words mode is unchanged and its output is that of
+rules 2026-10-08 (every words-mode row of the earlier conformance file is
+reproduced). In the table below, the words-mode rows still hold; the
+names-mode rows (69.7% on Wikidata FINAL) are of rules 2026-10-08 and are
+not re-read: a held-out set is read once (`MAINTAINING.md`, "Changing
+rules").
 
 There are two modes:
 

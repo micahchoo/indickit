@@ -42,6 +42,7 @@ type Rules = {
   unknown_penalty: number;
   alpha: Record<Mode, number>;
   silent: string;
+  cut_modes: Mode[];
   blocks: Record<string, number>;
   groups: Record<string, [number, number][]>;
   families: Record<Mode, Record<string, FamilyEntry>>;
@@ -170,6 +171,7 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
     if (name && files[name]) readList(files[name], counts);
   }
   const alpha = RULES.alpha[mode];
+  const guard = RULES.cut_modes.includes(mode); // the re-rank skips cut-short spellings
   const word = (latin: string, n = 4): string[] => {
     const w = clean(latin);
     if (w === "") return [];
@@ -183,14 +185,14 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
       }
     }
     const best = [...merged].map(([o, [s, cut]]): Scored => [o, s, cut]).sort(byScore);
-    // known strings by log score + α · log(count), then the rest in model order. A cut-short
-    // string is not known, whatever the list says: a short, common string (murmu → മു)
-    // would otherwise take the bonus and come first.
+    // known strings by log score + α · log(count), then the rest in model order. With guard,
+    // a cut-short string is not known, whatever the list says: a short, common string
+    // (murmu → മു) would otherwise take the bonus and come first.
     const known: [string, number][] = [];
     const rest: string[] = [];
     for (const [o, s, cut] of best) {
       const c = counts.get(fold(normalize(o, lang), lang));
-      if (c === undefined || cut) rest.push(o);
+      if (c === undefined || (guard && cut)) rest.push(o);
       else known.push([o, s + alpha * Math.log(c)]);
     }
     return [...known.sort(byScore).map((e) => e[0]), ...rest].slice(0, n);

@@ -64,6 +64,7 @@ var rules struct {
 	UnknownPenalty float64              `json:"unknown_penalty"`
 	Alpha          map[Mode]float64     `json:"alpha"`
 	Silent         string               `json:"silent"`
+	CutModes       []Mode               `json:"cut_modes"` // the modes whose re-rank skips a cut-short spelling
 	Blocks         map[string]rune      `json:"blocks"`
 	Groups         map[string][][2]rune `json:"groups"`
 	Unify          struct {
@@ -165,7 +166,7 @@ func Word(latin, lang string, mode Mode, n int) []string {
 	if best == nil {
 		return nil
 	}
-	out := rerank(best, c, list(c, mode), rules.Alpha[mode])
+	out := rerank(best, c, list(c, mode), rules.Alpha[mode], guarded(mode))
 	return out[:min(n, len(out))]
 }
 
@@ -246,15 +247,25 @@ func candidates(w, lang string, mode Mode) []scored {
 	return out
 }
 
+// guarded: does the mode's re-rank skip cut-short spellings (rules "cut_modes")?
+func guarded(mode Mode) bool {
+	for _, m := range rules.CutModes {
+		if m == mode {
+			return true
+		}
+	}
+	return false
+}
+
 // rerank: known strings by log score + α · log(count) in the word list, then the
 // rest in model order. A string is looked up by normalize.Text, then normalize.Fold.
-// A cut-short string is not known, whatever the list says: a short, common string
-// (murmu → മു) would otherwise take the bonus and come first.
-func rerank(best []scored, lang string, counts map[string]int, alpha float64) []string {
+// With guard, a cut-short string is not known, whatever the list says: a short,
+// common string (murmu → മു) would otherwise take the bonus and come first.
+func rerank(best []scored, lang string, counts map[string]int, alpha float64, guard bool) []string {
 	var known []scored
 	var rest []string
 	for _, b := range best {
-		if c, ok := counts[normalize.Fold(normalize.Text(b.o, lang), lang)]; ok && !b.cut {
+		if c, ok := counts[normalize.Fold(normalize.Text(b.o, lang), lang)]; ok && !(guard && b.cut) {
 			known = append(known, scored{b.s + alpha*math.Log(float64(c)), b.o, false})
 		} else {
 			rest = append(rest, b.o)

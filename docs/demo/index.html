@@ -297,7 +297,7 @@ table.langs { border-collapse: collapse; width: 100%; min-width: 880px; font-siz
         <p class="why">Most people type Indian languages on an English keyboard. A search box, a form or a chat must turn "yojana" into योजना before any other step can run.</p>
       </div>
       <div class="pane-body" id="body-deromanize"><p class="also">The live demo needs JavaScript.</p></div>
-      <p class="measured">Held out: Hindi news <strong>87.1%</strong> of words right (IndicXlit 86.1%); names <strong>69.7%</strong> (66.4%). Behind IndicXlit on unseen names (−2.8 points) and rare isolated words (−10.1). In names mode the first spelling is sometimes cut short while the full one is second or third: see the language table.</p>
+      <p class="measured">Held out: Hindi news <strong>87.1%</strong> of words right (IndicXlit 86.1%); names <strong>69.7%</strong> (66.4%). Behind IndicXlit on unseen names (−2.8 points) and rare isolated words (−10.1). A names-mode fault this page found (a cut-short first spelling) is fixed in rules 2026-10-09; see “Where it fails”.</p>
     </section>
     </div>
   </section>
@@ -346,7 +346,7 @@ table.langs { border-collapse: collapse; width: 100%; min-width: 880px; font-siz
   <section class="limits" aria-labelledby="limits-h">
     <h2 id="limits-h">Where it fails</h2>
     <ul id="limits">
-      <li><strong>deromanize cuts some names short.</strong> In names mode the first spelling is sometimes only the start of the name, while the full spelling is second or third: Malayalam “murmu” gives മു first, Kashmiri “Rajnath” gives راج, Urdu “Chandrayaan” gives ان. Words mode writes these whole. The language table shows every case.</li>
+      <li><strong>A <code>deromanize</code> fault this page found, fixed in rules 2026-10-09.</strong> In names mode the first spelling was sometimes only the start of the name (Malayalam “murmu” gave മു, Kashmiri “Rajnath” راج, Urdu “Chandrayaan” ان): the tables let a consonant write nothing, and a short common word then won the frequency re-rank. A spelling that writes nothing for a consonant is now ranked last in names mode (on names no rule was tuned on, the first spelling is right 69.2% instead of 68.1%). Words mode was right already and is unchanged.</li>
       <li><strong>Two <code>romanize</code> faults this page found, fixed in rules 2026-10-08.</strong> Manipuri written in Bengali script lost syllables (রামেন became “en”): its tables were grouped with Meetei Mayek alone; it now shares the Brahmic tables, and names mode writes “ramen”. Words mode still cuts some Bengali-script Manipuri short. An invisible joiner typed after a virama (प्राप्&#x200D;त) left only the end of the word (“the”) in 212 Hindi words of the 50 releases: joiners are now deleted before a word is romanized (“praapt”).</li>
       <li><strong>Common words in Latin letters.</strong> <code>romanize</code> gives some frequent words an English look-alike: एक becomes “ac”, देकर becomes “decker”.</li>
       <li><strong>Singh, fixed, at a cost.</strong> In 0.6.0, Hindi सिंह (no g) did not match “Singh”. 0.8.0 reads Latin “ngh” as anusvara + h: they match now, and “Singh” also matches “Sinha”. Bengali and Assamese write সিং, with no h, and that still misses “Singh” (the language table shows it). In <code>phonetic-search</code>, Hindi “singh” ranks संघ (union) above सिंह.</li>

@@ -17,6 +17,9 @@
   "te": 3072
  },
  "bos": "<s>",
+ "cut_modes": [
+  "names"
+ ],
  "eos": "</s>",
  "families": {
   "names": {

@@ -18,6 +18,9 @@ var rules_default = {
     te: 3072
   },
   bos: "<s>",
+  cut_modes: [
+    "names"
+  ],
   eos: "</s>",
   families: {
     names: {
@@ -918,6 +921,7 @@ function fromBytes(lang, mode, files) {
       readList(files[name], counts);
   }
   const alpha = RULES.alpha[mode];
+  const guard = RULES.cut_modes.includes(mode);
   const word = (latin, n = 4) => {
     const w = clean(latin);
     if (w === "")
@@ -935,7 +939,7 @@ function fromBytes(lang, mode, files) {
     const rest = [];
     for (const [o, s, cut] of best) {
       const c = counts.get(fold(normalize(o, lang), lang));
-      if (c === undefined || cut)
+      if (c === undefined || guard && cut)
         rest.push(o);
       else
         known.push([o, s + alpha * Math.log(c)]);

@@ -1,5 +1,5 @@
 {
- "indickit": "0.8.0",
+ "indickit": "0.8.0 + rules romanize 2026-10-08, deromanize 2026-10-09",
  "names": [
   "Lakshmi",
   "Droupadi Murmu",
@@ -203,8 +203,8 @@
      "draupadi murmu"
     ],
     "Rajnath Singh": [
-     "راج سِنگھ",
-     "raj singh"
+     "رجناتھ سِنگھ",
+     "rajanath singh"
     ],
     "Mohammed Rafi": [
      "محمد رفی",
@@ -229,8 +229,8 @@
      "draupadi murmu"
     ],
     "Rajnath Singh": [
-     "राजन सिंह",
-     "rajan singh"
+     "राज्नाथ सिंह",
+     "rajnath singh"
     ],
     "Mohammed Rafi": [
      "मोहम्मद रफी",
@@ -277,8 +277,8 @@
      "lakshmi"
     ],
     "Droupadi Murmu": [
-     "ദ്രൌപദി മു",
-     "draupadi mu"
+     "ദ്രൌപദി മുര്മു",
+     "draupadi murmu"
     ],
     "Rajnath Singh": [
      "രാജ്നാഥ് സിംഗ്",
@@ -303,20 +303,20 @@
      "lakshmi"
     ],
     "Droupadi Murmu": [
-     "ꯗ꯭ꯔꯥꯎꯄꯗꯤ ꯃꯨ",
-     "drapdi mu"
+     "ꯗ꯭ꯔꯥꯎꯄꯗꯤ ꯃꯨꯔꯃꯨ",
+     "drapdi murmu"
     ],
     "Rajnath Singh": [
-     "ꯔꯥꯖ ꯁꯤ",
-     "raj shi"
+     "ꯔꯥꯖꯅ ꯁꯤꯡꯍ",
+     "rajn singh"
     ],
     "Mohammed Rafi": [
-     "ꯃꯣꯍꯝꯃꯦꯗ ꯔꯤ",
-     "mohammed ri"
+     "ꯃꯣꯍꯝꯃꯦꯗ ꯔꯥꯐꯤ",
+     "mohammed rafi"
     ],
     "Chandrayaan": [
-     "ꯆ",
-     "ch"
+     "ꯆꯟꯗ꯭ꯔꯌꯥꯟ",
+     "chandraan"
     ]
    }
   },
@@ -455,8 +455,8 @@
    "romanize": "names",
    "names": {
     "Lakshmi": [
-     "ᱞᱚᱠᱷᱢᱤ",
-     "lakshmi"
+     "ᱞᱚᱠᱥᱢᱤ",
+     "laxmi"
     ],
     "Droupadi Murmu": [
      "ᱫᱨᱩᱯᱚᱫᱤ ᱢᱩᱨᱢᱩ",
@@ -489,12 +489,12 @@
      "draupadi mirmat"
     ],
     "Rajnath Singh": [
-     "راج سنگھ",
-     "raj singh"
+     "رجناتھ سنگھ",
+     "rjanath singh"
     ],
     "Mohammed Rafi": [
-     "محمد ري،",
-     "muhammad ri،"
+     "محمد رفت",
+     "muhammad raft"
     ],
     "Chandrayaan": [
      "چندريان",
@@ -507,8 +507,8 @@
    "romanize": "names",
    "names": {
     "Lakshmi": [
-     "லட்சுமி",
-     "lakshmi"
+     "லக்ஷ்மி",
+     "laxmi"
     ],
     "Droupadi Murmu": [
      "டிரௌபடி முர்மு",
@@ -519,8 +519,8 @@
      "rajnath singh"
     ],
     "Mohammed Rafi": [
-     "முகமது ரபி",
-     "mohammed rabi"
+     "முகம்மது ரபி",
+     "muhammed rabi"
     ],
     "Chandrayaan": [
      "சந்திரயான்",
@@ -545,7 +545,7 @@
      "rajnath singh"
     ],
     "Mohammed Rafi": [
-     "మహ్మద్ రఫీ",
+     "మొహమ్మద్ రఫీ",
      "mohammad rafi"
     ],
     "Chandrayaan": [
@@ -575,8 +575,8 @@
      "mohammad rafi"
     ],
     "Chandrayaan": [
-     "ان",
-     "an"
+     "چندریان",
+     "chandrian"
     ]
    }
   }
