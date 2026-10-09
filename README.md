@@ -484,6 +484,9 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
   TypeScript reads its host (node 24: 17.0), so a newer mark there can give
   another output: "Ram" plus U+0897 has the key `rn` in TypeScript and none
   in Go. Tests pin the table (`unicode_test.go`, `js/unidata.test.ts`).
+  The table costs about 2.8 KB gzipped in each browser file that reads it
+  (`normalize`, `phonetic`, `phonetic-search`, `romanize`, `deromanize`);
+  without it, those files would follow each browser's Unicode version.
 - **Two promises have a scope.** `normalize` twice gives what `normalize`
   once gives for text with at most 8 invisible characters; 9 BOMs before
   ૰ need a second call. `normalize` changes no `phonetic` key of a word
