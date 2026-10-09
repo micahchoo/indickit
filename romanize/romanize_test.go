@@ -133,6 +133,21 @@ func TestJoinersAreDeleted(t *testing.T) {
 	}
 }
 
+// A run of the script starts at a letter or a mark, never at a joiner: a joiner
+// where no run goes on (the text's start, after a space, after an unassigned code
+// point) is other text, and Text keeps it. TypeScript deleted it (perf job, phase 2).
+func TestTextKeepsAJoinerOutsideARun(t *testing.T) {
+	for _, c := range []struct{ lang, in, want string }{
+		{"ta", "\u0b95\u0ba1\u200d\u0ba8\u0bca", "ka\u0ba1\u200dnoo"},
+		{"hi", "\u200d\u0915\u092e\u0932", "\u200dkamal"},
+		{"hi", "\u0915\u092e\u0932 \u200c\u0915\u092e\u0932", "kamal \u200ckamal"},
+	} {
+		if got := romanize.Text(c.in, c.lang, romanize.Words); got != c.want {
+			t.Errorf("Text(%+q) = %+q, want %+q", c.in, got, c.want)
+		}
+	}
+}
+
 // Manipuri is written in Meetei Mayek and in Bengali script. Its own tables hold Meetei
 // Mayek only; a Bengali-script word is spelled by the shared Brahmic table, so the pooled
 // file must be the Brahmic one (v0.6.0 loaded a Meetei-only file: রামেন gave "en").

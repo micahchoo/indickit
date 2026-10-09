@@ -596,7 +596,8 @@ function fromBytes(lang, mode, own, pool) {
       const cs = [...nfc(t)];
       let out = "";
       for (let i = 0;i < cs.length; ) {
-        if (!(inScript(cs[i]) && letter(cs[i]))) {
+        const cp = cs[i].codePointAt(0);
+        if (!(inScript(cs[i]) && (isLetter(cp) || isMark(cp)))) {
           out += cs[i++];
           continue;
         }

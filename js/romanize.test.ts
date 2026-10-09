@@ -57,6 +57,16 @@ test("joiners are deleted before the lookup and the decode", async () => {
   expect(hi.word("\u200d")).toEqual([]);
 });
 
+// A run of the script starts at a letter or a mark, never at a joiner: a joiner where no
+// run goes on (the text's start, after a space, after an unassigned code point) is other
+// text, and text() keeps it, as Go does. text() deleted it (perf job, phase 2).
+test("text keeps a joiner outside a run", async () => {
+  expect((await get("ta", "words")).text("\u0b95\u0ba1\u200d\u0ba8\u0bca")).toBe("ka\u0ba1\u200dnoo");
+  const hi = await get("hi", "words");
+  expect(hi.text("\u200d\u0915\u092e\u0932")).toBe("\u200dkamal");
+  expect(hi.text("\u0915\u092e\u0932 \u200c\u0915\u092e\u0932")).toBe("kamal \u200ckamal");
+});
+
 // Manipuri is written in Meetei Mayek and in Bengali script. Its own tables hold Meetei Mayek
 // only; a Bengali-script word is spelled by the shared Brahmic table, so the pooled file must be
 // the Brahmic one (v0.6.0 loaded a Meetei-only file: রামেন gave "en").

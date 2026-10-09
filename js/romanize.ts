@@ -142,7 +142,9 @@ export function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8
       const cs = [...nfc(t)];
       let out = "";
       for (let i = 0; i < cs.length; ) {
-        if (!(inScript(cs[i]) && letter(cs[i]))) {
+        // a run starts at a letter or a mark; a joiner only goes on with one, as in Go
+        const cp = cs[i].codePointAt(0)!;
+        if (!(inScript(cs[i]) && (isLetter(cp) || isMark(cp)))) {
           out += cs[i++];
           continue;
         }

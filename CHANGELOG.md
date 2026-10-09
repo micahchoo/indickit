@@ -48,6 +48,9 @@ Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-
   and `deromanize` decoders (a 4,096-letter word ran out of 6 GB in Go). `phonetic-search`
   still grows with (query words) x (candidate words): cap user input
   (README, Limits).
+- Changed output, TypeScript only: `romanize` text() keeps a ZWJ or ZWNJ
+  that no run of the script goes on from (at the start, after a space,
+  after an unassigned code point), as Go always did; it deleted it.
 
 ## 0.8.0 (2026-10-08)
 
