@@ -56,6 +56,9 @@ Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-
   gets one spelling: the first spelling of each 256-letter piece, joined.
   Words that long are not words; the beam was quadratic on a long run of
   characters it has no table for (32,000 random code points: 49 s).
+- Faster, same output: `deromanize` 1.5-1.6x (a Hindi word in the browser:
+  19 -> 12 ms) and `romanize` 1.2-1.4x, in Go and TypeScript. The
+  `romanize` browser file is now 9 KB.
 
 ## 0.8.0 (2026-10-08)
 
