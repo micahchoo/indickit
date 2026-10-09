@@ -372,9 +372,10 @@ var rules_default = {
       ]
     ]
   },
+  max_letters: 256,
   max_n: 3,
   order: 3,
-  rules_version: "2026-10-08",
+  rules_version: "2026-10-09",
   unify: {
     from: [
       2432,
@@ -583,6 +584,13 @@ function fromBytes(lang, mode, own, pool) {
   };
   const word = (w, n = 4) => {
     const s = stripJoiners(nfc(w));
+    const cps = [...s];
+    if (cps.length > RULES.max_letters) {
+      let out = "";
+      for (let i = 0;i < cps.length; i += RULES.max_letters)
+        out += word(cps.slice(i, i + RULES.max_letters).join(""), 1)[0] ?? "";
+      return out === "" ? [] : [out];
+    }
     const known = x.lookup.get(s);
     if (known)
       return known.slice(0, n);

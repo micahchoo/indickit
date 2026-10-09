@@ -371,9 +371,10 @@
    ]
   ]
  },
+ "max_letters": 256,
  "max_n": 3,
  "order": 3,
- "rules_version": "2026-10-08",
+ "rules_version": "2026-10-09",
  "unify": {
   "from": [
    2432,

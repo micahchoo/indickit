@@ -489,10 +489,11 @@ var rules_default = {
       words: "ur.list.bin"
     }
   },
+  max_letters: 256,
   max_n: 3,
   nbest: 16,
   order: 3,
-  rules_version: "2026-10-09",
+  rules_version: "2026-10-09.1",
   silent: "aeiouhwy",
   unify: {
     from: [
@@ -926,6 +927,12 @@ function fromBytes(lang, mode, files) {
     const w = clean(latin);
     if (w === "")
       return [];
+    if (w.length > RULES.max_letters) {
+      let out = "";
+      for (let i = 0;i < w.length; i += RULES.max_letters)
+        out += word(w.slice(i, i + RULES.max_letters), 1)[0] ?? "";
+      return out === "" ? [] : [out];
+    }
     const merged = new Map;
     for (const x of mixes) {
       for (const [o, s, cut] of x.decode(w)) {

@@ -46,6 +46,7 @@ var rules struct {
 	RulesVersion   string       `json:"rules_version"`
 	Beam           map[Mode]int `json:"beam"`
 	MaxN           int          `json:"max_n"`
+	MaxLetters     int          `json:"max_letters"` // a longer word is romanized piece by piece (Word)
 	Order          int          `json:"order"`
 	Bos            string       `json:"bos"`
 	Eos            string       `json:"eos"`
@@ -124,6 +125,20 @@ func Word(word, lang string, mode Mode, n int) []string {
 		return nil
 	}
 	w := stripJoiners(unorm.NFC(word))
+	if rs := []rune(w); len(rs) > rules.MaxLetters {
+		// One spelling: each piece's first, joined. The beam's ties made a long run
+		// quadratic (32K code points: 49 s); real words are far shorter.
+		var b strings.Builder
+		for i := 0; i < len(rs); i += rules.MaxLetters {
+			if s := Word(string(rs[i:min(i+rules.MaxLetters, len(rs))]), lang, mode, 1); len(s) > 0 {
+				b.WriteString(s[0])
+			}
+		}
+		if b.Len() == 0 {
+			return nil
+		}
+		return []string{b.String()}
+	}
 	if s, ok := x.lookup[w]; ok {
 		return append([]string(nil), s[:min(n, len(s))]...)
 	}

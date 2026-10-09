@@ -58,6 +58,7 @@ var rules struct {
 	Beam           int                  `json:"beam"`
 	NBest          int                  `json:"nbest"`
 	MaxN           int                  `json:"max_n"`
+	MaxLetters     int                  `json:"max_letters"` // a longer word is written piece by piece (Word)
 	Order          int                  `json:"order"`
 	Bos            string               `json:"bos"`
 	Eos            string               `json:"eos"`
@@ -162,7 +163,22 @@ func Word(latin, lang string, mode Mode, n int) []string {
 		n = 4
 	}
 	c := code(lang)
-	best := candidates(clean(latin), c, mode)
+	w := clean(latin)
+	if len(w) > rules.MaxLetters { // a-z only: bytes are letters
+		// One spelling: each piece's first, joined. The beam's ties made a long run
+		// quadratic (32K letters: 49 s); real words are far shorter.
+		var b strings.Builder
+		for i := 0; i < len(w); i += rules.MaxLetters {
+			if s := Word(w[i:min(i+rules.MaxLetters, len(w))], lang, mode, 1); len(s) > 0 {
+				b.WriteString(s[0])
+			}
+		}
+		if b.Len() == 0 {
+			return nil
+		}
+		return []string{b.String()}
+	}
+	best := candidates(w, c, mode)
 	if best == nil {
 		return nil
 	}

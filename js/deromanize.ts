@@ -36,6 +36,7 @@ type Rules = {
   beam: number;
   nbest: number;
   max_n: number;
+  max_letters: number;
   order: number;
   bos: string;
   eos: string;
@@ -175,6 +176,13 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
   const word = (latin: string, n = 4): string[] => {
     const w = clean(latin);
     if (w === "") return [];
+    if (w.length > RULES.max_letters) {
+      // One spelling: each piece's first, joined. The beam's ties made a long run
+      // quadratic (32K letters: 49 s); real words are far shorter.
+      let out = "";
+      for (let i = 0; i < w.length; i += RULES.max_letters) out += word(w.slice(i, i + RULES.max_letters), 1)[0] ?? "";
+      return out === "" ? [] : [out];
+    }
     // names mode merges both models: each string at its better score, full if either writes it in full
     const merged = new Map<string, [number, boolean]>();
     for (const x of mixes) {

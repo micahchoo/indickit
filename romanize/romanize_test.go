@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/micahchoo/indickit/romanize"
@@ -145,6 +146,23 @@ func TestTextKeepsAJoinerOutsideARun(t *testing.T) {
 		if got := romanize.Text(c.in, c.lang, romanize.Words); got != c.want {
 			t.Errorf("Text(%+q) = %+q, want %+q", c.in, got, c.want)
 		}
+	}
+}
+
+// A word over max_letters gets one spelling: each piece's first, joined. The beam's
+// ties made a long run quadratic (perf job, phase 3b: 32K code points, 49 s).
+func TestALongWordIsRomanizedInPieces(t *testing.T) {
+	const cap = 256
+	rs := []rune(strings.Repeat("\u0915\u092e\u0932", 100)) // कमल x 100: 300 code points
+	var want strings.Builder
+	for i := 0; i < len(rs); i += cap {
+		want.WriteString(romanize.Word(string(rs[i:min(i+cap, len(rs))]), "hi", romanize.Words, 1)[0])
+	}
+	if got := romanize.Word(string(rs), "hi", romanize.Words, 4); fmt.Sprint(got) != fmt.Sprint([]string{want.String()}) {
+		t.Errorf("Word of 300 code points = %v, want [%s]", got, want.String())
+	}
+	if got := romanize.Text(string(rs), "hi", romanize.Words); got != want.String() {
+		t.Errorf("Text of 300 code points = %q, want %q", got, want.String())
 	}
 }
 

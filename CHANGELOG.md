@@ -10,7 +10,7 @@ input the same output.
 
 ## Unreleased
 
-Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-09, romanize 2026-10-08, deromanize 2026-10-09, phonetic-search 2026-10-08
+Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-09, romanize 2026-10-09, deromanize 2026-10-09.1, phonetic-search 2026-10-08
 
 - New: `wellformed`, a check that a word is drawn as written
   (`indickit/wellformed`).
@@ -51,6 +51,11 @@ Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-
 - Changed output, TypeScript only: `romanize` text() keeps a ZWJ or ZWNJ
   that no run of the script goes on from (at the start, after a space,
   after an unassigned code point), as Go always did; it deleted it.
+- Changed output: romanize rules 2026-10-08 -> 2026-10-09 and deromanize
+  2026-10-09 -> 2026-10-09.1. A word of more than 256 letters (`max_letters`)
+  gets one spelling: the first spelling of each 256-letter piece, joined.
+  Words that long are not words; the beam was quadratic on a long run of
+  characters it has no table for (32,000 random code points: 49 s).
 
 ## 0.8.0 (2026-10-08)
 

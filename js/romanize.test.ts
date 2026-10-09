@@ -67,6 +67,17 @@ test("text keeps a joiner outside a run", async () => {
   expect(hi.text("\u0915\u092e\u0932 \u200c\u0915\u092e\u0932")).toBe("kamal \u200ckamal");
 });
 
+// A word over max_letters gets one spelling: each piece's first, joined. The beam's ties
+// made a long run quadratic (perf job, phase 3b: 32K code points, 49 s).
+test("a long word is romanized in pieces", async () => {
+  const hi = await get("hi", "words");
+  const cps = [..."\u0915\u092e\u0932".repeat(100)]; // कमल x 100: 300 code points
+  let want = "";
+  for (let i = 0; i < cps.length; i += 256) want += hi.word(cps.slice(i, i + 256).join(""), 1)[0];
+  expect(hi.word(cps.join(""))).toEqual([want]);
+  expect(hi.text(cps.join(""))).toBe(want);
+});
+
 // Manipuri is written in Meetei Mayek and in Bengali script. Its own tables hold Meetei Mayek
 // only; a Bengali-script word is spelled by the shared Brahmic table, so the pooled file must be
 // the Brahmic one (v0.6.0 loaded a Meetei-only file: রামেন gave "en").

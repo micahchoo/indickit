@@ -31,6 +31,7 @@ type Rules = {
   rules_version: string;
   beam: Record<Mode, number>;
   max_n: number;
+  max_letters: number;
   order: number;
   bos: string;
   eos: string;
@@ -130,6 +131,14 @@ export function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8
   // joiners shape a letter and spell nothing: deleted before the lookup and the decode
   const word = (w: string, n = 4): string[] => {
     const s = stripJoiners(nfc(w));
+    const cps = [...s];
+    if (cps.length > RULES.max_letters) {
+      // One spelling: each piece's first, joined. The beam's ties made a long run
+      // quadratic (32K code points: 49 s); real words are far shorter.
+      let out = "";
+      for (let i = 0; i < cps.length; i += RULES.max_letters) out += word(cps.slice(i, i + RULES.max_letters).join(""), 1)[0] ?? "";
+      return out === "" ? [] : [out];
+    }
     const known = x.lookup.get(s);
     if (known) return known.slice(0, n);
     return x.decode(unify(s), n).filter((o) => o !== "");

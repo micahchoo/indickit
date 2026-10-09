@@ -488,10 +488,11 @@
    "words": "ur.list.bin"
   }
  },
+ "max_letters": 256,
  "max_n": 3,
  "nbest": 16,
  "order": 3,
- "rules_version": "2026-10-09",
+ "rules_version": "2026-10-09.1",
  "silent": "aeiouhwy",
  "unify": {
   "from": [

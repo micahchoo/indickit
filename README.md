@@ -471,6 +471,9 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
 - **Cap user input before `phonetic-search`.** Its cost grows with (query
   words) x (candidate words): a 4,096-character query takes seconds. See
   [docs/phonetic.md](docs/phonetic.md#search-phonetic-search).
+- **A word of more than 256 letters gets one spelling** from `romanize`
+  and `deromanize`: each 256-letter piece is spelled alone and the pieces
+  are joined. A run that long is not a word; the cap keeps the time linear.
 - **Go reads invalid UTF-8 as U+FFFD**, so for such input the output does
   not join back into the original bytes.
 - **"The same output" holds inside the blocks indickit reads.** There,
