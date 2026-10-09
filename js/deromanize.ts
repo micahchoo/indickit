@@ -203,7 +203,8 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
       if (c === undefined || (guard && cut)) rest.push(o);
       else known.push([o, s + alpha * Math.log(c)]);
     }
-    return [...known.sort(byScore).map((e) => e[0]), ...rest].slice(0, n);
+    // a spelling that writes nothing is no suggestion: dropped, as in romanize
+    return [...known.sort(byScore).map((e) => e[0]), ...rest].filter((o) => o !== "").slice(0, n);
   };
   return {
     lang,

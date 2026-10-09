@@ -10,7 +10,7 @@ input the same output.
 
 ## Unreleased
 
-Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-09, romanize 2026-10-09, deromanize 2026-10-09.1, phonetic-search 2026-10-08
+Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-09, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-08
 
 - New: `wellformed`, a check that a word is drawn as written
   (`indickit/wellformed`).
@@ -59,6 +59,13 @@ Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-
 - Faster, same output: `deromanize` 1.5-1.6x (a Hindi word in the browser:
   19 -> 12 ms) and `romanize` 1.2-1.4x, in Go and TypeScript. The
   `romanize` browser file is now 9 KB.
+- Changed output: deromanize rules 2026-10-09.1 -> 2026-10-09.2. No
+  spelling is empty: "q" in Bengali gave ক, ক্ and an empty spelling; the
+  empty one is dropped, as `romanize` always did (11 of 3,033 conformance
+  rows change, each by that drop).
+- The browser files are minified: each is 0.3 to 3.5 KB smaller gzipped
+  (`phonetic` 7 KB, `normalize` 16 KB, `romanize` 7 KB, `deromanize`
+  21 KB, `phonetic-search` 17 KB). Same code, same output (`check-dist`).
 
 ## 0.8.0 (2026-10-08)
 

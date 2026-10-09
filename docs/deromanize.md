@@ -98,5 +98,5 @@ own model, and its word list. Brotli-compressed: Hindi 1.97 MB, Urdu 1.35 MB,
 Tamil 2.57 MB, Malayalam 3.13 MB. The npm package carries no tables:
 `load()` reads them beside the module, else from jsDelivr at the package's
 version. In Go, import the languages you need; a program carries only
-their files. The browser file is 23 KB gzipped: it holds `normalize`, which
+their files. The browser file is 21 KB gzipped: it holds `normalize`, which
 the re-rank uses to look words up.

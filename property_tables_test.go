@@ -28,8 +28,9 @@ import (
 
 var tableLangs = []string{"hi", "bn", "ta", "ur"}
 
-// spellings: at most n, no two equal, each UTF-8. An empty spelling is
-// allowed: the reference keeps one (deromanize "q" in Bengali gives ক, ক্, "").
+// spellings: at most n, none empty, no two equal, each UTF-8. Both utilities
+// drop a spelling that writes nothing (deromanize kept one until rules
+// 2026-10-09.2: "q" in Bengali gave ক, ক্, "").
 func spellings(t *testing.T, what string, got []string, n int) {
 	t.Helper()
 	if len(got) > n {
@@ -37,8 +38,8 @@ func spellings(t *testing.T, what string, got []string, n int) {
 	}
 	seen := map[string]bool{}
 	for _, s := range got {
-		if seen[s] || !utf8.ValidString(s) {
-			t.Errorf("%s: spelling %+q repeated or not UTF-8 in %+q", what, s, got)
+		if s == "" || seen[s] || !utf8.ValidString(s) {
+			t.Errorf("%s: spelling %+q empty, repeated or not UTF-8 in %+q", what, s, got)
 		}
 		seen[s] = true
 	}

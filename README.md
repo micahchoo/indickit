@@ -413,12 +413,12 @@ other tools tried and each weak spot are in `docs/`.
 
 | Utility | Result | Best other tool | Browser file | Details |
 |---|---|---|---|---|
-| `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 17 KB | [docs/normalize.md](docs/normalize.md) |
+| `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 16 KB | [docs/normalize.md](docs/normalize.md) |
 | `stem` | finds 6–15 points more of the right sentences than exact search, in 13 languages | ahead in 5 languages, level in 2, a trade in 4, behind in Nepali | 3 KB | [docs/stem.md](docs/stem.md) |
-| `phonetic` | finds the right person 84% of the time, in 21 languages, on clean names; 42% on a real roster as written (70% with titles and initials removed); with `phonetic-search`, 86% of a real roster as written and 85% of villages | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu; ICU + fuzzy match: 78% and 65% | 8 KB | [docs/phonetic.md](docs/phonetic.md) |
-| `segment` | cuts 0.05% of Kannada words wrongly | `Intl.Segmenter`: 50.3% | 9 KB | [docs/segment.md](docs/segment.md) |
-| `romanize` | writes 48.9% of the words of running text as people typed them, in 11 languages; 71.3% of names (tables: 0.2–1.8 MB a language) | IndicXlit (Python, a 119 MB model): 37.9% and 49.0% | 9 KB | [docs/romanize.md](docs/romanize.md) |
-| `deromanize` | writes the right word first for 87.1% of the words of Hindi news typed in Latin, and in four for 97.4%; 69.7% of names in 19 languages (tables: 0.3–3.1 MB a language) | IndicXlit: 86.1%, 89.7% and 66.4%; behind on rare words out of context | 23 KB | [docs/deromanize.md](docs/deromanize.md) |
+| `phonetic` | finds the right person 84% of the time, in 21 languages, on clean names; 42% on a real roster as written (70% with titles and initials removed); with `phonetic-search`, 86% of a real roster as written and 85% of villages | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu; ICU + fuzzy match: 78% and 65% | 7 KB | [docs/phonetic.md](docs/phonetic.md) |
+| `segment` | cuts 0.05% of Kannada words wrongly | `Intl.Segmenter`: 50.3% | 8 KB | [docs/segment.md](docs/segment.md) |
+| `romanize` | writes 48.9% of the words of running text as people typed them, in 11 languages; 71.3% of names (tables: 0.2–1.8 MB a language) | IndicXlit (Python, a 119 MB model): 37.9% and 49.0% | 7 KB | [docs/romanize.md](docs/romanize.md) |
+| `deromanize` | writes the right word first for 87.1% of the words of Hindi news typed in Latin, and in four for 97.4%; 69.7% of names in 19 languages (tables: 0.3–3.1 MB a language) | IndicXlit: 86.1%, 89.7% and 66.4%; behind on rare words out of context | 21 KB | [docs/deromanize.md](docs/deromanize.md) |
 | `wellformed` | agrees with HarfBuzz on 100% of 135,944 held-out PDF words (9,594 of them broken) and 2,146,974 new Wikipedia words | a check that the word starts with a combining sign: finds 84% of the broken words, with 4,667 false alarms | 6 KB | [docs/wellformed.md](docs/wellformed.md) |
 
 (Browser files are gzipped.)

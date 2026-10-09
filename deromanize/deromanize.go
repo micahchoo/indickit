@@ -182,7 +182,12 @@ func Word(latin, lang string, mode Mode, n int) []string {
 	if best == nil {
 		return nil
 	}
-	out := rerank(best, c, list(c, mode), rules.Alpha[mode], guarded(mode))
+	var out []string // a spelling that writes nothing is no suggestion: dropped, as in romanize
+	for _, o := range rerank(best, c, list(c, mode), rules.Alpha[mode], guarded(mode)) {
+		if o != "" {
+			out = append(out, o)
+		}
+	}
 	return out[:min(n, len(out))]
 }
 

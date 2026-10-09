@@ -50,9 +50,10 @@ const disk = async (url: URL) => {
   const b = readFileSync(url);
   return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
 };
-// at most n, no two equal, each well-formed UTF-16; an empty spelling is allowed (the reference keeps one)
+// at most n, none empty, no two equal, each well-formed UTF-16
 const spellingsFault = (got: string[], n: number) =>
   got.length > n ? `${got.length} spellings` :
+  got.includes("") ? "an empty spelling" :
   new Set(got).size !== got.length ? "a repeated spelling" :
   got.some((s) => !s.isWellFormed()) ? "a lone surrogate" : undefined;
 

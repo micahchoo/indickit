@@ -38,7 +38,7 @@ Unicode 15.1. `indicparser` (Python) has no Kannada,
 and splits 5% of Punjabi words for other reasons (it cuts the nukta off its
 letter: ਦੇਸ਼ → ਦੇ ਸ ਼).
 
-The browser file is 9 KB gzipped. A word takes 0.4 µs in Node (`Intl.Segmenter`:
+The browser file is 8 KB gzipped. A word takes 0.4 µs in Node (`Intl.Segmenter`:
 1.9 µs) and 0.3 µs in Go.
 
 Known weak spots:
