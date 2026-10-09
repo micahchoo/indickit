@@ -74,8 +74,8 @@ func TestCases(t *testing.T) {
 		{"हिन्दी", -1},
 		{"प्राप्त", -1},
 		{"क\u200dि", -1}, // a ZWJ between a consonant and its vowel sign
-		{"क्ि", 6},  // a vowel sign after a virama
-		{"कंंं", 9}, // a third anusvara
+		{"क्ि", 6},       // a vowel sign after a virama
+		{"कंंं", 9},      // a third anusvara
 		{"", -1},
 		{"abc 123", -1},     // not our scripts
 		{"\U0001f600िह", 4}, // the index counts bytes, past the emoji

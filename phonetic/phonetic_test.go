@@ -109,9 +109,9 @@ func TestMatch(t *testing.T) {
 		{"Block 1", "Block 2", false},  // a number is keyed by its value
 		{"Block 12", "ब्लॉक १२", true}, // in any script
 		{"1", "2", false},
-		{"Singh", "सिंह", true},           // rules 2026-10-07: Latin "ngh" is anusvara + h
+		{"Singh", "सिंह", true},                // rules 2026-10-07: Latin "ngh" is anusvara + h
 		{"Bidhuri", "बिधू\u0921\u093cी", true}, // the flap, as NFC writes it: ड + nukta
-		{"Rao", "राव", true},              // व after a is also a vowel
+		{"Rao", "राव", true},                   // व after a is also a vowel
 	} {
 		if got := Match(c.a, c.b); got != c.want {
 			t.Errorf("Match(%q, %q) = %v, want %v", c.a, c.b, got, c.want)

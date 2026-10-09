@@ -31,9 +31,9 @@ const (
 
 type profile struct {
 	Key, Cost, Vowel, Div int
-	StopPermille         *int `json:"stop_permille"`
-	StopMinNames         int  `json:"stop_min_names"` // no stop share in a smaller index
-	Round                bool
+	StopPermille          *int `json:"stop_permille"`
+	StopMinNames          int  `json:"stop_min_names"` // no stop share in a smaller index
+	Round                 bool
 }
 
 var searchRules = func() (r struct {

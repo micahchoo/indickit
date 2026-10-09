@@ -121,7 +121,7 @@ type engine struct {
 	suffixes                 []suffix
 	digitZeros               []rune // a word of these digits (zero, then 1-9) only is a number
 	maxKeys                  int
-	nukta, flapClass         rune   // a nukta after a flap offset (ड ढ) reads it as the flap
+	nukta, flapClass         rune // a nukta after a flap offset (ड ढ) reads it as the flap
 	flapOffsets              []rune
 	joinedMin                int // joined keys shorter than this find too many names
 }
