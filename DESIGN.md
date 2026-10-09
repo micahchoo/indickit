@@ -413,9 +413,12 @@ false claim.
 ### When Unicode changes
 
 A new Unicode version can add letters, or move a letter to a new syllabic
-class. Pin the version of every Unicode data file in the repo. When Go's
-`x/text` or Node moves to a new version, derive the joiner table again, run
-the conformance tests, and treat any changed output as a rules change.
+class. Pin the version of every Unicode data file in the repo: inside the
+blocks indickit has rules for, both ports read one pinned table
+(`internal/unidata/unicode15.json`), so a new `x/text` or Node changes no
+output there. To move to a new version, write the table and the joiner
+table again from that version's data, run the conformance tests, and treat
+any changed output as a rules change.
 
 ## 5. Rules
 

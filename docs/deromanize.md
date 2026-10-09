@@ -20,6 +20,18 @@ a word that does not exist (कामल) above one that does (कमल). Each 
 gets its score plus the log of how often the word occurs in the language's
 Wikipedia, and words found in the list come first.
 
+A piece may write nothing: the "a" of "kamal" is the inherent vowel. A
+spelling that writes nothing for a consonant is cut short ("murmu" → മു,
+with nothing for "mur"), and a short, common string would take the list's
+bonus and come first; names mode did this in v0.8.0. Since rules 2026-10-09
+a cut-short spelling is ranked as if it were not in the list. The letters
+that may write nothing are the vowels, h (aspiration is written with the
+consonant before it), y and w (a glide fuses into a vowel sign), and the
+second letter of a double ("dutt": one sound). On the development names
+this moved the first answer from 68.1% to 69.3% right (19 languages), and
+the held-out numbers below are from the rules before it: a held-out set is
+read once (`MAINTAINING.md`, "Changing rules").
+
 There are two modes:
 
 - **words**, for running text: trained on 60,000 human romanizations a
@@ -31,7 +43,7 @@ There are two modes:
 
 The tables are rules as data: the Go and TypeScript code is a short loop
 over them, and both give the reference implementation's lists on every row
-of the conformance file (2,818 rows).
+of the conformance file (2,990 rows).
 
 ## How good it is
 
@@ -81,5 +93,5 @@ own model, and its word list. Brotli-compressed: Hindi 1.97 MB, Urdu 1.35 MB,
 Tamil 2.57 MB, Malayalam 3.13 MB. The npm package carries no tables:
 `load()` reads them beside the module, else from jsDelivr at the package's
 version. In Go, import the languages you need; a program carries only
-their files. The browser file is 20 KB gzipped: it holds `normalize`, which
+their files. The browser file is 23 KB gzipped: it holds `normalize`, which
 the re-rank uses to look words up.

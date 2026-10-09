@@ -148,6 +148,26 @@ if (pmiss || pn < 1000) {
 }
 console.log(`dist/phonetic-search.js: all ${pn} rows agree (search ${PS.SEARCH_VERSION})`);
 
+// dist/wellformed.js against wellformed/testdata/conformance.jsonl.gz: [text, code-point index or null]
+const { brokenAt, isWellFormed, RULES_VERSION: WELLFORMED_VERSION } = await import("../dist/wellformed.js");
+const wfRows = gunzipSync(readFileSync(new URL("../wellformed/testdata/conformance.jsonl.gz", import.meta.url))).toString("utf8");
+let wn = 0, wmiss = 0;
+for (const line of wfRows.split("\n")) {
+  if (!line) continue;
+  const [input, want] = JSON.parse(line);
+  wn++;
+  const at = brokenAt(input);
+  const got = at < 0 ? null : Array.from(input.slice(0, at)).length;
+  if (got !== want || isWellFormed(input) !== (want === null)) {
+    if (wmiss++ < 10) console.error(JSON.stringify([input, want, got]));
+  }
+}
+if (wmiss || wn < 30_000) {
+  console.error(`dist/wellformed.js: ${wmiss} of ${wn} inputs differ`);
+  process.exit(1);
+}
+console.log(`dist/wellformed.js: all ${wn} inputs agree (rules ${WELLFORMED_VERSION})`);
+
 // every package.json export points at files that exist (its JS and its types)
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 const { existsSync } = await import("node:fs");

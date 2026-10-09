@@ -41,6 +41,7 @@ type Rules = {
   eos: string;
   unknown_penalty: number;
   alpha: Record<Mode, number>;
+  silent: string;
   blocks: Record<string, number>;
   groups: Record<string, [number, number][]>;
   families: Record<Mode, Record<string, FamilyEntry>>;
@@ -172,20 +173,24 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
   const word = (latin: string, n = 4): string[] => {
     const w = clean(latin);
     if (w === "") return [];
-    const merged = new Map<string, number>();
+    // names mode merges both models: each string at its better score, full if either writes it in full
+    const merged = new Map<string, [number, boolean]>();
     for (const x of mixes) {
-      for (const [o, s] of x.decode(w)) {
+      for (const [o, s, cut] of x.decode(w)) {
         const d = deunify(o, lang);
         const v = merged.get(d);
-        if (v === undefined || s > v) merged.set(d, s);
+        merged.set(d, v === undefined ? [s, cut] : [Math.max(v[0], s), v[1] && cut]);
       }
     }
-    const best = [...merged].sort(byScore);
+    const best = [...merged].map(([o, [s, cut]]): Scored => [o, s, cut]).sort(byScore);
+    // known strings by log score + α · log(count), then the rest in model order. A cut-short
+    // string is not known, whatever the list says: a short, common string (murmu → മു)
+    // would otherwise take the bonus and come first.
     const known: [string, number][] = [];
     const rest: string[] = [];
-    for (const [o, s] of best) {
+    for (const [o, s, cut] of best) {
       const c = counts.get(fold(normalize(o, lang), lang));
-      if (c === undefined) rest.push(o);
+      if (c === undefined || cut) rest.push(o);
       else known.push([o, s + alpha * Math.log(c)]);
     }
     return [...known.sort(byScore).map((e) => e[0]), ...rest].slice(0, n);
@@ -213,8 +218,22 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
   };
 }
 
-const byScore = (p: [string, number], q: [string, number]): number =>
+/** A spelling, its log score, and whether every path to it wrote nothing for a consonant (cuts). */
+type Scored = [string, number, boolean];
+
+const byScore = (p: readonly [string, number, ...unknown[]], q: readonly [string, number, ...unknown[]]): number =>
   p[1] !== q[1] ? q[1] - p[1] : p[0] < q[0] ? -1 : p[0] > q[0] ? 1 : 0;
+
+// Does writing nothing for w[i..i+k) cut the word short? Yes if one of its letters is a
+// consonant that does not repeat the letter before it (tt, mm: one sound). The letters that
+// may write nothing are RULES.silent: the vowels, h (aspiration is written with the consonant
+// before it), y and w (a glide fuses into a vowel sign).
+function cuts(w: string[], i: number, k: number): boolean {
+  for (let j = i; j < i + k; j++) {
+    if (!RULES.silent.includes(w[j]) && !(j > 0 && w[j] === w[j - 1])) return true;
+  }
+  return false;
+}
 
 function deunify(w: string, lang: string): string {
   const base = RULES.blocks[lang];
@@ -380,8 +399,8 @@ class Model {
 }
 
 type Option = { tok: number; native: string };
-type Hyp = { score: number; out: string; ctx: number[] };
-type Cand = { score: number; out: string; parent: Hyp | null; tok: number; idx: number };
+type Hyp = { score: number; out: string; ctx: number[]; cut: boolean };
+type Cand = { score: number; out: string; parent: Hyp | null; tok: number; idx: number; cut: boolean };
 
 function before(a: Cand, b: Cand): boolean {
   if (a.score !== b.score) return a.score > b.score;
@@ -455,13 +474,14 @@ class Mix {
     return Math.log(this.lam * this.a.prob(sa, tok) + (1 - this.lam) * this.b.prob(sb, tok));
   }
 
-  /** Beam search over the ways to cut w into Latin chunks; the nbest spellings with scores. */
-  decode(word: string): [string, number][] {
+  /** Beam search over the ways to cut w into Latin chunks; the nbest spellings with scores.
+   *  A spelling is cut when every path that reaches it wrote nothing for a consonant. */
+  decode(word: string): Scored[] {
     const w = [...word];
     const h = RULES.order - 1;
-    const root: Hyp = { score: 0, out: "", ctx: this.start };
+    const root: Hyp = { score: 0, out: "", ctx: this.start, cut: false };
     const beams: Cand[][] = Array.from({ length: w.length + 1 }, () => []);
-    beams[0].push({ score: 0, out: "", parent: null, tok: -1, idx: 0 });
+    beams[0].push({ score: 0, out: "", parent: null, tok: -1, idx: 0, cut: false });
     const context = (c: Cand): number[] => {
       if (c.tok < 0) return c.parent!.ctx;
       const ctx = [...c.parent!.ctx, c.tok];
@@ -470,7 +490,7 @@ class Mix {
     for (let i = 0; i < w.length; i++) {
       if (beams[i].length === 0) continue;
       for (const c of top(beams[i], RULES.beam)) {
-        const hy: Hyp = i === 0 ? root : { score: c.score, out: c.out, ctx: context(c) };
+        const hy: Hyp = i === 0 ? root : { score: c.score, out: c.out, ctx: context(c), cut: c.cut };
         let moved = false;
         const sa = this.a.stats(hy.ctx);
         const sb = this.b.stats(hy.ctx);
@@ -479,23 +499,25 @@ class Mix {
           if (!opts) continue;
           for (const o of opts) {
             const next = beams[i + k];
-            next.push({ score: hy.score + this.logp(sa, sb, o.tok), out: hy.out + o.native, parent: hy, tok: o.tok, idx: next.length });
+            next.push({ score: hy.score + this.logp(sa, sb, o.tok), out: hy.out + o.native, parent: hy, tok: o.tok, idx: next.length,
+              cut: hy.cut || (o.native === "" && cuts(w, i, k)) });
             moved = true;
           }
         }
         if (!moved) {
           const next = beams[i + 1];
-          next.push({ score: hy.score - RULES.unknown_penalty, out: hy.out, parent: hy, tok: -1, idx: next.length });
+          next.push({ score: hy.score - RULES.unknown_penalty, out: hy.out, parent: hy, tok: -1, idx: next.length, cut: hy.cut || cuts(w, i, 1) });
         }
       }
     }
-    const final = new Map<string, number>();
+    const final = new Map<string, [number, boolean]>();
     for (const c of beams[w.length]) {
       const ctx = c.parent === null ? this.start : context(c);
       const s = c.score + this.logp(this.a.stats(ctx), this.b.stats(ctx), this.eos);
       const v = final.get(c.out);
-      if (v === undefined || s > v) final.set(c.out, s);
+      final.set(c.out, v === undefined ? [s, c.cut] : [Math.max(v[0], s), v[1] && c.cut]);
     }
-    return [...final].sort(byScore).slice(0, RULES.nbest);
+    const out = [...final].map(([o, [s, cut]]): Scored => [o, s, cut]);
+    return out.sort(byScore).slice(0, RULES.nbest);
   }
 }

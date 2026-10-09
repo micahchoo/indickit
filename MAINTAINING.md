@@ -136,7 +136,7 @@ change no longer equals one computed after it. So every rules change must:
   already been read. A number from a second read is not a held-out number.
   To report a new held-out number, get new held-out data. For names, that
   means Wikidata people added after the last fetch, or a new dataset;
-- **go in a minor release** before 1.0, and say in the release notes which
+- **go in a minor release** before 1.0, and say in `CHANGELOG.md` which
   inputs changed.
 
 A change that keeps every output the same (a refactor, a speedup) needs
@@ -155,6 +155,9 @@ helps on DEV and keeps the wrong-match rate within budget.
 | Built file | a `dist/` file that is stale or broken in Node | CI: `git diff --exit-code dist/`, `js/check-dist.mjs` |
 | README claims | a number, example, or size the code no longer backs | `js/readme.test.ts`, `phonetic/example_test.go` |
 | Research | a refactor that changes outputs by accident | `linguistic-utilities`: `uv run pytest` |
+| API | an export renamed or removed, which breaks a user's import | `js/api.test.ts` against `js/api.json` |
+| CHANGELOG | a release with no entry, or an entry whose rules versions the code does not ship | `js/changelog.test.ts` |
+| Patch guard | a patch tag whose output, tables or types differ from the previous tag | `.github/workflows/publish.yml` |
 
 Run all of CI locally before you push:
 
@@ -168,28 +171,70 @@ wrong. Never change a test only to make it pass.
 
 ## Releases
 
-- **Users install from Git tags**, not from npm:
-  `npm install github:micahchoo/indickit#v0.1.0`, and jsDelivr serves
-  `dist/` at the same tag. So `dist/` is committed, and a tag is the
-  release.
-- **Tag only a commit that GitHub CI passed.** A tag that you checked only
-  on your own machine is weaker. If GitHub Actions has an outage, wait.
-- **Never move or delete a tag** after you push it. Someone's lockfile
-  points at it. Fix forward with a new version.
-- **Versions:** before 1.0, a rules change or a new utility is a minor
-  version (0.2.0), and a fix that changes no output is a patch (0.1.1).
-  One tag covers the whole repo. The Go module and `package.json` share
-  the version.
+A release is one Git tag, `v<version>`. Three things point at it: the npm
+package (`npm install indickit`), jsDelivr
+(`cdn.jsdelivr.net/gh/micahchoo/indickit@v<version>/dist/`), and the Go
+module proxy. Users hold copies of every version that is out. A release
+is never changed; a new one follows it.
+
+- **npm is the install path.** The package carries `dist/` only. The
+  `romanize`, `deromanize` and `phonetic-search` bundles fetch their
+  tables at run time from jsDelivr, at the tag of their own version. So
+  every npm version depends on its tag, and on the files under
+  `romanize/lang/`, `deromanize/lang/` and `phonetic/scorer/` at that tag,
+  for as long as anyone has it installed.
+- **Never move or delete a tag** after you push it. Lockfiles point at it,
+  and the npm bundles fetch from it. Fix forward with a new version.
+- **The names users import are a contract.** `js/api.json` lists the
+  exports of each module, and `js/api.test.ts` holds the code to it. Add a
+  name freely. Rename or remove one only in a minor release, with the
+  change in `CHANGELOG.md`.
+- **Versions:** before 1.0, a rules change, a new utility, or a renamed or
+  removed export is a minor version (0.9.0). A fix that changes no output
+  and no API is a patch (0.8.1). A `^0.8.0` range takes every patch and no
+  minor, so a patch reaches users who did not ask for it; the publish
+  workflow refuses a patch tag whose rules, conformance files, tables or
+  type declarations differ from the previous tag. One tag covers the whole
+  repo. The Go module and `package.json` share the version.
+- **`CHANGELOG.md` has an entry for every version:** first the rules
+  version of each utility, then what changed. Between releases, a change
+  of output goes in an `Unreleased` entry at the top. `js/changelog.test.ts`
+  checks the first entry's rules line against the code, and the first
+  released entry against `package.json`.
+- **To cut a release:** set the version in `package.json` and in the
+  README's tags, rename the `Unreleased` entry to the version, run CI locally, push, wait for
+  GitHub CI to pass, then push the tag. A tag that you checked only on
+  your own machine is weaker; if GitHub Actions has an outage, wait. The
+  publish workflow runs the checks again and stages the package, and a
+  person approves it on npmjs.com with 2FA. There is no npm token, and
+  there must never be one: trusted publishing (OIDC) gives provenance and
+  keeps every publish behind a person. If the workflow fails, fix forward
+  and tag the next version; do not add a token to make it pass. The
+  registry also lists `0.0.0-stage`: npm's own placeholder, made when the
+  first staged publish created the package. Leave it.
+- **A published version with a fault** gets
+  `npm deprecate indickit@<version> "<what is wrong, which version fixes it>"`.
+  Never `npm unpublish` a version that is older than 72 hours: npm forbids
+  it, and a removed version breaks every install that pinned it.
 
 ## Upkeep
 
 These change under the code without any commit here:
 
-- **Unicode.** A new Unicode version can add letters to an Indian script.
-  The rules map letters by their place in the script's block, so a new
-  letter gets the class of its neighbor's place, which may be wrong. When
-  Go's `x/text` or Node moves to a new Unicode version, check the new
-  letters in the 0900–0D7F blocks and in Ol Chiki and Meetei Mayek.
+- **Unicode.** Inside the blocks indickit has rules for (Arabic, 0900–0D7F,
+  Ol Chiki, Vedic, Devanagari Extended, Meetei Mayek), both ports read one
+  pinned table, `internal/unidata/unicode15.json` (Unicode 15.0): the
+  categories L, M and Mn, the combining classes, the decompositions and
+  the composition exclusions. A new `x/text` or Node changes no output
+  there. To move to a new Unicode version: in the research repo, set
+  `UNICODE` in `jobs/release/measure/code_floor/unicode_table.py`, run it
+  under a Python that ships that version, and write the table; run `go
+  test ./...`, `bun test`, `bun run build`, `node js/check-dist.mjs`; a
+  changed output is a rules change (a new letter gets the class of its
+  neighbor's place, which may be wrong: check the new letters), so it
+  takes the rules-change steps above and a version bump. `unicode_test.go`
+  and `js/unidata.test.ts` check the table against `testdata/unicode15.json`
+  (Python's data); regenerate that file too (`unicode15.py`).
 - **Dependencies.** Keep `golang.org/x/text`, `typescript`, and Bun
   current. CI pins Node 22; move it when Node 22 leaves long-term support.
 - **Bun is pinned** by `packageManager` in `package.json`, and CI reads it

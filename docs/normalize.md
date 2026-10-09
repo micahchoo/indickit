@@ -53,7 +53,7 @@ rivals find more where they merge different sounds: Lucene's Hindi and
 Bengali filters make long vowels short, so की "of" and कि "that" become one
 word; Indic NLP drops a final long ā in Telugu and Kannada.
 
-The browser file is 14 KB gzipped.
+The browser file is 17 KB gzipped.
 
 Known weak spots:
 

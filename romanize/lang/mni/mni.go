@@ -7,7 +7,7 @@ import (
 	_ "embed"
 
 	"github.com/micahchoo/indickit/romanize"
-	_ "github.com/micahchoo/indickit/romanize/lang/meetei"
+	_ "github.com/micahchoo/indickit/romanize/lang/brahmic"
 )
 
 //go:embed mni.names.bin

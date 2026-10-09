@@ -26,6 +26,7 @@ test("every input gives the reference stem", () => {
 
 test("forms of one word meet", () => {
   expect(stem("ஆண்டில்", "ta")).toBe(stem("ஆண்டு", "ta"));
+  expect(stem("ಪ್ರಧಾನಮಂತ್ರಿಯವರು", "kn")).toBe(stem("ಪ್ರಧಾನಮಂತ್ರಿ", "kn"));
 });
 
 test("outside the tables, the word comes back", () => {

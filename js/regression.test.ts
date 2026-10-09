@@ -87,21 +87,5 @@ test("language tags", () => {
   for (const tag of ["en", "xx", ""]) expect(stem(t, tag)).toBe(t);
 });
 
-// Finding 5 is a scope, not a fix: TypeScript reads the host's Unicode
-// data (node 24: 17.0), Go reads 15.0. Inside the blocks indickit reads, the
-// two agree: every code point's NFD and its Mn category, as of Unicode 15.0.
-test("Unicode data agrees with 15.0 inside the blocks indickit reads", () => {
-  const blocks = JSON.parse(readFileSync(new URL("../testdata/unicode15.json", import.meta.url), "utf8")) as
-    { ranges: number[][]; mn: number[]; nfd: Record<string, number[]> };
-  const mn = new Set(blocks.mn);
-  const bad: string[] = [];
-  for (const [lo, hi] of blocks.ranges) {
-    for (let c = lo; c <= hi; c++) {
-      const s = String.fromCodePoint(c);
-      if (/\p{Mn}/u.test(s) !== mn.has(c)) bad.push(`Mn ${c.toString(16)}`);
-      const want = blocks.nfd[c] ?? [c];
-      if (Array.from(s.normalize("NFD"), (x) => x.codePointAt(0)).join() !== want.join()) bad.push(`NFD ${c.toString(16)}`);
-    }
-  }
-  expect(bad).toEqual([]);
-});
+// Finding 5: both ports read one pinned Unicode table inside the blocks
+// indickit has rules for; the tests are in unidata.test.ts.

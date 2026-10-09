@@ -21,6 +21,7 @@ import fineJson from "../phonetic/scorer/fine.json" with { type: "json" };
 import fine2Json from "../phonetic/scorer/fine2.json" with { type: "json" };
 import { version as PACKAGE_VERSION } from "../package.json" with { type: "json" };
 import { _internal, JOINED_MIN_CLASSES, MAX_NAME_KEYS, words } from "./phonetic";
+import { isLetter, nfc } from "./unidata";
 
 /** "names": a list of names; "text": a name among a text's words. */
 export type Profile = "names" | "text";
@@ -87,7 +88,7 @@ function searchWords(name: string): string[] {
 
 const latSyms = (w: string): string[] => [...w.toLowerCase()].filter((c) => c >= "a" && c <= "z");
 // Python's str.isspace: JavaScript's \s without U+FEFF, with U+001C-001F and U+0085
-const natSyms = (w: string): string[] => [...w.normalize("NFC")].filter((c) => c !== "‌" && c !== "‍" && !/^(?:[^\S﻿]|[\x1c-\x1f\x85])$/u.test(c));
+const natSyms = (w: string): string[] => [...nfc(w)].filter((c) => c !== "‌" && c !== "‍" && !/^(?:[^\S﻿]|[\x1c-\x1f\x85])$/u.test(c));
 
 function deletions(k: string): string[] {
   const rs = [...k];
@@ -123,10 +124,8 @@ const BLOCKS: [number, number, string][] = [[0x0600, 0x06ff, "arab"], [0x0750, 0
 
 function scriptOf(w: string): string {
   for (const c of w) {
-    if (/\p{L}/u.test(c)) {
-      const o = c.codePointAt(0)!;
-      return BLOCKS.find(([lo, hi]) => o >= lo && o <= hi)?.[2] ?? "";
-    }
+    const o = c.codePointAt(0)!;
+    if (isLetter(o)) return BLOCKS.find(([lo, hi]) => o >= lo && o <= hi)?.[2] ?? "";
   }
   return "";
 }

@@ -14,6 +14,8 @@ Each language has a list of 20–71 endings. `stem` cuts the longest one
 that leaves at least two code points; in nine languages it then drops one
 final vowel sign (the Tamil ு in ஆண்டு). So a stem is a key, not a word:
 ஆண்ட is not Tamil, but ஆண்டு "year" and ஆண்டில் "in the year" both give it.
+Kannada endings stack, so in Kannada `stem` does all of this twice:
+ಪ್ರಧಾನಮಂತ್ರಿಯವರು "the Prime Minister" (honorific) and ಪ್ರಧಾನಮಂತ್ರಿ give one key.
 `stem` may cut a stem again, as Snowball and Lucene do: apply it once.
 
 Normalize first. On PIB search, `normalize` before `stem` is never worse
@@ -72,6 +74,12 @@ inflection tables. A second set of PIB queries, never used to choose,
 points the same way in every language it could measure (Nepali has too
 few PIB sentences); FLORES+ puts Gujarati and Marathi ahead where PIB had
 them level, and Tamil level where PIB had it behind.
+
+Kannada cuts twice since rules 2026-10-09; the Kannada row above was
+measured before that change. On PIB sentences of August 2023, which no rule
+was chosen on and which were read once, the second cut finds 0.9 points
+more of the right sentences (95%: +0.7 to +1.1), and precision falls by
+0.75 points (95%: −1.2 to −0.4).
 
 The browser file is 3 KB gzipped.
 

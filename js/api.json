@@ -1,0 +1,59 @@
+{
+  "phonetic": [
+    "JOINED_MIN_CLASSES",
+    "MAX_NAME_KEYS",
+    "RULES_VERSION",
+    "_internal",
+    "joinedKeys",
+    "keys",
+    "match",
+    "nameKeys",
+    "words"
+  ],
+  "normalize": [
+    "RULES_VERSION",
+    "fold",
+    "normalize"
+  ],
+  "segment": [
+    "RULES_VERSION",
+    "UNICODE_VERSION",
+    "codePointBounds",
+    "count",
+    "segment"
+  ],
+  "stem": [
+    "LANGUAGES",
+    "RULES_VERSION",
+    "stem"
+  ],
+  "romanize": [
+    "CDN",
+    "RULES_VERSION",
+    "_decode",
+    "fromBytes",
+    "languages",
+    "load",
+    "unify"
+  ],
+  "phonetic-search": [
+    "CDN",
+    "Index",
+    "SEARCH_VERSION",
+    "THRESHOLDS",
+    "loadSearch"
+  ],
+  "deromanize": [
+    "CDN",
+    "RULES_VERSION",
+    "clean",
+    "fromBytes",
+    "languages",
+    "load"
+  ],
+  "wellformed": [
+    "RULES_VERSION",
+    "brokenAt",
+    "isWellFormed"
+  ]
+}

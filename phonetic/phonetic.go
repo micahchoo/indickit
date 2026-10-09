@@ -13,11 +13,9 @@ import (
 	"encoding/json"
 	"regexp"
 	"strings"
-	"unicode"
 	"unicode/utf8"
 
-	"golang.org/x/text/unicode/norm"
-
+	"github.com/micahchoo/indickit/internal/unidata"
 	"github.com/micahchoo/indickit/internal/unorm"
 )
 
@@ -49,15 +47,22 @@ const MaxNameKeys = 256
 func normalize(word string) string {
 	var plain strings.Builder
 	latin := true
-	for _, r := range norm.NFD.String(word) {
-		if unicode.Is(unicode.Mn, r) {
-			continue
+	// Each code point decomposed alone: the ASCII letters that survive are
+	// starters, which canonical ordering never moves.
+	for _, r0 := range word {
+		for _, r := range unidata.NFD(r0) {
+			if unidata.IsMn(r) {
+				continue
+			}
+			if r >= 0x80 {
+				latin = false
+				break
+			}
+			plain.WriteRune(r)
 		}
-		if r >= 0x80 {
-			latin = false
+		if !latin {
 			break
 		}
-		plain.WriteRune(r)
 	}
 	if latin {
 		return strings.ToLower(plain.String())

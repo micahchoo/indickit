@@ -14,8 +14,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: tag equals package.json version
         run: test "${GITHUB_REF_NAME#v}" = "$(node -p 'require("./package.json").version')"
+      # A ^0.x.y range takes every patch, so a patch reaches users who did not
+      # ask for it. It must give every input the same output and keep every
+      # export: no rules, conformance file, table or type declaration may
+      # differ from the previous tag. A change to any of those is a minor.
+      - name: a patch changes no output and no API
+        run: |
+          v=${GITHUB_REF_NAME#v}
+          patch=${v##*.}
+          if [ "$patch" = 0 ]; then echo "minor release, no patch check"; exit 0; fi
+          prev="v${v%.*}.$((patch - 1))"
+          git rev-parse -q --verify "refs/tags/$prev" >/dev/null || { echo "$prev is not a tag"; exit 1; }
+          git diff --stat --exit-code "$prev" HEAD -- '*/rules.json' '*/testdata/*' \
+            romanize/lang deromanize/lang phonetic/scorer dist/types js/api.json
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod

@@ -6,6 +6,7 @@
  * least two code points; in languages with the vowel step it then drops one
  * final vowel sign (the Dravidian enunciative u). A word with no listed
  * ending is its own stem, and so is every word of a language with no table.
+ * Kannada, whose endings stack, runs all of this twice.
  *
  * A stem is a key, not text. Apply `stem` once to the words you index and
  * once to the query, and compare. stem(stem(w)) may cut again, as Snowball

@@ -12,6 +12,7 @@
  */
 
 import rulesJson from "../phonetic/rules.json" with { type: "json" };
+import { isMn, nfc, nfd } from "./unidata";
 
 type Rules = typeof rulesJson;
 
@@ -242,9 +243,18 @@ export const RULES_VERSION: string = rulesJson.version;
 export const MAX_NAME_KEYS = 256;
 
 // Latin is lower-cased with its accents removed (ā → a); anything else is NFC.
+// Each code point is decomposed alone: the ASCII letters that survive are
+// starters, which canonical ordering never moves.
 function normalize(word: string): string {
-  const plain = word.normalize("NFD").replace(/\p{Mn}/gu, "");
-  return /^[\x00-\x7f]*$/.test(plain) ? plain.toLowerCase() : word.normalize("NFC");
+  let plain = "";
+  for (const c of word) {
+    for (const cp of nfd(c.codePointAt(0)!)) {
+      if (isMn(cp)) continue;
+      if (cp >= 0x80) return nfc(word);
+      plain += String.fromCodePoint(cp);
+    }
+  }
+  return plain.toLowerCase();
 }
 
 /** The sorted keys of one word; empty when it holds no letter the rules read. */

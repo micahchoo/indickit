@@ -56,8 +56,8 @@ test("the README example", async () => {
 test("the docs' claims about size and small lists hold", async () => {
   const docs = readFileSync(new URL("../docs/phonetic.md", import.meta.url), "utf8").replace(/\s+/g, " ");
   const gz = gzipSync(readFileSync(new URL("../dist/phonetic-search.js", import.meta.url))).length;
-  expect(docs).toContain("The browser file is 17 KB gzipped, and a language's table 2–6 KB more");
-  expect(gz).toBeLessThan(17.5 * 1024);
+  expect(docs).toContain("The browser file is 21 KB gzipped, and a language's table 2–6 KB more");
+  expect(gz).toBeLessThan(21.5 * 1024);
   const dir = new URL("../phonetic/scorer/latin/", import.meta.url);
   for (const f of readdirSync(dir)) {
     const kb = gzipSync(readFileSync(new URL(f, dir))).length / 1024;

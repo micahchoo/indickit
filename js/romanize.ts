@@ -21,6 +21,7 @@
 import rulesJson from "../romanize/rules.json" with { type: "json" };
 import { version as PACKAGE_VERSION } from "../package.json" with { type: "json" };
 import { langCode } from "./lang";
+import { isLetter, isMark, nfc } from "./unidata";
 
 /** The tables: "words" for running text, "names" for person names. */
 export type Mode = "words" | "names";
@@ -35,7 +36,7 @@ type Rules = {
   eos: string;
   unknown_penalty: number;
   unify: { from: [number, number]; to_block: number; mask: number };
-  groups: Record<string, [number, number]>;
+  groups: Record<string, [number, number][]>;
   families: Record<Mode, Record<string, FamilyEntry>>;
 };
 const RULES = rulesJson as unknown as Rules;
@@ -117,14 +118,18 @@ export function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8
   const l = RULES.families[mode][lang];
   if (!l) throw new Error(`romanize: no ${mode} tables for "${lang}"`);
   const x = new Mix(own, pool, l.tag, RULES.beam[mode]);
-  const [lo, hi] = RULES.groups[l.group];
+  const ranges = RULES.groups[l.group];
   const inScript = (ch: string) => {
     const cp = ch.codePointAt(0)!;
-    return (cp >= lo && cp <= hi) || cp === 0x200c || cp === 0x200d;
+    return cp === 0x200c || cp === 0x200d || ranges.some(([lo, hi]) => cp >= lo && cp <= hi);
   };
-  const letter = /[\p{L}\p{M}‌‍]/u;
+  const letter = (c: string) => {
+    const cp = c.codePointAt(0)!;
+    return cp === 0x200c || cp === 0x200d || isLetter(cp) || isMark(cp);
+  };
+  // joiners shape a letter and spell nothing: deleted before the lookup and the decode
   const word = (w: string, n = 4): string[] => {
-    const s = w.normalize("NFC");
+    const s = stripJoiners(nfc(w));
     const known = x.lookup.get(s);
     if (known) return known.slice(0, n);
     return x.decode(unify(s), n).filter((o) => o !== "");
@@ -134,15 +139,15 @@ export function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8
     mode,
     word,
     text(t: string): string {
-      const cs = [...t.normalize("NFC")];
+      const cs = [...nfc(t)];
       let out = "";
       for (let i = 0; i < cs.length; ) {
-        if (!(inScript(cs[i]) && letter.test(cs[i]))) {
+        if (!(inScript(cs[i]) && letter(cs[i]))) {
           out += cs[i++];
           continue;
         }
         let j = i;
-        while (j < cs.length && inScript(cs[j]) && letter.test(cs[j])) j++;
+        while (j < cs.length && inScript(cs[j]) && letter(cs[j])) j++;
         const run = cs.slice(i, j).join("");
         out += word(run, 1)[0] ?? run;
         i = j;
@@ -152,6 +157,14 @@ export function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8
   };
   Object.defineProperty(r, "_mix", { value: x }); // for _decode only
   return r;
+}
+
+// The tables hold a "\u200d" → "" chunk from the training text; left in place, a joiner puts
+// the beam on the path that spells every chunk before it as "", and the letters before the
+// joiner are lost. The reference (jsm.Model.decode) deletes joiners the same way.
+const JOINERS = /[\u200c\u200d]/gu;
+function stripJoiners(s: string): string {
+  return s.replace(JOINERS, "");
 }
 
 /** Moves every Brahmic code point to the Devanagari block by its offset (rules.json "unify"). */
@@ -365,7 +378,7 @@ class Mix {
 
   /** Beam search over the ways to cut w into chunks; the n best spellings (an empty one included). */
   decode(word: string, n: number): string[] {
-    const w = [...word];
+    const w = [...stripJoiners(word)];
     const h = RULES.order - 1;
     const root: Hyp = { score: 0, out: "", ctx: this.start };
     const beams: Cand[][] = Array.from({ length: w.length + 1 }, () => []);

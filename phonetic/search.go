@@ -14,7 +14,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"golang.org/x/text/unicode/norm"
+	"github.com/micahchoo/indickit/internal/unidata"
+	"github.com/micahchoo/indickit/internal/unorm"
 )
 
 //go:embed scorer
@@ -164,7 +165,7 @@ func latSyms(w string) []rune {
 
 func natSyms(w string) []rune {
 	var out []rune
-	for _, r := range norm.NFC.String(w) {
+	for _, r := range unorm.NFC(w) {
 		if r != 0x200c && r != 0x200d && !unicode.IsSpace(r) {
 			out = append(out, r)
 		}
@@ -245,7 +246,7 @@ var blocks = []struct {
 
 func scriptOf(w string) string {
 	for _, r := range w {
-		if unicode.IsLetter(r) {
+		if unidata.IsLetter(r) {
 			for _, b := range blocks {
 				if r >= b.lo && r <= b.hi {
 					return b.name

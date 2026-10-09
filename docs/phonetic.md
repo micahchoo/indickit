@@ -45,7 +45,7 @@ name among 81,000 English names returns about one wrong person.
 
 One word takes 0.6 µs in Go and 0.7 µs in Node, on one core. A million
 names index in about 2 s (Go) or 3 s (Node); a search takes 2–3 µs. The
-browser file is 5 KB gzipped.
+browser file is 8 KB gzipped.
 
 Known weak spots:
 
@@ -95,7 +95,7 @@ and 78%.
 - **Small lists.** In a list of fewer than 100 names every key counts, and
   a title weighs as much as a name: "Narendra Modi" scores 73 against
   "श्री नरेंद्र मोदी" in a list of four names. Remove titles in small lists.
-- **Size.** The browser file is 17 KB gzipped, and a language's table 2–6
+- **Size.** The browser file is 21 KB gzipped, and a language's table 2–6
   KB more, loaded when you call `loadSearch`.
 
 Weak spots: Urdu (41%) and Malayalam (53%) names in text at the strict

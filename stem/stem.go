@@ -5,6 +5,7 @@
 // least two code points; in languages with the vowel step it then drops one
 // final vowel sign (the Dravidian enunciative u). A word with no listed
 // ending is its own stem, and so is every word of a language with no table.
+// Kannada, whose endings stack, runs all of this twice.
 //
 // A stem is a key, not text. Apply Stem once to the words you index and
 // once to the query, and compare. Stem(Stem(w)) may cut again, as Snowball
@@ -19,6 +20,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"sort"
+	"unicode/utf8"
 
 	langtag "github.com/micahchoo/indickit/internal/lang"
 )
@@ -29,6 +31,7 @@ var rulesJSON []byte
 type table struct {
 	endings map[string]bool
 	vowel   bool
+	passes  int
 }
 
 var (
@@ -48,6 +51,7 @@ func init() {
 		VowelSigns []rune `json:"vowel_signs"`
 		Languages  map[string]struct {
 			VowelStep bool     `json:"vowel_step"`
+			Passes    int      `json:"passes"`
 			Endings   []string `json:"endings"`
 		} `json:"languages"`
 	}
@@ -59,7 +63,7 @@ func init() {
 		vowelSigns[c] = true
 	}
 	for lang, l := range r.Languages {
-		t := table{endings: map[string]bool{}, vowel: l.VowelStep}
+		t := table{endings: map[string]bool{}, vowel: l.VowelStep, passes: l.Passes}
 		for _, e := range l.Endings {
 			t.endings[e] = true
 		}
@@ -85,19 +89,42 @@ func Stem(word, lang string) string {
 	if !ok {
 		return word
 	}
-	r := []rune(word)
-	s, cut := r, false
-	for k := min(maxEnd, len(r)-minStem); k > 0; k-- {
-		if t.endings[string(r[len(r)-k:])] {
-			s, cut = r[:len(r)-k], true
+	for range t.passes {
+		word = t.cut(word)
+	}
+	return word
+}
+
+// cut is one pass: the longest listed ending, then the vowel step.
+func (t table) cut(word string) string {
+	// Walk back over code points; every candidate ending is a substring of
+	// word, so no lookup copies. starts[k] is the byte where the last k code
+	// points begin.
+	var starts [16]int
+	n, i := 0, len(word)
+	for n < maxEnd+minStem && n < len(starts)-1 && i > 0 {
+		i--
+		for i > 0 && word[i]&0xC0 == 0x80 { // a continuation byte
+			i--
+		}
+		n++
+		starts[n] = i
+	}
+	if i > 0 { // more code points than we walked: none of them is a limit
+		n = len(starts)
+	}
+	end := len(word)
+	for k := min(maxEnd, n-minStem); k > 0; k-- {
+		if t.endings[word[starts[k]:]] {
+			end = starts[k]
+			n -= k
 			break
 		}
 	}
-	if t.vowel && len(s) > minStem && vowelSigns[s[len(s)-1]] {
-		s, cut = s[:len(s)-1], true
+	if t.vowel && n > minStem {
+		if c, size := utf8.DecodeLastRuneInString(word[:end]); vowelSigns[c] {
+			end -= size
+		}
 	}
-	if !cut {
-		return word
-	}
-	return string(s)
+	return word[:end]
 }

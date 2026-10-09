@@ -16,6 +16,7 @@ phonetic  राम  ರಾಮ  രാമ  ராம  رام  Ram       →  rn
 segment   ಲಕ್ಷ್ಮಿ                              →  ಲ  ಕ್ಷ್ಮಿ
 romanize  लक्ष्मी  ലക്ഷ്മി  லக்ஷ்மி              →  lakshmi
 deromanize  namaste                         →  नमस्ते
+wellformed  िहन्दी  हिन्दी                     →  broken  whole
 ```
 
 Each utility gives the same output in Go and in TypeScript, and each was
@@ -32,7 +33,9 @@ measured on data that its rules were never built on.
 | find a name in a long list, as people write it (titles, initials), or in running text | `phonetic-search` |
 | count letters, cut at a length, or move a cursor | `segment` |
 | write a name or a text in Latin letters (लक्ष्मी → lakshmi) | `romanize` |
+| let a search for "modi" find मोदी | `romanize` the index; see the recipe |
 | write Latin typing in an Indian script (namaste → नमस्ते) | `deromanize` |
+| reject or flag text that no font can draw whole (a PDF text layer) | `wellformed` |
 
 ## Languages
 
@@ -53,7 +56,7 @@ others hold tables for some languages only.
 | Konkani | `gom` | Devanagari | – | ✓ | words, names | words, names |
 | Maithili | `mai` | Devanagari | – | ✓ | words, names | words, names |
 | Malayalam | `ml` | Malayalam | ✓ | ✓ | words, names | words, names |
-| Manipuri | `mni` | Meetei Mayek | – | ✓ | words, names | words, names |
+| Manipuri | `mni` | Meetei Mayek, Bengali-Assamese | – | ✓ | words, names | words, names |
 | Marathi | `mr` | Devanagari | ✓ | ✓ | words, names | words, names |
 | Nepali | `ne` | Devanagari | ✓ | ✓ | words, names | words, names |
 | Odia | `or` | Odia | – | ✓ | words, names | words, names |
@@ -101,6 +104,7 @@ import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.8.0/d
 import { load } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.8.0/dist/romanize.js";
 import { loadSearch } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.8.0/dist/phonetic-search.js";
 import { load as loadDeromanize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.8.0/dist/deromanize.js";
+import { isWellFormed } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.8.0/dist/wellformed.js";
 ```
 
 Each utility is its own file, so a page loads only the rules it uses.
@@ -127,6 +131,22 @@ import { normalize } from "indickit/normalize";
 normalize("ಸಿಕಾರ್\u200c", "kn"); // "ಸಿಕಾರ್": a ZWNJ at the end draws nothing
 normalize("അവന്\u200d", "ml"); // "അവൻ": the old chillu becomes the atomic one
 normalize("र्\u200dय", "mr"); // "र्\u200dय": eyelash ra; this ZWJ is visible, so it stays
+```
+
+### Reject text no font can draw
+
+A PDF text layer or an OCR run gives words that no font can draw whole: a
+vowel sign typed before its letter, a conjunct with a member dropped. A
+renderer shows a dotted circle (◌) there. `normalize` cannot repair such a
+word, because it never moves a sign. `wellformed` finds it before you store
+it: 10.8% of the words in PDF text layers are broken, 0.012% in clean text.
+
+```ts
+import { isWellFormed, brokenAt } from "indickit/wellformed";
+
+isWellFormed("\u093fहन्दी"); // false: the vowel sign ि has no letter before it
+isWellFormed("हिन्दी"); // true
+brokenAt("क्ि"); // 2: a vowel sign after a virama
 ```
 
 ### Search words in their other forms
@@ -163,6 +183,12 @@ import { fold } from "indickit/normalize";
 fold("हिन्दी", "hi"); // "हिंदी"
 fold("गाँव", "hi"); // "गांव"
 ```
+
+Urdu and Sindhi often write two words as one (ہو گیا and ہوگیا). `fold`
+does not join them: joining the stored text glues 39% of Urdu words to the
+word before. Instead, search a phrase twice, as typed and with its spaces
+removed. On new Wikipedia text that finds 3–4% more of a phrase's hits in
+Urdu and 6–14% in Sindhi, with 0.6% and 1.3% wrong hits.
 
 ### Find a name in any script
 
@@ -256,6 +282,42 @@ import (
 romanize.Word("लक्ष्मी", "hi", romanize.Words, 2) // [lakshmi laxmi]
 ```
 
+### Find native text with a Latin query
+
+A user types "modi" in a search box; the store holds मोदी. When you build
+the index, romanize each stored word in the `"words"` mode and store its
+four most likely spellings in a Latin field beside it:
+
+```ts
+import { load } from "indickit/romanize";
+
+const hi = await load("hi");          // the "words" mode
+hi.word("मोदी", 4);                    // ["modi","modee","moudi","mody"]
+hi.word("दिल्ली", 4);                  // ["dilli","dili","dilly","dilley"]
+hi.word("सरकार", 4);                   // ["sarkar","sarkaar","sarakar","sarakaar"]
+```
+
+At query time, lower-case the query and fuzzy-match it against that field:
+a hit is a word with a stored spelling one or two edits from the query
+(Elasticsearch: `fuzziness: AUTO`). The browser needs no model, and the
+index needs no download beyond the tables it was romanized with.
+
+On Wikipedia sentences typed in Latin letters by native speakers (Dakshina,
+11 languages, held out), the first hit is the right word 81.4% of the time,
+and one of the first four is 91.3%. IndicXlit, a 119 MB neural model that
+writes the query in the native script, gives 81.8% and 87.6%. The index
+leads in Bengali, Hindi, Kannada, Malayalam, Marathi, Tamil and Telugu, is
+level in Gujarati and Punjabi, and trails in Sindhi and Urdu. Its cost is a
+long list: 24 hits a search, and more than half of the first ten are other
+words. See [docs/romanize.md](docs/romanize.md#a-latin-query-on-a-romanized-index).
+
+Two other ways were measured. Do not put the `phonetic` key on both sides:
+it finds the right word first 38.0% of the time and floods the list; it is
+for names, not words. Do not write the query in the native script
+(`deromanize`, the next recipe) for a ranked list: that is the right way
+for a strict filter, where every hit must be the word itself, but for a
+ranked list the romanized index is as good and needs no second download.
+
 ### Write Latin typing in an Indian script
 
 `deromanize` is the reverse: it gives a ranked list of native spellings for
@@ -292,9 +354,11 @@ import (
 	"github.com/micahchoo/indickit/phonetic"
 	"github.com/micahchoo/indickit/segment"
 	"github.com/micahchoo/indickit/stem"
+	"github.com/micahchoo/indickit/wellformed"
 )
 
 normalize.Text("അവന്\u200d", "ml")               // "അവൻ"
+wellformed.Check("\u093fहन्दी")                   // false
 stem.Stem(normalize.Text("किताबों", "hi"), "hi") // किताब
 phonetic.Match("Mohanlal", "മോഹൻലാൽ")            // true
 phonetic.NewIndex(names, "hi", phonetic.ProfileNames).Search("Narendra Modi", phonetic.Thresholds["names"])
@@ -325,6 +389,8 @@ segment.Segment("ಲಕ್ಷ್ಮಿ")                       // [ಲ ಕ್ಷ
 | `deromanize.Word(latin, lang, mode, n)` | `(await load(lang, mode)).word(latin, n?)` | up to n native spellings, most likely first |
 | `deromanize.Text(s, lang, mode)` | `(await load(lang, mode)).text(text)` | each run of Latin letters in the language's script |
 | `deromanize.Languages(mode)` | `languages(mode)` | the languages with tables (Go: those imported) |
+| `wellformed.Check(s)` | `isWellFormed(text)` | true when a font draws the text with no dotted circle |
+| `wellformed.BrokenAt(s)` | `brokenAt(text)` | where the first dotted circle would be (Go: byte index; TypeScript: UTF-16 index), or -1 |
 
 Three things hold for all of them:
 
@@ -347,12 +413,13 @@ other tools tried and each weak spot are in `docs/`.
 
 | Utility | Result | Best other tool | Browser file | Details |
 |---|---|---|---|---|
-| `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 14 KB | [docs/normalize.md](docs/normalize.md) |
+| `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 17 KB | [docs/normalize.md](docs/normalize.md) |
 | `stem` | finds 6–15 points more of the right sentences than exact search, in 13 languages | ahead in 5 languages, level in 2, a trade in 4, behind in Nepali | 3 KB | [docs/stem.md](docs/stem.md) |
-| `phonetic` | finds the right person 84% of the time, in 21 languages, on clean names; 42% on a real roster as written (70% with titles and initials removed); with `phonetic-search`, 86% of a real roster as written and 85% of villages | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu; ICU + fuzzy match: 78% and 65% | 5 KB | [docs/phonetic.md](docs/phonetic.md) |
+| `phonetic` | finds the right person 84% of the time, in 21 languages, on clean names; 42% on a real roster as written (70% with titles and initials removed); with `phonetic-search`, 86% of a real roster as written and 85% of villages | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu; ICU + fuzzy match: 78% and 65% | 8 KB | [docs/phonetic.md](docs/phonetic.md) |
 | `segment` | cuts 0.05% of Kannada words wrongly | `Intl.Segmenter`: 50.3% | 9 KB | [docs/segment.md](docs/segment.md) |
-| `romanize` | writes 48.9% of the words of running text as people typed them, in 11 languages; 71.3% of names (tables: 0.2–1.8 MB a language) | IndicXlit (Python, a 119 MB model): 37.9% and 49.0% | 5 KB | [docs/romanize.md](docs/romanize.md) |
-| `deromanize` | writes the right word first for 87.1% of the words of Hindi news typed in Latin, and in four for 97.4%; 69.7% of names in 19 languages (tables: 0.3–3.1 MB a language) | IndicXlit: 86.1%, 89.7% and 66.4%; behind on rare words out of context | 20 KB | [docs/deromanize.md](docs/deromanize.md) |
+| `romanize` | writes 48.9% of the words of running text as people typed them, in 11 languages; 71.3% of names (tables: 0.2–1.8 MB a language) | IndicXlit (Python, a 119 MB model): 37.9% and 49.0% | 8 KB | [docs/romanize.md](docs/romanize.md) |
+| `deromanize` | writes the right word first for 87.1% of the words of Hindi news typed in Latin, and in four for 97.4%; 69.7% of names in 19 languages (tables: 0.3–3.1 MB a language) | IndicXlit: 86.1%, 89.7% and 66.4%; behind on rare words out of context | 23 KB | [docs/deromanize.md](docs/deromanize.md) |
+| `wellformed` | agrees with HarfBuzz on 100% of 135,944 held-out PDF words (9,594 of them broken) and 2,146,974 new Wikipedia words | a check that the word starts with a combining sign: finds 84% of the broken words, with 4,667 false alarms | 6 KB | [docs/wellformed.md](docs/wellformed.md) |
 
 (Browser files are gzipped.)
 
@@ -388,14 +455,29 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
   are not among them.
 - **`romanize` is behind IndicXlit on places and on rare single words**
   (by 7–13 and 5.5 points). Santali has names only; Bodo and Dogri have
-  text only. See [docs/romanize.md](docs/romanize.md).
+  text only. Manipuri in Bengali script loses syllables in the words mode;
+  its tables were trained on Meetei Mayek. See [docs/romanize.md](docs/romanize.md).
+- **`normalize` keeps the direction marks LRM and RLM** (U+200E, U+200F).
+  Text copied from the web carries them, and they hide a match on 0.04% of
+  Wikipedia redirect titles. Next to right-to-left text or digits, deleting
+  one can change the order a reader sees, and the glyph oracle cannot see
+  that. Strip them yourself before `normalize` when the text has no
+  right-to-left part.
+- **`wellformed` gives HarfBuzz's verdict only.** DirectWrite (Windows) and
+  CoreText (Apple) insert dotted circles by their own grammars. Arabic and
+  Ol Chiki text is always whole. A verdict that needs more than three
+  characters of context (three or more invisible characters in a row) can
+  be wrong. See [docs/wellformed.md](docs/wellformed.md).
 - **Go reads invalid UTF-8 as U+FFFD**, so for such input the output does
   not join back into the original bytes.
-- **"The same output" holds inside the blocks indickit reads.** Go reads
-  Unicode 15.0; TypeScript reads the Unicode data of its host (node 24:
-  17.0). A newer mark outside those blocks can give another output: "Ram"
-  plus U+0897 has the key `rn` in TypeScript and none in Go. A test checks
-  the blocks (`unicode_test.go`, `js/regression.test.ts`).
+- **"The same output" holds inside the blocks indickit reads.** There,
+  both ports read one pinned table of Unicode 15.0 data
+  (`internal/unidata/unicode15.json`), whatever Unicode version the host
+  ships; a letter added since 15.0 is not a letter to indickit. Outside the
+  blocks (Latin accents, symbols), Go reads x/text's Unicode 15.0 and
+  TypeScript reads its host (node 24: 17.0), so a newer mark there can give
+  another output: "Ram" plus U+0897 has the key `rn` in TypeScript and none
+  in Go. Tests pin the table (`unicode_test.go`, `js/unidata.test.ts`).
 - **Two promises have a scope.** `normalize` twice gives what `normalize`
   once gives for text with at most 8 invisible characters; 9 BOMs before
   ૰ need a second call. `normalize` changes no `phonetic` key of a word
@@ -407,14 +489,14 @@ Each utility's own weak spots are at the end of its file in `docs/`.
 
 Every table and switch of a utility is in its rules file
 (`normalize/rules.json`, `stem/rules.json`, `phonetic/rules.json`,
-`segment/rules.json`; `romanize/rules.json` and its tables in
+`segment/rules.json`, `wellformed/rules.json`; `romanize/rules.json` and its tables in
 `romanize/lang/`; `deromanize/rules.json` and its tables and word lists in
 `deromanize/lang/`; `phonetic-search`'s tables in `phonetic/scorer/`); the
 Go and TypeScript code is a short loop over it.
 Both are checked against a conformance file of inputs with the outputs that
 a reference implementation gave them: 345,276 inputs for `normalize`,
 418,665 for `stem`, 195,994 for `phonetic`, 858,654 for `segment`, 2,397
-for `romanize`, 2,818 for `deromanize`, and 1,021 search rows for
+for `romanize`, 2,990 for `deromanize`, 32,279 for `wellformed`, and 1,021 search rows for
 `phonetic-search` (`*/testdata/*conformance.jsonl.gz`). A change that makes any one disagree
 on any input fails the build.
 

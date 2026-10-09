@@ -63,6 +63,7 @@ var rules struct {
 	Eos            string               `json:"eos"`
 	UnknownPenalty float64              `json:"unknown_penalty"`
 	Alpha          map[Mode]float64     `json:"alpha"`
+	Silent         string               `json:"silent"`
 	Blocks         map[string]rune      `json:"blocks"`
 	Groups         map[string][][2]rune `json:"groups"`
 	Unify          struct {
@@ -197,8 +198,9 @@ func Text(text, lang string, mode Mode) string {
 func isLatin(r rune) bool { return clean(string(r)) != "" || r >= 0x0300 && r <= 0x036F }
 
 type scored struct {
-	s float64
-	o string
+	s   float64
+	o   string
+	cut bool // every path to o wrote nothing for a consonant (cuts): the re-rank skips it
 }
 
 func byScore(rs []scored) {
@@ -211,12 +213,12 @@ func byScore(rs []scored) {
 }
 
 // candidates decodes w with the mode's models; names mode merges both families,
-// each string at its better score.
+// each string at its better score, full if either model writes it in full.
 func candidates(w, lang string, mode Mode) []scored {
 	if w == "" {
 		return nil
 	}
-	merged := map[string]float64{}
+	merged := map[string]scored{}
 	found := false
 	for _, f := range families(mode) {
 		x := get(f, lang)
@@ -226,8 +228,10 @@ func candidates(w, lang string, mode Mode) []scored {
 		found = true
 		for _, r := range x.decode(w) {
 			o := deunify(r.o, lang)
-			if v, ok := merged[o]; !ok || r.s > v {
-				merged[o] = r.s
+			if v, ok := merged[o]; !ok {
+				merged[o] = scored{r.s, o, r.cut}
+			} else {
+				merged[o] = scored{max(v.s, r.s), o, v.cut && r.cut}
 			}
 		}
 	}
@@ -235,8 +239,8 @@ func candidates(w, lang string, mode Mode) []scored {
 		return nil
 	}
 	out := make([]scored, 0, len(merged))
-	for o, s := range merged {
-		out = append(out, scored{s, o})
+	for _, v := range merged {
+		out = append(out, v)
 	}
 	byScore(out)
 	return out
@@ -244,12 +248,14 @@ func candidates(w, lang string, mode Mode) []scored {
 
 // rerank: known strings by log score + α · log(count) in the word list, then the
 // rest in model order. A string is looked up by normalize.Text, then normalize.Fold.
+// A cut-short string is not known, whatever the list says: a short, common string
+// (murmu → മു) would otherwise take the bonus and come first.
 func rerank(best []scored, lang string, counts map[string]int, alpha float64) []string {
 	var known []scored
 	var rest []string
 	for _, b := range best {
-		if c, ok := counts[normalize.Fold(normalize.Text(b.o, lang), lang)]; ok {
-			known = append(known, scored{b.s + alpha*math.Log(float64(c)), b.o})
+		if c, ok := counts[normalize.Fold(normalize.Text(b.o, lang), lang)]; ok && !b.cut {
+			known = append(known, scored{b.s + alpha*math.Log(float64(c)), b.o, false})
 		} else {
 			rest = append(rest, b.o)
 		}
@@ -543,6 +549,7 @@ type hyp struct {
 	score float64
 	out   string
 	ctx   []int32
+	cut   bool // the path wrote nothing for a consonant (cuts)
 }
 
 // cand is a hypothesis before the beam cut: its context is built only if it survives.
@@ -552,6 +559,21 @@ type cand struct {
 	parent *hyp
 	tok    int32 // -1 for an unknown character: the context does not move
 	idx    int   // insertion order, the stable sort's last key
+	cut    bool
+}
+
+// cuts: does writing nothing for w[i:i+k] cut the word short? Yes if one of its
+// letters is a consonant that does not repeat the letter before it (tt, mm: one
+// sound). The letters that may write nothing are rules.Silent: the vowels, h
+// (aspiration is written with the consonant before it), y and w (a glide fuses
+// into a vowel sign).
+func cuts(w []rune, i, k int) bool {
+	for j := i; j < i+k; j++ {
+		if !strings.ContainsRune(rules.Silent, w[j]) && !(j > 0 && w[j] == w[j-1]) {
+			return true
+		}
+	}
+	return false
 }
 
 func before(a, b *cand) bool { // the reference's stable sort: score down, spelling up, then insertion
@@ -592,13 +614,14 @@ func top(cs []cand, k int) []*cand {
 }
 
 // decode: beam search over the ways to cut w into Latin chunks; the NBest spellings
-// (in the unified block) with their scores.
+// (in the unified block) with their scores. A spelling is cut when every path that
+// reaches it wrote nothing for a consonant.
 func (x *mix) decode(word string) []scored {
 	w := []rune(word)
 	h := rules.Order - 1
-	root := &hyp{0, "", x.start}
+	root := &hyp{0, "", x.start, false}
 	beams := make([][]cand, len(w)+1)
-	beams[0] = []cand{{0, "", nil, -1, 0}}
+	beams[0] = []cand{{0, "", nil, -1, 0, false}}
 	for i := 0; i < len(w); i++ {
 		if len(beams[i]) == 0 {
 			continue
@@ -606,22 +629,23 @@ func (x *mix) decode(word string) []scored {
 		for _, c := range top(beams[i], rules.Beam) {
 			hy := root
 			if i > 0 {
-				hy = &hyp{c.score, c.out, c.context(h)}
+				hy = &hyp{c.score, c.out, c.context(h), c.cut}
 			}
 			moved := false
 			sa, sb := x.a.stats(hy.ctx), x.b.stats(hy.ctx)
 			for k := 1; k <= rules.MaxN && i+k <= len(w); k++ {
 				for _, o := range x.options[string(w[i:i+k])] {
-					beams[i+k] = append(beams[i+k], cand{hy.score + x.logp(&sa, &sb, o.tok), hy.out + o.native, hy, o.tok, len(beams[i+k])})
+					beams[i+k] = append(beams[i+k], cand{hy.score + x.logp(&sa, &sb, o.tok), hy.out + o.native, hy, o.tok, len(beams[i+k]),
+						hy.cut || o.native == "" && cuts(w, i, k)})
 					moved = true
 				}
 			}
 			if !moved {
-				beams[i+1] = append(beams[i+1], cand{hy.score - rules.UnknownPenalty, hy.out, hy, -1, len(beams[i+1])})
+				beams[i+1] = append(beams[i+1], cand{hy.score - rules.UnknownPenalty, hy.out, hy, -1, len(beams[i+1]), hy.cut || cuts(w, i, 1)})
 			}
 		}
 	}
-	final := map[string]float64{}
+	final := map[string]scored{}
 	for i := range beams[len(w)] {
 		c := &beams[len(w)][i]
 		ctx := x.start
@@ -630,13 +654,15 @@ func (x *mix) decode(word string) []scored {
 		}
 		sa, sb := x.a.stats(ctx), x.b.stats(ctx)
 		s := c.score + x.logp(&sa, &sb, x.eos)
-		if v, ok := final[c.out]; !ok || s > v {
-			final[c.out] = s
+		if v, ok := final[c.out]; !ok {
+			final[c.out] = scored{s, c.out, c.cut}
+		} else {
+			final[c.out] = scored{max(v.s, s), c.out, v.cut && c.cut}
 		}
 	}
 	out := make([]scored, 0, len(final))
-	for o, s := range final {
-		out = append(out, scored{s, o})
+	for _, v := range final {
+		out = append(out, v)
 	}
 	byScore(out)
 	if len(out) > rules.NBest {

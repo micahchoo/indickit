@@ -21,7 +21,6 @@ import (
 	_ "github.com/micahchoo/indickit/romanize/lang/kn"
 	_ "github.com/micahchoo/indickit/romanize/lang/ks"
 	_ "github.com/micahchoo/indickit/romanize/lang/mai"
-	_ "github.com/micahchoo/indickit/romanize/lang/meetei"
 	_ "github.com/micahchoo/indickit/romanize/lang/ml"
 	_ "github.com/micahchoo/indickit/romanize/lang/mni"
 	_ "github.com/micahchoo/indickit/romanize/lang/mr"
@@ -109,5 +108,41 @@ func TestDeterministic(t *testing.T) {
 		if b := romanize.Word("ಲಕ್ಷ್ಮಿ", "kn", romanize.Words, 4); fmt.Sprint(a) != fmt.Sprint(b) {
 			t.Fatalf("run %d: %v, then %v", i, a, b)
 		}
+	}
+}
+
+// A joiner after the virama shapes the letter and spells nothing. Left in place, it put
+// the beam on the path that spells everything before it as "" (प्राप्\u200dत gave "the";
+// the demo job, 2026-10-08). Word deletes U+200C and U+200D before the lookup and the decode.
+func TestJoinersAreDeleted(t *testing.T) {
+	for _, c := range []struct{ joined, plain string }{
+		{"प्राप्\u200dत", "प्राप्त"}, {"उन्\u200dहोंने", "उन्होंने"}, {"विश्\u200dव", "विश्व"}, {"प्राप्\u200cत", "प्राप्त"},
+	} {
+		for _, mode := range []romanize.Mode{romanize.Words, romanize.Names} {
+			got, want := romanize.Word(c.joined, "hi", mode, 4), romanize.Word(c.plain, "hi", mode, 4)
+			if fmt.Sprint(got) != fmt.Sprint(want) {
+				t.Errorf("%s %q: %v, without the joiner %v", mode, c.joined, got, want)
+			}
+		}
+	}
+	if got := romanize.Text("प्राप्\u200dत", "hi", romanize.Words); got != "praapt" {
+		t.Errorf("Text with a joiner: %q", got)
+	}
+	if got := romanize.Word("\u200d", "hi", romanize.Words, 4); len(got) != 0 {
+		t.Errorf("a joiner alone: %v", got)
+	}
+}
+
+// Manipuri is written in Meetei Mayek and in Bengali script. Its own tables hold Meetei
+// Mayek only; a Bengali-script word is spelled by the shared Brahmic table, so the pooled
+// file must be the Brahmic one (v0.6.0 loaded a Meetei-only file: রামেন gave "en").
+func TestManipuriInBengaliScript(t *testing.T) {
+	for w, want := range map[string]string{"রামেন": "ramen", "ওরাম": "oram", "রামদারশ": "ramdarsh", "ꯔꯥꯝ": "ram"} {
+		if got := romanize.Word(w, "mni", romanize.Names, 1); len(got) != 1 || got[0] != want {
+			t.Errorf("mni names %q: %v, want %q", w, got, want)
+		}
+	}
+	if got := romanize.Text("ꯔꯥꯝ, রামেন", "mni", romanize.Names); got != "ram, ramen" {
+		t.Errorf("Text in both scripts: %q", got)
 	}
 }

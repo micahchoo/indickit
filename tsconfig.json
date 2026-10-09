@@ -18,6 +18,7 @@
     "js/stem.ts",
     "js/romanize.ts",
     "js/phonetic-search.ts",
-    "js/deromanize.ts"
+    "js/deromanize.ts",
+    "js/wellformed.ts"
   ]
 }

@@ -24,10 +24,10 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"unicode"
 
 	langtag "github.com/micahchoo/indickit/internal/lang"
-	"golang.org/x/text/unicode/norm"
+	"github.com/micahchoo/indickit/internal/unidata"
+	"github.com/micahchoo/indickit/internal/unorm"
 )
 
 //go:embed rules.json
@@ -55,7 +55,7 @@ var rules struct {
 		ToBlock rune    `json:"to_block"`
 		Mask    rune    `json:"mask"`
 	} `json:"unify"`
-	Groups   map[string][2]rune `json:"groups"`
+	Groups   map[string][][2]rune `json:"groups"`
 	Families map[Mode]map[string]struct {
 		Tag    string `json:"tag"`
 		Group  string `json:"group"`
@@ -113,7 +113,8 @@ func code(lang string) string {
 
 // Word returns up to n spellings of one word (n ≤ 0 means 4), most likely
 // first. It returns nil when the language's files are not imported for
-// this mode, or the word has none of the language's letters.
+// this mode, or the word has none of the language's letters. Joiners
+// (U+200C, U+200D) are deleted first: they shape a letter and spell nothing.
 func Word(word, lang string, mode Mode, n int) []string {
 	if n <= 0 {
 		n = 4
@@ -122,7 +123,7 @@ func Word(word, lang string, mode Mode, n int) []string {
 	if x == nil {
 		return nil
 	}
-	w := norm.NFC.String(word)
+	w := stripJoiners(unorm.NFC(word))
 	if s, ok := x.lookup[w]; ok {
 		return append([]string(nil), s[:min(n, len(s))]...)
 	}
@@ -143,20 +144,28 @@ func Text(text, lang string, mode Mode) string {
 	if !ok || get(c, mode) == nil {
 		return text
 	}
-	rng := rules.Groups[l.Group]
+	ranges := rules.Groups[l.Group]
 	in := func(r rune) bool {
-		return r >= rng[0] && r <= rng[1] || r == 0x200C || r == 0x200D
+		if r == 0x200C || r == 0x200D {
+			return true
+		}
+		for _, rng := range ranges {
+			if r >= rng[0] && r <= rng[1] {
+				return true
+			}
+		}
+		return false
 	}
 	var b strings.Builder
-	rs := []rune(norm.NFC.String(text))
+	rs := []rune(unorm.NFC(text))
 	for i := 0; i < len(rs); {
-		if !in(rs[i]) || !(unicode.IsLetter(rs[i]) || unicode.IsMark(rs[i])) {
+		if !in(rs[i]) || !(unidata.IsLetter(rs[i]) || unidata.IsMark(rs[i])) {
 			b.WriteRune(rs[i])
 			i++
 			continue
 		}
 		j := i
-		for j < len(rs) && in(rs[j]) && (unicode.IsLetter(rs[j]) || unicode.IsMark(rs[j]) || rs[j] == 0x200C || rs[j] == 0x200D) {
+		for j < len(rs) && in(rs[j]) && (unidata.IsLetter(rs[j]) || unidata.IsMark(rs[j]) || rs[j] == 0x200C || rs[j] == 0x200D) {
 			j++
 		}
 		if out := Word(string(rs[i:j]), c, mode, 1); len(out) > 0 {
@@ -167,6 +176,19 @@ func Text(text, lang string, mode Mode) string {
 		i = j
 	}
 	return b.String()
+}
+
+// stripJoiners deletes ZWNJ and ZWJ. The tables hold a "\u200d" → "" chunk from the
+// training text; left in place, a joiner puts the beam on the path that spells every
+// chunk before it as "", and the letters before the joiner are lost. The reference
+// (jsm.Model.decode) deletes them the same way.
+func stripJoiners(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r == 0x200C || r == 0x200D {
+			return -1
+		}
+		return r
+	}, s)
 }
 
 // unify moves every Brahmic code point to the Devanagari block by its offset:
@@ -459,7 +481,7 @@ func top(cs []cand, k int) []*cand {
 
 // decode: beam search over the ways to cut w into chunks; the n best spellings.
 func (x *mix) decode(word string, n int) []string {
-	w := []rune(word)
+	w := []rune(stripJoiners(word))
 	h := rules.Order - 1
 	root := &hyp{0, "", x.start}
 	beams := make([][]cand, len(w)+1)

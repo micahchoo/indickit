@@ -42,6 +42,32 @@ test("word and text", async () => {
   expect(languages("words")).not.toContain("sat");
 });
 
+// A joiner after the virama shapes the letter and spells nothing. Left in place, it put the
+// beam on the path that spells everything before it as "" (प्राप्\u200dत gave "the"; the demo
+// job, 2026-10-08). word() deletes U+200C and U+200D before the lookup and the decode.
+test("joiners are deleted before the lookup and the decode", async () => {
+  for (const mode of ["words", "names"] as Mode[]) {
+    const hi = await get("hi", mode);
+    for (const [joined, plain] of [["प्राप्\u200dत", "प्राप्त"], ["उन्\u200dहोंने", "उन्होंने"], ["विश्\u200dव", "विश्व"], ["प्राप्\u200cत", "प्राप्त"]]) {
+      expect([mode, joined, hi.word(joined)]).toEqual([mode, joined, hi.word(plain)]);
+    }
+  }
+  const hi = await get("hi", "words");
+  expect(hi.text("प्राप्\u200dत")).toBe("praapt");
+  expect(hi.word("\u200d")).toEqual([]);
+});
+
+// Manipuri is written in Meetei Mayek and in Bengali script. Its own tables hold Meetei Mayek
+// only; a Bengali-script word is spelled by the shared Brahmic table, so the pooled file must be
+// the Brahmic one (v0.6.0 loaded a Meetei-only file: রামেন gave "en").
+test("Manipuri in Bengali script", async () => {
+  const mni = await get("mni", "names");
+  for (const [w, want] of [["রামেন", "ramen"], ["ওরাম", "oram"], ["রামদারশ", "ramdarsh"], ["ꯔꯥꯝ", "ram"]]) {
+    expect([w, mni.word(w, 1)]).toEqual([w, [want]]);
+  }
+  expect(mni.text("ꯔꯥꯝ, রামেন")).toBe("ram, ramen");
+});
+
 test("fromBytes gives the same tables as load", async () => {
   const own = readFileSync(new URL("../romanize/lang/ta/ta.words.bin", import.meta.url));
   const pool = readFileSync(new URL("../romanize/lang/brahmic/words-brahmic.bin", import.meta.url));

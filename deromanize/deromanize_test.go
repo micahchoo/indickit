@@ -100,3 +100,42 @@ func TestDeterministic(t *testing.T) {
 		}
 	}
 }
+
+// A spelling that writes nothing for a consonant is cut short; the re-rank's
+// frequency bonus put such strings first in names mode (ml murmu → മു, ur
+// chandrayaan → ان, ks rajnath → راج; rules 2026-10-09). The silent letters still
+// write nothing: the inherent a (kamal → कमल), a doubled consonant (mohammad → محمد).
+func TestCutShortSpellingIsNotFirst(t *testing.T) {
+	cases := []struct {
+		word, lang string
+		mode       deromanize.Mode
+		want       []string // the first answer is one of these
+		not        string   // the cut-short spelling v0.8.0 gave first
+	}{
+		{"murmu", "ml", deromanize.Names, []string{"മുര്മു"}, "മു"},
+		{"chandrayaan", "ur", deromanize.Names, []string{"چندریان"}, "ان"},
+		{"rajnath", "ks", deromanize.Names, []string{"رجناتھ", "راجناتھ"}, "راج"},
+		{"rajnath", "gom", deromanize.Names, []string{"राज्नाथ", "रजनाथ", "राजनाथ"}, "राजन"},
+		{"rajnath", "mni", deromanize.Names, []string{"ꯔꯥꯖꯅ", "ꯔꯥꯖꯅꯠ", "ꯔꯥꯖꯅꯥꯠ"}, "ꯔꯥꯖ"},
+		{"murmu", "mni", deromanize.Names, []string{"ꯃꯨꯔꯃꯨ"}, "ꯃꯨ"},
+		{"kamal", "hi", deromanize.Words, []string{"कमल"}, ""},
+		{"mohammad", "ur", deromanize.Names, []string{"محمد"}, ""},
+	}
+	for _, c := range cases {
+		got := deromanize.Word(c.word, c.lang, c.mode, 4)
+		if len(got) == 0 || got[0] == c.not {
+			t.Errorf("%s %s %q: got %q, a cut-short spelling first", c.mode, c.lang, c.word, got)
+			continue
+		}
+		ok := false
+		for _, w := range c.want {
+			ok = ok || got[0] == w
+		}
+		if !ok {
+			t.Errorf("%s %s %q: got %q, want one of %q first", c.mode, c.lang, c.word, got, c.want)
+		}
+	}
+	if deromanize.RulesVersion < "2026-10-09" {
+		t.Errorf("rules version %s predates the cut-short guard", deromanize.RulesVersion)
+	}
+}

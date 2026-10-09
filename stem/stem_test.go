@@ -54,6 +54,9 @@ func TestCases(t *testing.T) {
 	if Stem("ஆண்டில்", "ta") != Stem("ஆண்டு", "ta") {
 		t.Error("Tamil: a case ending and the enunciative u should meet")
 	}
+	if Stem("ಪ್ರಧಾನಮಂತ್ರಿಯವರು", "kn") != Stem("ಪ್ರಧಾನಮಂತ್ರಿ", "kn") {
+		t.Error("Kannada: two passes should take the honorific and the stem vowel")
+	}
 	if got := Stem("ஆண்டில்", "xx"); got != "ஆண்டில்" {
 		t.Errorf("unknown language: %q, want the word unchanged", got)
 	}

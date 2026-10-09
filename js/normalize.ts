@@ -22,6 +22,7 @@
 
 import rulesJson from "../normalize/rules.json" with { type: "json" };
 import { langCode } from "./lang";
+import { nfc } from "./unidata";
 
 type Rules = typeof rulesJson;
 type Tree = number | [number, { [values: string]: Tree }];
@@ -109,7 +110,7 @@ function compile(r: Rules) {
   const khanda = { from: Array.from(r.khanda_ta.from, cp), to: cp(r.khanda_ta.to), notBefore: r.khanda_ta.not_before };
 
   function onePass(text: string, lang: string | undefined): string {
-    let s = Array.from(text.normalize("NFC"), cp);
+    let s = Array.from(nfc(text), cp);
     // rule 2: consonant + virama + ZWJ -> chillu, not after a virama, not before not_before
     let out: number[] = [];
     for (let i = 0; i < s.length; i++) {
@@ -149,7 +150,7 @@ function compile(r: Rules) {
       if (invisible.has(s[i]) && deletes(out.slice(-LEFT), s[i], s.slice(i + 1, i + 1 + RIGHT))) continue;
       out.push(s[i]);
     }
-    return fromCodePoints(out).normalize("NFC");
+    return nfc(fromCodePoints(out));
   }
 
   // Again until nothing changes: deleting one invisible character can change

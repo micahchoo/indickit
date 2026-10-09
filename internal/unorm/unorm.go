@@ -10,12 +10,20 @@
 // So x/text decides only whether a string is already NFC; its answer agreed
 // with Python 3.12 (Unicode 15.0) on 100,000 random strings with runs of up
 // to 70 marks (linguistic-utilities jobs/release/reports/03-code-floor-fixes.md).
+// That quick check stays right under a newer x/text: a string it calls
+// normal has no decomposable code point, no composable pair and its marks in
+// order under the newer data, so under the pinned data too (the pinned data
+// knows fewer code points, each inert).
+//
+// The three questions of the algorithm, a code point's decomposition, its
+// combining class and the composite of two code points, go to internal/unidata:
+// the pinned table inside indickit's blocks, x/text outside them.
 package unorm
 
 import (
 	"slices"
-	"unicode/utf8"
 
+	"github.com/micahchoo/indickit/internal/unidata"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -27,7 +35,7 @@ func NFC(s string) string {
 	return compose(decompose(s))
 }
 
-func ccc(r rune) uint8 { return norm.NFD.PropertiesString(string(r)).CCC() }
+func ccc(r rune) uint8 { return unidata.CCC(r) }
 
 // decompose is NFD: each code point decomposed alone (no decomposition is
 // longer than 18 code points, so x/text inserts nothing), then the canonical
@@ -35,7 +43,7 @@ func ccc(r rune) uint8 { return norm.NFD.PropertiesString(string(r)).CCC() }
 func decompose(s string) []rune {
 	var d []rune
 	for _, r := range s {
-		d = append(d, []rune(norm.NFD.String(string(r)))...)
+		d = append(d, unidata.NFD(r)...)
 	}
 	for i := 0; i < len(d); {
 		if ccc(d[i]) == 0 {
@@ -53,8 +61,7 @@ func decompose(s string) []rune {
 }
 
 // compose is the canonical composition algorithm of UAX #15 on a string in
-// NFD. pair asks x/text for the primary composite of two code points; two
-// code points hold far fewer than 30 non-starters.
+// NFD.
 func compose(d []rune) string {
 	out := make([]rune, 0, len(d))
 	starter := -1 // index in out of the last starter
@@ -74,11 +81,4 @@ func compose(d []rune) string {
 	return string(out)
 }
 
-func pair(a, b rune) (rune, bool) {
-	t := norm.NFC.String(string([]rune{a, b}))
-	if utf8.RuneCountInString(t) != 1 {
-		return 0, false
-	}
-	r, _ := utf8.DecodeRuneInString(t)
-	return r, true
-}
+func pair(a, b rune) (rune, bool) { return unidata.Pair(a, b) }

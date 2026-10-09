@@ -72,9 +72,9 @@
    },
    "mni": {
     "file": "mni.names.bin",
-    "group": "meetei",
+    "group": "brahmic",
     "lookup": 253,
-    "pooled": "names-meetei.bin",
+    "pooled": "names-brahmic.bin",
     "tag": "mni"
    },
    "mr": {
@@ -228,9 +228,9 @@
    },
    "mni": {
     "file": "mni.words.bin",
-    "group": "meetei",
+    "group": "brahmic",
     "lookup": 0,
-    "pooled": "words-meetei.bin",
+    "pooled": "words-brahmic.bin",
     "tag": "mni:w"
    },
    "mr": {
@@ -324,8 +324,7 @@
   "mr.names.bin": 119082,
   "mr.words.bin": 327753,
   "names-arabic.bin": 188775,
-  "names-brahmic.bin": 594055,
-  "names-meetei.bin": 43805,
+  "names-brahmic.bin": 600155,
   "names-olchiki.bin": 97591,
   "ne.names.bin": 37468,
   "ne.words.bin": 297072,
@@ -345,31 +344,36 @@
   "ur.names.bin": 192400,
   "ur.words.bin": 540255,
   "words-arabic.bin": 1182486,
-  "words-brahmic.bin": 2542643,
-  "words-meetei.bin": 198229,
+  "words-brahmic.bin": 2679161,
   "words-olchiki.bin": 61705
  },
  "groups": {
   "arabic": [
-   1536,
-   1791
+   [
+    1536,
+    1791
+   ]
   ],
   "brahmic": [
-   2304,
-   3455
-  ],
-  "meetei": [
-   43744,
-   44031
+   [
+    2304,
+    3455
+   ],
+   [
+    43744,
+    44031
+   ]
   ],
   "olchiki": [
-   7248,
-   7295
+   [
+    7248,
+    7295
+   ]
   ]
  },
  "max_n": 3,
  "order": 3,
- "rules_version": "2026-10-07",
+ "rules_version": "2026-10-08",
  "unify": {
   "from": [
    2432,

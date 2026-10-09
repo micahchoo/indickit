@@ -488,7 +488,8 @@
  "max_n": 3,
  "nbest": 16,
  "order": 3,
- "rules_version": "2026-10-08",
+ "rules_version": "2026-10-09",
+ "silent": "aeiouhwy",
  "unify": {
   "from": [
    2432,

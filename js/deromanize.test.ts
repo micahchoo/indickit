@@ -71,3 +71,25 @@ test("word, text and the input rule", async () => {
   expect(languages("words")).not.toContain("sat");
   expect(languages("names").length).toBe(22);
 });
+
+// A spelling that writes nothing for a consonant is cut short; the re-rank's frequency bonus
+// put such strings first in names mode (ml murmu → മു, ur chandrayaan → ان, ks rajnath → راج;
+// rules 2026-10-09). The silent letters still write nothing: the inherent a, a doubled consonant.
+test("a cut-short spelling is not first", async () => {
+  const cases: [string, string, Mode, string[], string][] = [
+    ["murmu", "ml", "names", ["മുര്മു"], "മു"],
+    ["chandrayaan", "ur", "names", ["چندریان"], "ان"],
+    ["rajnath", "ks", "names", ["رجناتھ", "راجناتھ"], "راج"],
+    ["rajnath", "gom", "names", ["राज्नाथ", "रजनाथ", "राजनाथ"], "राजन"],
+    ["rajnath", "mni", "names", ["ꯔꯥꯖꯅ", "ꯔꯥꯖꯅꯠ", "ꯔꯥꯖꯅꯥꯠ"], "ꯔꯥꯖ"],
+    ["murmu", "mni", "names", ["ꯃꯨꯔꯃꯨ"], "ꯃꯨ"],
+    ["kamal", "hi", "words", ["कमल"], ""],
+    ["mohammad", "ur", "names", ["محمد"], ""],
+  ];
+  for (const [word, lang, mode, want, not] of cases) {
+    const got = (await get(lang, mode)).word(word, 4);
+    expect([word, got[0] !== not && want.includes(got[0])]).toEqual([word, true]);
+  }
+  const { RULES_VERSION } = await import("./deromanize");
+  expect(RULES_VERSION >= "2026-10-09").toBe(true);
+}, 120_000);
