@@ -595,9 +595,10 @@ type cand struct {
 	cut    bool
 }
 
-func (c *cand) spelling() string {
-	pieces := []string{c.piece}
-	for p := c.parent; p != nil; p = p.parent {
+// spelling: the pieces from the root to h, joined.
+func (h *hyp) spelling() string {
+	var pieces []string
+	for p := h; p != nil; p = p.parent {
 		pieces = append(pieces, p.piece)
 	}
 	var b strings.Builder
@@ -671,10 +672,23 @@ func (c *cand) context(h int) []int32 {
 // every candidate, for the insertion order. With all set, it keeps every
 // candidate (the last position, where the end-of-word score reorders them).
 type beam struct {
-	k    int
-	all  bool
-	n    int
-	best []*cand
+	k     int
+	all   bool
+	n     int
+	best  []*cand
+	every []cand // with all set: every candidate, by value (no allocation each)
+}
+
+// lpCache: one context's statistics and its options' log probabilities, by chunk length.
+type lpCache struct {
+	sa, sb ctxStats
+	lp     [][]float64
+}
+
+// closed: no candidate scoring at most s (with a margin for rounding: a mixed
+// probability can pass 1 by an ulp) can enter. The last position keeps all.
+func (bm *beam) closed(s float64) bool {
+	return !bm.all && len(bm.best) == bm.k && s+1e-9 < bm.best[bm.k-1].score
 }
 
 func (bm *beam) add(c cand) {
@@ -684,12 +698,12 @@ func (bm *beam) add(c cand) {
 	if full && c.score < bm.best[bm.k-1].score {
 		return // the common case: nothing is built for a candidate that loses
 	}
-	p := new(cand)
-	*p = c
 	if bm.all {
-		bm.best = append(bm.best, p)
+		bm.every = append(bm.every, c)
 		return
 	}
+	p := new(cand)
+	*p = c
 	if full && !before(p, bm.best[bm.k-1]) {
 		return
 	}
@@ -713,35 +727,90 @@ func (x *mix) decode(word string) []scored {
 		beams[i] = beam{k: rules.Beam, all: i == len(w)}
 	}
 	beams[0].add(cand{tok: -1})
+	opts := make([][]option, rules.MaxN+1) // the options of w[i:i+k], by k
 	for i := 0; i < len(w); i++ {
+		seen := map[uint64]*lpCache{} // by context, at this position: options are this position's
 		for _, c := range beams[i].best {
+			// A log probability is at most 0, so no candidate of c scores above c. Where the
+			// next beam's 40th already scores above c, nothing of c can enter: its options are
+			// counted (insertion order) and not scored. The beams are read best first, so this
+			// skips most of the work (perf job, phase 6).
+			moved, open := false, false
+			for k := 1; k <= rules.MaxN && i+k <= len(w); k++ {
+				opts[k] = x.options[string(w[i:i+k])]
+				if len(opts[k]) > 0 {
+					moved = true
+					open = open || !beams[i+k].closed(c.score)
+				}
+			}
+			if moved && !open {
+				for k := 1; k <= rules.MaxN && i+k <= len(w); k++ {
+					beams[i+k].n += len(opts[k])
+				}
+				continue
+			}
 			hy := root
 			if i > 0 {
 				hy = &hyp{c.score, c.parent, c.piece, i, c.context(h), c.cut}
 			}
-			moved := false
-			sa, sb := x.a.stats(hy.ctx), x.b.stats(hy.ctx)
-			for k := 1; k <= rules.MaxN && i+k <= len(w); k++ {
-				for _, o := range x.options[string(w[i:i+k])] {
-					beams[i+k].add(cand{score: hy.score + x.logp(&sa, &sb, o.tok), parent: hy, piece: o.native, tok: o.tok,
-						cut: hy.cut || o.native == "" && cuts(w, i, k)})
-					moved = true
-				}
-			}
 			if !moved {
 				beams[i+1].add(cand{score: hy.score - rules.UnknownPenalty, parent: hy, tok: -1, cut: hy.cut || cuts(w, i, 1)})
+				continue
+			}
+			// Hypotheses here that share a context share every option's log probability:
+			// computed once per context (the same function on the same inputs: the same floats).
+			e := seen[ctxKey(hy.ctx)]
+			if e == nil {
+				e = &lpCache{sa: x.a.stats(hy.ctx), sb: x.b.stats(hy.ctx), lp: make([][]float64, rules.MaxN+1)}
+				seen[ctxKey(hy.ctx)] = e
+			}
+			for k := 1; k <= rules.MaxN && i+k <= len(w); k++ {
+				if beams[i+k].closed(hy.score) {
+					beams[i+k].n += len(opts[k])
+					continue
+				}
+				if e.lp[k] == nil {
+					e.lp[k] = make([]float64, len(opts[k]))
+					for j, o := range opts[k] {
+						e.lp[k][j] = x.logp(&e.sa, &e.sb, o.tok)
+					}
+				}
+				for j, o := range opts[k] {
+					beams[i+k].add(cand{score: hy.score + e.lp[k][j], parent: hy, piece: o.native, tok: o.tok,
+						cut: hy.cut || o.native == "" && cuts(w, i, k)})
+				}
 			}
 		}
 	}
+	// The last position keeps every candidate (thousands for a short word), and many
+	// share a context and a parent: the end-of-word log probability is computed once
+	// per context, and a parent's spelling once per parent.
 	final := map[string]scored{}
-	for _, c := range beams[len(w)].best {
+	eos := map[uint64]float64{}
+	spelled := map[*hyp]string{}
+	for i := range beams[len(w)].every {
+		c := &beams[len(w)].every[i]
 		ctx := x.start
 		if c.parent != nil {
 			ctx = c.context(h)
 		}
-		sa, sb := x.a.stats(ctx), x.b.stats(ctx)
-		s := c.score + x.logp(&sa, &sb, x.eos)
-		o := c.spelling()
+		key := ctxKey(ctx)
+		lp, ok := eos[key]
+		if !ok {
+			sa, sb := x.a.stats(ctx), x.b.stats(ctx)
+			lp = x.logp(&sa, &sb, x.eos)
+			eos[key] = lp
+		}
+		s := c.score + lp
+		o := c.piece
+		if c.parent != nil {
+			ps, ok := spelled[c.parent]
+			if !ok {
+				ps = c.parent.spelling()
+				spelled[c.parent] = ps
+			}
+			o = ps + c.piece
+		}
 		if v, ok := final[o]; !ok {
 			final[o] = scored{s, o, c.cut}
 		} else {

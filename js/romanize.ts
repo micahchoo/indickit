@@ -309,9 +309,10 @@ type Option = { tok: number; en: string };
 type Hyp = { score: number; parent: Hyp | null; piece: string; at: number; ctx: number[] };
 type Cand = { score: number; parent: Hyp | null; piece: string; tok: number; idx: number };
 
-function spelling(c: Cand): string {
-  const pieces = [c.piece];
-  for (let p = c.parent; p; p = p.parent) pieces.push(p.piece);
+// The pieces from the root to h, joined.
+function spelling(h: Hyp): string {
+  const pieces: string[] = [];
+  for (let p: Hyp | null = h; p; p = p.parent) pieces.push(p.piece);
   return pieces.reverse().join("");
 }
 
@@ -345,6 +346,12 @@ class Beam {
   n = 0;
   best: Cand[] = [];
   constructor(readonly k: number, readonly all: boolean) {}
+
+  // No candidate scoring at most s can enter (with a margin for rounding: a mixed
+  // probability can pass 1 by an ulp). The last position keeps all.
+  closed(s: number): boolean {
+    return !this.all && this.best.length === this.k && s + 1e-9 < this.best[this.k - 1].score;
+  }
 
   add(score: number, parent: Hyp | null, piece: string, tok: number): void {
     const idx = this.n++;
@@ -434,28 +441,68 @@ class Mix {
       const ctx = [...c.parent!.ctx, c.tok];
       return ctx.slice(ctx.length - h);
     };
+    const opts: (Option[] | undefined)[] = new Array(RULES.max_n + 1); // the options of w[i:i+k], by k
     for (let i = 0; i < w.length; i++) {
+      // Hypotheses here that share a context share every option's log probability:
+      // computed once per context (the same function on the same inputs: the same numbers).
+      const seen = new Map<number, { sa: CtxStats; sb: CtxStats; lp: (number[] | undefined)[] }>();
       for (const c of beams[i].best) {
-        const hy: Hyp = i === 0 ? root : { score: c.score, parent: c.parent, piece: c.piece, at: i, ctx: context(c) };
-        let moved = false;
-        const sa = this.a.stats(hy.ctx);
-        const sb = this.b.stats(hy.ctx);
+        // A log probability is at most 0, so no candidate of c scores above c. Where the next
+        // beam's last place already scores above c, nothing of c can enter: its options are
+        // counted (insertion order) and not scored (perf job, phase 6).
+        let moved = false, open = false;
         for (let k = 1; k <= RULES.max_n && i + k <= w.length; k++) {
-          const opts = this.options.get(w.slice(i, i + k).join(""));
-          if (!opts) continue;
-          for (const o of opts) {
-            beams[i + k].add(hy.score + this.logp(sa, sb, o.tok), hy, o.en, o.tok);
-            moved = true;
-          }
+          opts[k] = this.options.get(w.slice(i, i + k).join(""));
+          if (opts[k]?.length) { moved = true; open ||= !beams[i + k].closed(c.score); }
         }
-        if (!moved) beams[i + 1].add(hy.score - RULES.unknown_penalty, hy, "", -1);
+        if (moved && !open) {
+          for (let k = 1; k <= RULES.max_n && i + k <= w.length; k++) beams[i + k].n += opts[k]?.length ?? 0;
+          continue;
+        }
+        const hy: Hyp = i === 0 ? root : { score: c.score, parent: c.parent, piece: c.piece, at: i, ctx: context(c) };
+        if (!moved) {
+          beams[i + 1].add(hy.score - RULES.unknown_penalty, hy, "", -1);
+          continue;
+        }
+        const key = ctxKey(hy.ctx, 0);
+        let e = seen.get(key);
+        if (!e) {
+          e = { sa: this.a.stats(hy.ctx), sb: this.b.stats(hy.ctx), lp: [] };
+          seen.set(key, e);
+        }
+        for (let k = 1; k <= RULES.max_n && i + k <= w.length; k++) {
+          const os = opts[k];
+          if (!os) continue;
+          if (beams[i + k].closed(hy.score)) { beams[i + k].n += os.length; continue; }
+          let lp = e.lp[k];
+          if (!lp) {
+            lp = os.map((o) => this.logp(e!.sa, e!.sb, o.tok));
+            e.lp[k] = lp;
+          }
+          for (let j = 0; j < os.length; j++) beams[i + k].add(hy.score + lp[j], hy, os[j].en, os[j].tok);
+        }
       }
     }
+    // The last position keeps every candidate, and many share a context and a parent: the
+    // end-of-word log probability is computed once per context, a parent's spelling once.
     const final = new Map<string, number>();
+    const eos = new Map<number, number>();
+    const spelled = new Map<Hyp, string>();
     for (const c of beams[w.length].best) {
       const ctx = c.parent === null ? this.start : context(c);
-      const s = c.score + this.logp(this.a.stats(ctx), this.b.stats(ctx), this.eos);
-      const o = spelling(c);
+      const key = ctxKey(ctx, 0);
+      let lp = eos.get(key);
+      if (lp === undefined) {
+        lp = this.logp(this.a.stats(ctx), this.b.stats(ctx), this.eos);
+        eos.set(key, lp);
+      }
+      const s = c.score + lp;
+      let o = c.piece;
+      if (c.parent !== null) {
+        let ps = spelled.get(c.parent);
+        if (ps === undefined) { ps = spelling(c.parent); spelled.set(c.parent, ps); }
+        o = ps + c.piece;
+      }
       const v = final.get(o);
       if (v === undefined || s > v) final.set(o, s);
     }

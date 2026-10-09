@@ -742,9 +742,9 @@ class Interner {
     return v;
   }
 }
-function spelling(c) {
-  const pieces = [c.piece];
-  for (let p = c.parent;p; p = p.parent)
+function spelling(h) {
+  const pieces = [];
+  for (let p = h;p; p = p.parent)
     pieces.push(p.piece);
   return pieces.reverse().join("");
 }
@@ -785,6 +785,9 @@ class Beam {
   constructor(k, all) {
     this.k = k;
     this.all = all;
+  }
+  closed(s) {
+    return !this.all && this.best.length === this.k && s + 0.000000001 < this.best[this.k - 1].score;
   }
   add(score, parent, piece, tok) {
     const idx = this.n++;
@@ -880,30 +883,73 @@ class Mix {
       const ctx = [...c.parent.ctx, c.tok];
       return ctx.slice(ctx.length - h);
     };
+    const opts = new Array(RULES.max_n + 1);
     for (let i = 0;i < w.length; i++) {
+      const seen = new Map;
       for (const c of beams[i].best) {
-        const hy = i === 0 ? root : { score: c.score, parent: c.parent, piece: c.piece, at: i, ctx: context(c) };
-        let moved = false;
-        const sa = this.a.stats(hy.ctx);
-        const sb = this.b.stats(hy.ctx);
+        let moved = false, open = false;
         for (let k = 1;k <= RULES.max_n && i + k <= w.length; k++) {
-          const opts = this.options.get(w.slice(i, i + k).join(""));
-          if (!opts)
-            continue;
-          for (const o of opts) {
-            beams[i + k].add(hy.score + this.logp(sa, sb, o.tok), hy, o.en, o.tok);
+          opts[k] = this.options.get(w.slice(i, i + k).join(""));
+          if (opts[k]?.length) {
             moved = true;
+            open ||= !beams[i + k].closed(c.score);
           }
         }
-        if (!moved)
+        if (moved && !open) {
+          for (let k = 1;k <= RULES.max_n && i + k <= w.length; k++)
+            beams[i + k].n += opts[k]?.length ?? 0;
+          continue;
+        }
+        const hy = i === 0 ? root : { score: c.score, parent: c.parent, piece: c.piece, at: i, ctx: context(c) };
+        if (!moved) {
           beams[i + 1].add(hy.score - RULES.unknown_penalty, hy, "", -1);
+          continue;
+        }
+        const key = ctxKey(hy.ctx, 0);
+        let e = seen.get(key);
+        if (!e) {
+          e = { sa: this.a.stats(hy.ctx), sb: this.b.stats(hy.ctx), lp: [] };
+          seen.set(key, e);
+        }
+        for (let k = 1;k <= RULES.max_n && i + k <= w.length; k++) {
+          const os = opts[k];
+          if (!os)
+            continue;
+          if (beams[i + k].closed(hy.score)) {
+            beams[i + k].n += os.length;
+            continue;
+          }
+          let lp = e.lp[k];
+          if (!lp) {
+            lp = os.map((o) => this.logp(e.sa, e.sb, o.tok));
+            e.lp[k] = lp;
+          }
+          for (let j = 0;j < os.length; j++)
+            beams[i + k].add(hy.score + lp[j], hy, os[j].en, os[j].tok);
+        }
       }
     }
     const final = new Map;
+    const eos = new Map;
+    const spelled = new Map;
     for (const c of beams[w.length].best) {
       const ctx = c.parent === null ? this.start : context(c);
-      const s = c.score + this.logp(this.a.stats(ctx), this.b.stats(ctx), this.eos);
-      const o = spelling(c);
+      const key = ctxKey(ctx, 0);
+      let lp = eos.get(key);
+      if (lp === undefined) {
+        lp = this.logp(this.a.stats(ctx), this.b.stats(ctx), this.eos);
+        eos.set(key, lp);
+      }
+      const s = c.score + lp;
+      let o = c.piece;
+      if (c.parent !== null) {
+        let ps = spelled.get(c.parent);
+        if (ps === undefined) {
+          ps = spelling(c.parent);
+          spelled.set(c.parent, ps);
+        }
+        o = ps + c.piece;
+      }
       const v = final.get(o);
       if (v === undefined || s > v)
         final.set(o, s);
