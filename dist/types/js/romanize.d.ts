@@ -49,7 +49,5 @@ export declare function load(lang: string, mode?: Mode, opts?: {
 }): Promise<Romanizer>;
 /** Builds a Romanizer from a language's two files (for tests and offline use). */
 export declare function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8Array): Romanizer;
-/** Moves every Brahmic code point to the Devanagari block by its offset (rules.json "unify"). */
-export declare function unify(w: string): string;
 /** @internal The model's own list for a unified word (no lookup), for the conformance test. */
 export declare function _decode(r: Romanizer, word: string, n: number): string[];

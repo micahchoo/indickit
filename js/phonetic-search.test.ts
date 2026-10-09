@@ -103,3 +103,16 @@ test("an unknown profile is named", async () => {
   expect(() => s.index(["नरेंद्र मोदी"], bad)).toThrow('unknown profile "Names"');
   expect(() => s.score("Narendra Modi", ["नरेंद्र मोदी"], bad)).toThrow('unknown profile "Names"');
 });
+
+// The index built the whole product of a name's word keys before the cut at
+// MAX_NAME_KEYS: 2^26 strings for a 26-word name of two-key words. It now
+// builds the first MAX_NAME_KEYS only, as nameKeys does (design pass, perf
+// job report 08).
+test("an index of one 26-word name is built at once", async () => {
+  const s = await loadSearch("ta", { fetcher: local });
+  const name = Array(26).fill("கோவிந்தன்").join(" ");
+  const start = performance.now();
+  const ix = s.index([name, "ராமன்"]); // a second name: alone, every word's rarity weight is 0 and so is the score
+  expect(performance.now() - start).toBeLessThan(2000);
+  expect(ix.search(name, 0)).toEqual([{ name: 0, score: 100 }]);
+});

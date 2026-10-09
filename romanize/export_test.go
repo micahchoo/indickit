@@ -1,9 +1,11 @@
 package romanize
 
+import langtag "github.com/micahchoo/indickit/internal/lang"
+
 // Decode exposes the decoder without the lookup or the empty-spelling filter, for the
 // conformance test: the reference's rows are the model's own lists.
 func Decode(word, lang string, mode Mode, n int) []string {
-	x := get(code(lang), mode)
+	x := get(langtag.Code(lang), mode)
 	if x == nil {
 		return nil
 	}

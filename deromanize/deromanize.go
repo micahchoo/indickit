@@ -102,14 +102,6 @@ func Register(file string, data []byte) {
 	mu.Unlock()
 }
 
-func code(lang string) string {
-	c := langtag.Code(lang)
-	if c == "kok" {
-		return "gom"
-	}
-	return c
-}
-
 func families(mode Mode) []Mode {
 	if mode == Names {
 		return []Mode{Names, Words}
@@ -162,7 +154,7 @@ func Word(latin, lang string, mode Mode, n int) []string {
 	if n <= 0 {
 		n = 4
 	}
-	c := code(lang)
+	c := langtag.Code(lang)
 	w := clean(latin)
 	if len(w) > rules.MaxLetters { // a-z only: bytes are letters
 		// One spelling: each piece's first, joined. The beam's ties made a long run

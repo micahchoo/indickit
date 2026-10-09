@@ -15,6 +15,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	langtag "github.com/micahchoo/indickit/internal/lang"
 	"github.com/micahchoo/indickit/internal/unidata"
 	"github.com/micahchoo/indickit/internal/unorm"
 )
@@ -490,7 +491,8 @@ func wordSim(a, b, lang string, cal map[string]int64, p profile) int64 {
 // ---- the index -------------------------------------------------------------------
 
 // Index holds names to search, keyed once. The Latin tables are per language,
-// so an index holds the names of one language (lang: hi, ta, ur, ...).
+// so an index holds the names of one language. lang is a language tag ("hi",
+// "ta-IN", "urd"); only its language counts, as in every indickit utility.
 type Index struct {
 	lang    string
 	profile profile
@@ -530,27 +532,7 @@ func strictKeys(ws []string) []string {
 			all = append(all, ks)
 		}
 	}
-	if len(all) == 0 {
-		return nil
-	}
-	out := []string{""}
-	for i, ks := range all { // the product, the last word fastest, cut at MaxNameKeys
-		var next []string
-		for _, p := range out {
-			for _, k := range ks {
-				if i > 0 {
-					next = append(next, p+"\x1f"+k)
-				} else {
-					next = append(next, k)
-				}
-			}
-		}
-		out = next
-	}
-	if len(out) > MaxNameKeys {
-		out = out[:MaxNameKeys]
-	}
-	return out
+	return keyProduct(all, '\x1f') // the product, the last word fastest, cut at MaxNameKeys
 }
 
 // NewIndex keys names of one language for Search. profile is ProfileNames or
@@ -560,7 +542,7 @@ func NewIndex(names []string, lang, profileName string) *Index {
 	if !ok {
 		panic(`phonetic: unknown profile "` + profileName + `" (ProfileNames or ProfileText)`)
 	}
-	ix := &Index{lang: lang, profile: p, n: int64(len(names)),
+	ix := &Index{lang: langtag.Code(lang), profile: p, n: int64(len(names)),
 		df: map[string]int64{}, strict: map[string][]int{}, joined: map[string][]int{},
 		loose: map[string][]int{}, near: map[string][]int{}}
 	ix.words = make([][]string, len(names))

@@ -111,13 +111,20 @@ func NameKeys(name string) []string {
 			all = append(all, ks)
 		}
 	}
+	return keyProduct(all, ' ')
+}
+
+// keyProduct gives the combinations of the words' keys, one key of each word
+// joined by sep, in order with the last word changing fastest, and stops at
+// MaxNameKeys. So only the last words whose combinations reach MaxNameKeys
+// change; every word before them takes its first key. Each result is built
+// once: the time is linear in the length of the result, not in the product
+// (the search index built the whole product first: 2^26 strings for a
+// 26-word name of two-key words).
+func keyProduct(all [][]string, sep byte) []string {
 	if len(all) == 0 {
 		return nil
 	}
-	// The combinations come in order, the last word changing fastest, and
-	// stop at MaxNameKeys. So only the last words whose combinations reach
-	// MaxNameKeys change; every word before them takes its first key. Each
-	// result is built once: the time is linear in the length of the result.
 	n, tail := 1, len(all)
 	for tail > 0 && n < MaxNameKeys {
 		tail--
@@ -127,7 +134,7 @@ func NameKeys(name string) []string {
 	var b strings.Builder
 	for _, ks := range all[:tail] {
 		b.WriteString(ks[0])
-		b.WriteByte(' ')
+		b.WriteByte(sep)
 	}
 	head := b.String()
 	out := make([]string, n)
@@ -137,7 +144,7 @@ func NameKeys(name string) []string {
 		b.WriteString(head)
 		for j, k := range pick {
 			if j > 0 {
-				b.WriteByte(' ')
+				b.WriteByte(sep)
 			}
 			b.WriteString(all[tail+j][k])
 		}

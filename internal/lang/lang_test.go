@@ -7,6 +7,7 @@ func TestCode(t *testing.T) {
 	for tag, want := range map[string]string{
 		"as": "as", "AS": "as", "as-IN": "as", "as_IN": "as", "asm": "as", "hin": "hi",
 		"hi-Deva-IN": "hi", "ori": "or", "mai": "mai", "en": "en", "xx": "xx", "": "",
+		"kok": "gom", "kok-IN": "gom", "gom": "gom",
 	} {
 		if got := Code(tag); got != want {
 			t.Errorf("Code(%q) = %q, want %q", tag, got, want)

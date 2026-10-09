@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 // testdata/scorer-conformance.jsonl.gz holds scores and searches from the
@@ -117,4 +118,20 @@ func TestUnknownProfileIsNamed(t *testing.T) {
 	}()
 	NewIndex([]string{"नरेंद्र मोदी"}, "hi", "Names")
 	t.Fatal("NewIndex did not panic")
+}
+
+// The index built the whole product of a name's word keys before the cut at
+// MaxNameKeys: 2^26 strings, 8 s, for a 26-word name of two-key words. It
+// now builds the first MaxNameKeys only, as NameKeys does (design pass,
+// perf job report 08).
+func TestIndexOfALongNameIsLinear(t *testing.T) {
+	name := strings.TrimSpace(strings.Repeat("கோவிந்தன் ", 26))
+	start := time.Now()
+	ix := NewIndex([]string{name}, "ta", ProfileNames)
+	if d := time.Since(start); d > time.Second {
+		t.Fatalf("NewIndex of one 26-word name took %v", d)
+	}
+	if len(ix.strict) != MaxNameKeys {
+		t.Errorf("strict keys = %d, want %d", len(ix.strict), MaxNameKeys)
+	}
 }

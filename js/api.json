@@ -3,7 +3,6 @@
     "JOINED_MIN_CLASSES",
     "MAX_NAME_KEYS",
     "RULES_VERSION",
-    "_internal",
     "joinedKeys",
     "keys",
     "match",
@@ -33,8 +32,7 @@
     "_decode",
     "fromBytes",
     "languages",
-    "load",
-    "unify"
+    "load"
   ],
   "phonetic-search": [
     "CDN",

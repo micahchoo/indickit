@@ -96,8 +96,10 @@ export interface Search {
 }
 /** Loads one language's table (Latin queries against its script) and, for
  * native-to-native search, the tables between the scripts named in `scripts`
- * (e.g. ["deva", "arab", "beng"]). A missing table falls back to the fine keys. */
-export declare function loadSearch(lang: string, options?: {
+ * (e.g. ["deva", "arab", "beng"]). A missing table falls back to the fine keys.
+ * `lang` is a language tag ("hi", "ta-IN", "urd"); only its language counts,
+ * as in every indickit utility, and `Search.lang` is that code. */
+export declare function loadSearch(tag: string, options?: {
     scripts?: string[];
     fetcher?: Fetcher;
 }): Promise<Search>;

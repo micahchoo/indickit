@@ -67,7 +67,7 @@ for a long list, for names written with titles, initials or joined words,
 and for a name in running text.
 
 Measured on data that no rule, table or threshold was set on (search
-2026-10-08, rules 2026-10-07). Each list number is the share of English
+2026-10-09, rules 2026-10-07). Each list number is the share of English
 names that find the right entry among the native-script names, at the
 threshold for that use.
 

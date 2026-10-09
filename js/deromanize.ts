@@ -95,10 +95,6 @@ export interface Deromanizer {
   text(text: string): string;
 }
 
-function code(lang: string): string {
-  const c = langCode(lang);
-  return c === "kok" ? "gom" : c;
-}
 
 /** The input as the training pairs were read: accents removed, lower case, a-z only. */
 export function clean(s: string): string {
@@ -125,7 +121,7 @@ export async function load(
   mode: Mode = "words",
   opts: { fetch?: Fetcher; base?: URL | string } = {},
 ): Promise<Deromanizer> {
-  const c = code(lang);
+  const c = langCode(lang);
   const fams = familiesOf(mode).filter((f) => RULES.families[f][c]);
   if (fams.length === 0) throw new Error(`deromanize: no ${mode} tables for "${lang}"`);
   const base = new URL(opts.base ?? "../deromanize/lang/", import.meta.url);

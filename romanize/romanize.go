@@ -104,14 +104,6 @@ func Languages(mode Mode) []string {
 	return out
 }
 
-func code(lang string) string {
-	c := langtag.Code(lang)
-	if c == "kok" {
-		return "gom"
-	}
-	return c
-}
-
 // Word returns up to n spellings of one word (n ≤ 0 means 4), most likely
 // first. It returns nil when the language's files are not imported for
 // this mode, or the word has none of the language's letters. Joiners
@@ -120,7 +112,7 @@ func Word(word, lang string, mode Mode, n int) []string {
 	if n <= 0 {
 		n = 4
 	}
-	x := get(code(lang), mode)
+	x := get(langtag.Code(lang), mode)
 	if x == nil {
 		return nil
 	}
@@ -154,7 +146,7 @@ func Word(word, lang string, mode Mode, n int) []string {
 // Text romanizes every run of the language's script in text (top spelling
 // of each word) and keeps everything else as it is.
 func Text(text, lang string, mode Mode) string {
-	c := code(lang)
+	c := langtag.Code(lang)
 	l, ok := rules.Families[mode][c]
 	if !ok || get(c, mode) == nil {
 		return text

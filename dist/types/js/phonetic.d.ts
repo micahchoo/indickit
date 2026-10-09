@@ -10,17 +10,10 @@
  *
  * @module
  */
-/** @internal For ./phonetic-search: the engine compiler, the normalizer and the
- * search key's engine (keys of a normalized word). Not part of the API. */
-export declare const _internal: {
-    compile: (r: unknown) => (word: string) => string[];
-    normalize: (w: string) => string;
-    engine: (word: string) => string[];
-};
+import { MAX_NAME_KEYS } from "./phonetic-engine";
+export { MAX_NAME_KEYS };
 /** The rules every key from this module was made with. */
 export declare const RULES_VERSION: string;
-/** NameKeys stops here: a long Tamil name can have many key combinations. */
-export declare const MAX_NAME_KEYS = 256;
 /** The sorted keys of one word; empty when it holds no letter the rules read. */
 export declare function keys(word: string): string[];
 /** A name split the way nameKeys and match split it: on spaces and

@@ -84,11 +84,6 @@ export interface Romanizer {
   text(text: string): string;
 }
 
-function code(lang: string): string {
-  const c = langCode(lang);
-  return c === "kok" ? "gom" : c;
-}
-
 const pooledCache = new Map<string, Promise<ArrayBuffer>>();
 
 /**
@@ -103,7 +98,7 @@ export async function load(
   mode: Mode = "words",
   opts: { fetch?: Fetcher; base?: URL | string } = {},
 ): Promise<Romanizer> {
-  const c = code(lang);
+  const c = langCode(lang);
   const l = RULES.families[mode][c];
   if (!l) throw new Error(`romanize: no ${mode} tables for "${lang}"`);
   const base = new URL(opts.base ?? "../romanize/lang/", import.meta.url);
@@ -179,7 +174,7 @@ function stripJoiners(s: string): string {
 }
 
 /** Moves every Brahmic code point to the Devanagari block by its offset (rules.json "unify"). */
-export function unify(w: string): string {
+function unify(w: string): string {
   const u = RULES.unify;
   let out = "";
   for (const ch of w) {

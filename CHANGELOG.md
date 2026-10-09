@@ -8,14 +8,32 @@ version, and compare `RULES_VERSION` (or `SEARCH_VERSION`) to know which
 rows. A version whose rules line equals the one before it gives every
 input the same output.
 
-## 0.9.1 (2026-10-09)
+## 0.10.0 (2026-10-09)
 
-Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-09, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-08 (unchanged from 0.9.0: every input gives the same output)
+Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-09, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-09
 
+- Changed output: phonetic search 2026-10-08 → 2026-10-09, for language
+  tags only. `NewIndex` and `Score` (Go), `loadSearch` (TypeScript) took
+  a bare code (`hi`) where every other utility takes a tag: `hi-IN`,
+  `HI` and `hin` found no Latin table and scored by the fine keys alone.
+  They now read the tag as the other utilities do. The tables are
+  unchanged: every score for a bare code is the same.
+- Changed output: `kok` (the Konkani macrolanguage) names the `gom`
+  tables in every utility's tag reading. romanize and deromanize did
+  this already; stem and normalize hold no Konkani table, so nothing
+  changes there.
+- Removed exports: TypeScript `_internal` (phonetic) and `unify`
+  (romanize), which no documented use needed. The phonetic engine now
+  lives in `js/phonetic-engine.ts`, shared by `phonetic` and
+  `phonetic-search`, not an entry of the package.
 - Fixed: `phonetic.NewIndex` and `Score` (Go), `index` and `score`
   (TypeScript) given a profile name other than `names` or `text` crashed
   later with no cause named (Go: divide by zero in the first `Search`;
   TypeScript: a `TypeError`). They now fail at once, naming the profile.
+- Fixed: the search index built every combination of a name's word keys
+  before cutting to 256 (a 26-word name of two-key words: 2^26 strings,
+  8 s in Go, 4.9 s in TypeScript). It now builds the first 256 only, as
+  `NameKeys` does; the keys are the same.
 - Go `stem` checks at load that `max_end + min_stem` in rules.json is
   below its fixed walk (16): a larger value would have cut differently
   from the reference, silently.

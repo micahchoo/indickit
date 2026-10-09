@@ -6,13 +6,17 @@ package lang
 import "strings"
 
 // Code gives the code the rules files use for a language tag: lower case,
-// the first subtag only (hi-IN, hi_IN → hi), and an ISO 639-2 code of a
-// language with a two-letter code as that code (hin → hi). Any other tag
-// comes back lower-cased, and the rules files hold no table for it.
+// the first subtag only (hi-IN, hi_IN → hi), an ISO 639-2 code of a
+// language with a two-letter code as that code (hin → hi), and kok as gom.
+// Any other tag comes back lower-cased, and the rules files hold no table
+// for it.
 func Code(tag string) string {
 	t := strings.ToLower(tag)
 	if i := strings.IndexAny(t, "-_"); i >= 0 {
 		t = t[:i]
+	}
+	if t == "kok" { // the Konkani macrolanguage: Goan Konkani is the only Konkani the tables hold
+		return "gom"
 	}
 	if c, ok := iso6392[t]; ok {
 		return c

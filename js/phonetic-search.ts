@@ -20,7 +20,9 @@ import searchJson from "../phonetic/scorer/search.json" with { type: "json" };
 import fineJson from "../phonetic/scorer/fine.json" with { type: "json" };
 import fine2Json from "../phonetic/scorer/fine2.json" with { type: "json" };
 import { version as PACKAGE_VERSION } from "../package.json" with { type: "json" };
-import { _internal, JOINED_MIN_CLASSES, MAX_NAME_KEYS, words } from "./phonetic";
+import { langCode } from "./lang";
+import { JOINED_MIN_CLASSES, MAX_NAME_KEYS, words } from "./phonetic";
+import { compile, engine, keyProduct, normalize } from "./phonetic-engine";
 import { isLetter, nfc } from "./unidata";
 
 /** "names": a list of names; "text": a name among a text's words. */
@@ -40,7 +42,6 @@ export const SEARCH_VERSION: string = R.version;
  * in text 80 (at most 10% of hits wrong) or 70 (20%). */
 export const THRESHOLDS: Readonly<Record<string, number>> = R.thresholds;
 
-const { compile, normalize, engine } = _internal;
 const fineEngine = compile(fineJson);
 const fine2Engine = compile(fine2Json);
 const JOINED_MIN = JOINED_MIN_CLASSES;
@@ -284,11 +285,7 @@ function joinedOf(ws: string[], min: number): string[] {
 }
 
 function strictKeys(ws: string[]): string[] {
-  const all = ws.map(keysOf).filter((ks) => ks.length);
-  if (!all.length) return [];
-  let out = [""];
-  all.forEach((ks, i) => { out = out.flatMap((p) => ks.map((k) => (i ? p + "\x1f" + k : k))); });
-  return out.slice(0, MAX_NAME_KEYS);
+  return keyProduct(ws.map(keysOf).filter((ks) => ks.length), "\x1f"); // the product, the last word fastest, cut at MAX_NAME_KEYS
 }
 
 /** Names of one language, keyed once for searching. */
@@ -397,8 +394,11 @@ export interface Search {
 
 /** Loads one language's table (Latin queries against its script) and, for
  * native-to-native search, the tables between the scripts named in `scripts`
- * (e.g. ["deva", "arab", "beng"]). A missing table falls back to the fine keys. */
-export async function loadSearch(lang: string, options: { scripts?: string[]; fetcher?: Fetcher } = {}): Promise<Search> {
+ * (e.g. ["deva", "arab", "beng"]). A missing table falls back to the fine keys.
+ * `lang` is a language tag ("hi", "ta-IN", "urd"); only its language counts,
+ * as in every indickit utility, and `Search.lang` is that code. */
+export async function loadSearch(tag: string, options: { scripts?: string[]; fetcher?: Fetcher } = {}): Promise<Search> {
+  const lang = langCode(tag);
   const fetcher = options.fetcher ?? defaultFetcher;
   const scripts = [...new Set(options.scripts ?? [])].sort();
   const pairs = new Map<string, CostTable>();
