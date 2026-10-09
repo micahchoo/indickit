@@ -20,6 +20,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"sort"
+	"strconv"
 	"unicode/utf8"
 
 	langtag "github.com/micahchoo/indickit/internal/lang"
@@ -33,6 +34,10 @@ type table struct {
 	vowel   bool
 	passes  int
 }
+
+// maxWalk bounds the code points cut walks back over, so it allocates nothing:
+// max_end + min_stem in rules.json must stay below it (init checks).
+const maxWalk = 16
 
 var (
 	minStem, maxEnd int
@@ -59,6 +64,9 @@ func init() {
 		panic("stem: rules.json: " + err.Error())
 	}
 	RulesVersion, minStem, maxEnd = r.Version, r.MinStem, r.MaxEnd
+	if maxEnd+minStem >= maxWalk {
+		panic("stem: rules.json: max_end + min_stem must be below " + strconv.Itoa(maxWalk))
+	}
 	for _, c := range r.VowelSigns {
 		vowelSigns[c] = true
 	}
@@ -100,7 +108,7 @@ func (t table) cut(word string) string {
 	// Walk back over code points; every candidate ending is a substring of
 	// word, so no lookup copies. starts[k] is the byte where the last k code
 	// points begin.
-	var starts [16]int
+	var starts [maxWalk]int
 	n, i := 0, len(word)
 	for n < maxEnd+minStem && n < len(starts)-1 && i > 0 {
 		i--

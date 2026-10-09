@@ -104,3 +104,17 @@ func TestLongQueryWordScoresAsTheReference(t *testing.T) {
 		t.Errorf("Score = %s, want %s", got, want)
 	}
 }
+
+// A profile name that is not ProfileNames or ProfileText: the index took a
+// zero profile without a check, and the first Search divided by zero
+// (design pass, perf job report 08). The error must name the cause.
+func TestUnknownProfileIsNamed(t *testing.T) {
+	defer func() {
+		msg, _ := recover().(string)
+		if !strings.Contains(msg, `unknown profile "Names"`) {
+			t.Fatalf("NewIndex panicked with %q, want the profile named", msg)
+		}
+	}()
+	NewIndex([]string{"नरेंद्र मोदी"}, "hi", "Names")
+	t.Fatal("NewIndex did not panic")
+}

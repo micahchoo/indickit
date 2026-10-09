@@ -93,3 +93,13 @@ test("a 10,617-letter query word scores as the reference", async () => {
   const q = Array.from("कকਕકକகకಕകকبᱚꯀa".repeat(1200)).slice(0, 10617).join("");
   expect((await searchFor("hi")).score(q, ["five", "vi"])).toEqual([0, 0]);
 });
+
+// A profile that is not "names" or "text": the index took an undefined
+// profile, and the first read of it threw a TypeError that named nothing
+// (design pass, perf job report 08). The error must name the cause.
+test("an unknown profile is named", async () => {
+  const s = await loadSearch("hi", { fetcher: local });
+  const bad = "Names" as "names";
+  expect(() => s.index(["नरेंद्र मोदी"], bad)).toThrow('unknown profile "Names"');
+  expect(() => s.score("Narendra Modi", ["नरेंद्र मोदी"], bad)).toThrow('unknown profile "Names"');
+});

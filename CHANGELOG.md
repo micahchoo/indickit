@@ -8,6 +8,18 @@ version, and compare `RULES_VERSION` (or `SEARCH_VERSION`) to know which
 rows. A version whose rules line equals the one before it gives every
 input the same output.
 
+## 0.9.1 (2026-10-09)
+
+Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-09, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-08 (unchanged from 0.9.0: every input gives the same output)
+
+- Fixed: `phonetic.NewIndex` and `Score` (Go), `index` and `score`
+  (TypeScript) given a profile name other than `names` or `text` crashed
+  later with no cause named (Go: divide by zero in the first `Search`;
+  TypeScript: a `TypeError`). They now fail at once, naming the profile.
+- Go `stem` checks at load that `max_end + min_stem` in rules.json is
+  below its fixed walk (16): a larger value would have cut differently
+  from the reference, silently.
+
 ## 0.9.0 (2026-10-09)
 
 Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-09, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-08

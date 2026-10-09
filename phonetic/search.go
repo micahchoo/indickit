@@ -553,9 +553,14 @@ func strictKeys(ws []string) []string {
 	return out
 }
 
-// NewIndex keys names of one language for Search. profile is ProfileNames or ProfileText.
+// NewIndex keys names of one language for Search. profile is ProfileNames or
+// ProfileText; any other name panics.
 func NewIndex(names []string, lang, profileName string) *Index {
-	ix := &Index{lang: lang, profile: searchRules.Profiles[profileName], n: int64(len(names)),
+	p, ok := searchRules.Profiles[profileName]
+	if !ok {
+		panic(`phonetic: unknown profile "` + profileName + `" (ProfileNames or ProfileText)`)
+	}
+	ix := &Index{lang: lang, profile: p, n: int64(len(names)),
 		df: map[string]int64{}, strict: map[string][]int{}, joined: map[string][]int{},
 		loose: map[string][]int{}, near: map[string][]int{}}
 	ix.words = make([][]string, len(names))

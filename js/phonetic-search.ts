@@ -301,7 +301,9 @@ export class Index {
 
   /** @internal Use Search.index. */
   constructor(private readonly scorer: Scorer, names: string[], profile: Profile) {
-    this.p = R.profiles[profile];
+    const p = R.profiles[profile];
+    if (!p) throw new Error(`phonetic-search: unknown profile "${profile}" ("names" or "text")`);
+    this.p = p;
     this.n = names.length;
     this.words = names.map(searchWords);
     for (const ws of this.words) for (const k of new Set(ws.flatMap(keysOf))) this.df.set(k, (this.df.get(k) ?? 0) + 1);
