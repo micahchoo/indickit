@@ -85,7 +85,7 @@ test("score takes 1,000,000 candidates", async () => {
     cands.push(w);
   }
   expect((await searchFor("hi")).score("राम", cands).length).toBe(N);
-}, 60_000);
+}, 300_000); // 21 s here, 74 s on a GitHub runner
 
 // A query word whose cost x length passes 2^30 (Go divided by zero there).
 // The scores are the Python reference's.
