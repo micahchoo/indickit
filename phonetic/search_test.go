@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -90,5 +91,16 @@ func TestSearchConformance(t *testing.T) {
 	}
 	if wrong > 0 {
 		t.Fatalf("%d disagreements", wrong)
+	}
+}
+
+// A query word long enough that every cost x length passes 2^30: the port
+// started its minimum at inf = 2^30, so every weight was 0 and Go divided by
+// zero (perf job, phase 1). The scores are the Python reference's.
+func TestLongQueryWordScoresAsTheReference(t *testing.T) {
+	q := string([]rune(strings.Repeat("कকਕકକகకಕകকبᱚꯀa", 1200))[:10617])
+	got := fmt.Sprint(Score(q, []string{"five", "vi"}, "hi", ProfileNames))
+	if want := "[0 0]"; got != want {
+		t.Errorf("Score = %s, want %s", got, want)
 	}
 }

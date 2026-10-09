@@ -1275,9 +1275,12 @@ class Scorer {
     const out = new Map;
     if (!cs.size)
       return out;
-    const best = Math.min(...cs.values());
     const na = Math.max(isAscii(a) ? latSyms(a).length : natSyms(a).length, 1);
-    const lo = Math.min(...[...cs.values()].map((c) => c * na));
+    let best = Infinity, lo = Infinity;
+    for (const c of cs.values()) {
+      best = Math.min(best, c);
+      lo = Math.min(lo, c * na);
+    }
     const w = new Map;
     let z = 0;
     for (const [b, c] of cs) {

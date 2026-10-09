@@ -8,6 +8,7 @@ package phonetic
 import (
 	"embed"
 	"encoding/json"
+	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -431,18 +432,17 @@ func calibrations(a string, cands []string, lang string) map[string]int64 {
 	if len(cs) == 0 {
 		return nil
 	}
-	best := inf
-	for _, c := range cs {
-		best = min(best, c)
-	}
+	// The true minimums, as the reference: a cost x length can pass inf (a
+	// query word of 10,000 letters), and a minimum started at inf then made
+	// every weight 0 and z 0.
+	best, lo := int64(math.MaxInt64), int64(math.MaxInt64)
 	na := int64(len(natSyms(a)))
 	if isASCII(a) {
 		na = int64(len(latSyms(a)))
 	}
 	na = max(na, 1)
-	lo := inf
 	for _, c := range cs {
-		lo = min(lo, c*na)
+		best, lo = min(best, c), min(lo, c*na)
 	}
 	w := map[string]int64{}
 	var z int64

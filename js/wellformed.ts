@@ -78,21 +78,25 @@ function compile(rules: Rules) {
 
   /** The index in run of its first broken character, or -1. */
   function check(s: Script, run: number[]): number {
-    let h = ""; // the classes so far
+    // h: the last three classes so far; n: how many classes so far. Every rule
+    // reads at most three classes back, so a longer history (h += y on the
+    // whole run) only made the check quadratic in the run.
+    let h = "", n = 0;
     for (let i = 0; i < run.length; i++) {
       const y = s.cls.get(run[i])!;
-      const n = h.length;
       let bad: boolean;
       if (n === 0) bad = s.start.has(y);
-      else if (n >= 3 && s.qb.has(h.slice(n - 3) + y)) bad = true;
-      else if (n >= 3 && s.qw.has(h.slice(n - 3) + y)) bad = false;
-      else if (n >= 2 && s.tb.has(h.slice(n - 2) + y)) bad = true;
-      else if (n >= 2 && s.tw.has(h.slice(n - 2) + y)) bad = false;
-      else bad = s.pairs.has(h.slice(n - 1) + y);
+      else if (n >= 3 && s.qb.has(h.slice(-3) + y)) bad = true;
+      else if (n >= 3 && s.qw.has(h.slice(-3) + y)) bad = false;
+      else if (n >= 2 && s.tb.has(h.slice(-2) + y)) bad = true;
+      else if (n >= 2 && s.tw.has(h.slice(-2) + y)) bad = false;
+      else bad = s.pairs.has(h.slice(-1) + y);
       if (bad) return i;
       h += y;
+      n += y.length;
+      if (h.length > 3) h = h.slice(-3);
     }
-    if (h.length > 0 && s.pending.has(h[h.length - 1])) return run.length - 1;
+    if (n > 0 && s.pending.has(h[h.length - 1])) return run.length - 1;
     return -1;
   }
 

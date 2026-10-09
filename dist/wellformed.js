@@ -35,28 +35,30 @@ function compile(rules) {
     shared.forEach((c, i) => s.cls.set(c, t.shared[i]));
   }
   function check(s, run) {
-    let h = "";
+    let h = "", n = 0;
     for (let i = 0;i < run.length; i++) {
       const y = s.cls.get(run[i]);
-      const n = h.length;
       let bad;
       if (n === 0)
         bad = s.start.has(y);
-      else if (n >= 3 && s.qb.has(h.slice(n - 3) + y))
+      else if (n >= 3 && s.qb.has(h.slice(-3) + y))
         bad = true;
-      else if (n >= 3 && s.qw.has(h.slice(n - 3) + y))
+      else if (n >= 3 && s.qw.has(h.slice(-3) + y))
         bad = false;
-      else if (n >= 2 && s.tb.has(h.slice(n - 2) + y))
+      else if (n >= 2 && s.tb.has(h.slice(-2) + y))
         bad = true;
-      else if (n >= 2 && s.tw.has(h.slice(n - 2) + y))
+      else if (n >= 2 && s.tw.has(h.slice(-2) + y))
         bad = false;
       else
-        bad = s.pairs.has(h.slice(n - 1) + y);
+        bad = s.pairs.has(h.slice(-1) + y);
       if (bad)
         return i;
       h += y;
+      n += y.length;
+      if (h.length > 3)
+        h = h.slice(-3);
     }
-    if (h.length > 0 && s.pending.has(h[h.length - 1]))
+    if (n > 0 && s.pending.has(h[h.length - 1]))
       return run.length - 1;
     return -1;
   }

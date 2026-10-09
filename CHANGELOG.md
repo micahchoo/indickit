@@ -39,6 +39,15 @@ Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-
   indickit has rules for. Cost: about 2.9 KB gzipped in each bundle that
   reads it; the phonetic, normalize and romanize bundles are now over their
   README budgets.
+- Fixed: Go `phonetic.Score` and `Index.Search` panicked (integer divide
+  by zero) on a query word of about 10,000 letters; they now give the
+  reference's scores. TypeScript `score` threw `RangeError` from about
+  125,000 candidates in Node.
+- Faster on long input, same output: `wellformed` (262,144 code points:
+  2.3 s -> 0.03 s in Go, 7.2 s -> 0.04 s in TypeScript) and the `romanize`
+  and `deromanize` decoders (a 4,096-letter word ran out of 6 GB in Go). `phonetic-search`
+  still grows with (query words) x (candidate words): cap user input
+  (README, Limits).
 
 ## 0.8.0 (2026-10-08)
 

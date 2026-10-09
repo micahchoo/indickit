@@ -401,31 +401,66 @@ class Model {
 }
 
 type Option = { tok: number; native: string };
-type Hyp = { score: number; out: string; ctx: number[]; cut: boolean };
-type Cand = { score: number; out: string; parent: Hyp | null; tok: number; idx: number; cut: boolean };
+// A spelling is a chain: each hypothesis holds its parent and the piece it
+// adds, and a whole string is built only at the last position. A copy of the
+// whole string in every candidate made a long word cost (length)^2 in time
+// and memory (perf job, phase 1).
+type Hyp = { score: number; parent: Hyp | null; piece: string; at: number; ctx: number[]; cut: boolean };
+type Cand = { score: number; parent: Hyp | null; piece: string; tok: number; idx: number; cut: boolean };
+
+function spelling(c: Cand): string {
+  const pieces = [c.piece];
+  for (let p = c.parent; p; p = p.parent) pieces.push(p.piece);
+  return pieces.reverse().join("");
+}
+
+// Orders two spellings as < does. They share the spelling of their nearest
+// common hypothesis, so only the pieces after it are read.
+function compareSpellings(a: Cand, b: Cand): number {
+  const ra = [a.piece], rb = [b.piece];
+  let pa = a.parent, pb = b.parent;
+  while (pa !== pb) {
+    if (pb === null || (pa !== null && pa.at > pb.at)) { ra.push(pa!.piece); pa = pa!.parent; }
+    else if (pa === null || pb.at > pa.at) { rb.push(pb.piece); pb = pb.parent; }
+    else { ra.push(pa.piece); pa = pa.parent; rb.push(pb.piece); pb = pb.parent; }
+  }
+  const x = ra.reverse().join(""), y = rb.reverse().join("");
+  return x < y ? -1 : x > y ? 1 : 0;
+}
 
 function before(a: Cand, b: Cand): boolean {
   if (a.score !== b.score) return a.score > b.score;
-  if (a.out !== b.out) return a.out < b.out;
+  const c = compareSpellings(a, b);
+  if (c !== 0) return c < 0;
   return a.idx < b.idx;
 }
 
-// the first k candidates in the reference's stable sort order (score down, spelling up, insertion)
-function top(cs: Cand[], k: number): Cand[] {
-  const best: Cand[] = [];
-  for (const c of cs) {
-    if (best.length === k && !before(c, best[k - 1])) continue;
-    let lo = 0;
-    let hi = best.length;
+// The first k candidates of one position in the stable sort's order (score
+// down, spelling up, insertion), kept as they arrive: the same k that sorting
+// them all gives. n counts every candidate, for the insertion order. With all
+// set, it keeps every candidate (the last position, where the end-of-word
+// score reorders them).
+class Beam {
+  n = 0;
+  best: Cand[] = [];
+  constructor(readonly k: number, readonly all: boolean) {}
+
+  add(score: number, parent: Hyp | null, piece: string, tok: number, cut: boolean): void {
+    const idx = this.n++;
+    const full = !this.all && this.best.length === this.k;
+    if (full && score < this.best[this.k - 1].score) return; // nothing is built for a candidate that loses
+    const c: Cand = { score, parent, piece, tok, idx, cut };
+    if (this.all) { this.best.push(c); return; }
+    if (full && !before(c, this.best[this.k - 1])) return;
+    let lo = 0, hi = this.best.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
-      if (before(c, best[mid])) hi = mid;
+      if (before(c, this.best[mid])) hi = mid;
       else lo = mid + 1;
     }
-    best.splice(lo, 0, c);
-    if (best.length > k) best.pop();
+    this.best.splice(lo, 0, c);
+    if (this.best.length > this.k) this.best.pop();
   }
-  return best;
 }
 
 /** One language's two models, mixed: λ × own + (1 − λ) × pooled. */
@@ -481,18 +516,17 @@ class Mix {
   decode(word: string): Scored[] {
     const w = [...word];
     const h = RULES.order - 1;
-    const root: Hyp = { score: 0, out: "", ctx: this.start, cut: false };
-    const beams: Cand[][] = Array.from({ length: w.length + 1 }, () => []);
-    beams[0].push({ score: 0, out: "", parent: null, tok: -1, idx: 0, cut: false });
+    const root: Hyp = { score: 0, parent: null, piece: "", at: 0, ctx: this.start, cut: false };
+    const beams = Array.from({ length: w.length + 1 }, (_, i) => new Beam(RULES.beam, i === w.length));
+    beams[0].add(0, null, "", -1, false);
     const context = (c: Cand): number[] => {
       if (c.tok < 0) return c.parent!.ctx;
       const ctx = [...c.parent!.ctx, c.tok];
       return ctx.slice(ctx.length - h);
     };
     for (let i = 0; i < w.length; i++) {
-      if (beams[i].length === 0) continue;
-      for (const c of top(beams[i], RULES.beam)) {
-        const hy: Hyp = i === 0 ? root : { score: c.score, out: c.out, ctx: context(c), cut: c.cut };
+      for (const c of beams[i].best) {
+        const hy: Hyp = i === 0 ? root : { score: c.score, parent: c.parent, piece: c.piece, at: i, ctx: context(c), cut: c.cut };
         let moved = false;
         const sa = this.a.stats(hy.ctx);
         const sb = this.b.stats(hy.ctx);
@@ -500,24 +534,20 @@ class Mix {
           const opts = this.options.get(w.slice(i, i + k).join(""));
           if (!opts) continue;
           for (const o of opts) {
-            const next = beams[i + k];
-            next.push({ score: hy.score + this.logp(sa, sb, o.tok), out: hy.out + o.native, parent: hy, tok: o.tok, idx: next.length,
-              cut: hy.cut || (o.native === "" && cuts(w, i, k)) });
+            beams[i + k].add(hy.score + this.logp(sa, sb, o.tok), hy, o.native, o.tok, hy.cut || (o.native === "" && cuts(w, i, k)));
             moved = true;
           }
         }
-        if (!moved) {
-          const next = beams[i + 1];
-          next.push({ score: hy.score - RULES.unknown_penalty, out: hy.out, parent: hy, tok: -1, idx: next.length, cut: hy.cut || cuts(w, i, 1) });
-        }
+        if (!moved) beams[i + 1].add(hy.score - RULES.unknown_penalty, hy, "", -1, hy.cut || cuts(w, i, 1));
       }
     }
     const final = new Map<string, [number, boolean]>();
-    for (const c of beams[w.length]) {
+    for (const c of beams[w.length].best) {
       const ctx = c.parent === null ? this.start : context(c);
       const s = c.score + this.logp(this.a.stats(ctx), this.b.stats(ctx), this.eos);
-      const v = final.get(c.out);
-      final.set(c.out, v === undefined ? [s, c.cut] : [Math.max(v[0], s), v[1] && c.cut]);
+      const o = spelling(c);
+      const v = final.get(o);
+      final.set(o, v === undefined ? [s, c.cut] : [Math.max(v[0], s), v[1] && c.cut]);
     }
     const out = [...final].map(([o, [s, cut]]): Scored => [o, s, cut]);
     return out.sort(byScore).slice(0, RULES.nbest);

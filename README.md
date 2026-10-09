@@ -468,6 +468,9 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
   Ol Chiki text is always whole. A verdict that needs more than three
   characters of context (three or more invisible characters in a row) can
   be wrong. See [docs/wellformed.md](docs/wellformed.md).
+- **Cap user input before `phonetic-search`.** Its cost grows with (query
+  words) x (candidate words): a 4,096-character query takes seconds. See
+  [docs/phonetic.md](docs/phonetic.md#search-phonetic-search).
 - **Go reads invalid UTF-8 as U+FFFD**, so for such input the output does
   not join back into the original bytes.
 - **"The same output" holds inside the blocks indickit reads.** There,

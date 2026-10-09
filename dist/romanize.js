@@ -733,32 +733,74 @@ class Interner {
     return v;
   }
 }
+function spelling(c) {
+  const pieces = [c.piece];
+  for (let p = c.parent;p; p = p.parent)
+    pieces.push(p.piece);
+  return pieces.reverse().join("");
+}
+function compareSpellings(a, b) {
+  const ra = [a.piece], rb = [b.piece];
+  let pa = a.parent, pb = b.parent;
+  while (pa !== pb) {
+    if (pb === null || pa !== null && pa.at > pb.at) {
+      ra.push(pa.piece);
+      pa = pa.parent;
+    } else if (pa === null || pb.at > pa.at) {
+      rb.push(pb.piece);
+      pb = pb.parent;
+    } else {
+      ra.push(pa.piece);
+      pa = pa.parent;
+      rb.push(pb.piece);
+      pb = pb.parent;
+    }
+  }
+  const x = ra.reverse().join(""), y = rb.reverse().join("");
+  return x < y ? -1 : x > y ? 1 : 0;
+}
 function before(a, b) {
   if (a.score !== b.score)
     return a.score > b.score;
-  if (a.out !== b.out)
-    return a.out < b.out;
+  const c = compareSpellings(a, b);
+  if (c !== 0)
+    return c < 0;
   return a.idx < b.idx;
 }
-function top(cs, k) {
-  const best = [];
-  for (const c of cs) {
-    if (best.length === k && !before(c, best[k - 1]))
-      continue;
-    let lo = 0;
-    let hi = best.length;
+
+class Beam {
+  k;
+  all;
+  n = 0;
+  best = [];
+  constructor(k, all) {
+    this.k = k;
+    this.all = all;
+  }
+  add(score, parent, piece, tok) {
+    const idx = this.n++;
+    const full = !this.all && this.best.length === this.k;
+    if (full && score < this.best[this.k - 1].score)
+      return;
+    const c = { score, parent, piece, tok, idx };
+    if (this.all) {
+      this.best.push(c);
+      return;
+    }
+    if (full && !before(c, this.best[this.k - 1]))
+      return;
+    let lo = 0, hi = this.best.length;
     while (lo < hi) {
       const mid = lo + hi >> 1;
-      if (before(c, best[mid]))
+      if (before(c, this.best[mid]))
         hi = mid;
       else
         lo = mid + 1;
     }
-    best.splice(lo, 0, c);
-    if (best.length > k)
-      best.pop();
+    this.best.splice(lo, 0, c);
+    if (this.best.length > this.k)
+      this.best.pop();
   }
-  return best;
 }
 
 class Mix {
@@ -820,9 +862,9 @@ class Mix {
   decode(word, n) {
     const w = [...stripJoiners(word)];
     const h = RULES.order - 1;
-    const root = { score: 0, out: "", ctx: this.start };
-    const beams = Array.from({ length: w.length + 1 }, () => []);
-    beams[0].push({ score: 0, out: "", parent: null, tok: -1, idx: 0 });
+    const root = { score: 0, parent: null, piece: "", at: 0, ctx: this.start };
+    const beams = Array.from({ length: w.length + 1 }, (_, i) => new Beam(this.beam, i === w.length));
+    beams[0].add(0, null, "", -1);
     const context = (c) => {
       if (c.tok < 0)
         return c.parent.ctx;
@@ -830,10 +872,8 @@ class Mix {
       return ctx.slice(ctx.length - h);
     };
     for (let i = 0;i < w.length; i++) {
-      if (beams[i].length === 0)
-        continue;
-      for (const c of top(beams[i], this.beam)) {
-        const hy = i === 0 ? root : { score: c.score, out: c.out, ctx: context(c) };
+      for (const c of beams[i].best) {
+        const hy = i === 0 ? root : { score: c.score, parent: c.parent, piece: c.piece, at: i, ctx: context(c) };
         let moved = false;
         const sa = this.a.stats(hy.ctx);
         const sb = this.b.stats(hy.ctx);
@@ -842,24 +882,22 @@ class Mix {
           if (!opts)
             continue;
           for (const o of opts) {
-            const next = beams[i + k];
-            next.push({ score: hy.score + this.logp(sa, sb, o.tok), out: hy.out + o.en, parent: hy, tok: o.tok, idx: next.length });
+            beams[i + k].add(hy.score + this.logp(sa, sb, o.tok), hy, o.en, o.tok);
             moved = true;
           }
         }
-        if (!moved) {
-          const next = beams[i + 1];
-          next.push({ score: hy.score - RULES.unknown_penalty, out: hy.out, parent: hy, tok: -1, idx: next.length });
-        }
+        if (!moved)
+          beams[i + 1].add(hy.score - RULES.unknown_penalty, hy, "", -1);
       }
     }
     const final = new Map;
-    for (const c of beams[w.length]) {
+    for (const c of beams[w.length].best) {
       const ctx = c.parent === null ? this.start : context(c);
       const s = c.score + this.logp(this.a.stats(ctx), this.b.stats(ctx), this.eos);
-      const v = final.get(c.out);
+      const o = spelling(c);
+      const v = final.get(o);
       if (v === undefined || s > v)
-        final.set(c.out, s);
+        final.set(o, s);
     }
     return [...final].sort((p, q) => p[1] !== q[1] ? q[1] - p[1] : p[0] < q[0] ? -1 : p[0] > q[0] ? 1 : 0).slice(0, n).map((e) => e[0]);
   }

@@ -97,6 +97,15 @@ and 78%.
   "श्री नरेंद्र मोदी" in a list of four names. Remove titles in small lists.
 - **Size.** The browser file is 21 KB gzipped, and a language's table 2–6
   KB more, loaded when you call `loadSearch`.
+- **Cap what users type.** The scorer compares each query word with each
+  candidate word, so its cost grows with their product, and a name's
+  near-match keys grow with the square of its length. Measured in Go: a
+  query of 1,024 characters (about 110 words) scored against itself takes
+  77 ms; 4,096 characters take 1.2 s (3.8 s as one-letter words), and
+  16,384 run out of 6 GB. A query of 4,096 Latin characters against an
+  index of 579 names takes 1.5 s (TypeScript 3.5 s); indexing one name of
+  4,096 letters takes 118 ms. Cut a query to a few dozen words and a name
+  to a few hundred characters before the call.
 
 Weak spots: Urdu (41%) and Malayalam (53%) names in text at the strict
 threshold; Tamil village names (66%). At the very strictest thresholds (one

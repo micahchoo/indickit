@@ -68,3 +68,28 @@ test("the docs' claims about size and small lists hold", async () => {
   expect(four.search("Narendra Modi", 0)[0]).toEqual({ name: 0, score: 73 });
   expect(docs).toContain(`"Narendra Modi" scores 73 against "श्री नरेंद्र मोदी" in a list of four names`);
 });
+
+// Perf job, phase 1. More candidates than a function call takes arguments:
+// Math.min(...costs) threw RangeError from about 125,000 distinct words in
+// Node, 1,000,000 in Bun.
+test("score takes 1,000,000 candidates", async () => {
+  const N = 1_000_000;
+  const letters = "bcdfghjklmnprstv";
+  const cands: string[] = [];
+  for (let i = 0; cands.length < N; i++) {
+    let w = "";
+    for (let x = i; ; x = Math.floor(x / 16)) {
+      w += letters[x % 16] + "a";
+      if (x < 16) break;
+    }
+    cands.push(w);
+  }
+  expect((await searchFor("hi")).score("राम", cands).length).toBe(N);
+}, 60_000);
+
+// A query word whose cost x length passes 2^30 (Go divided by zero there).
+// The scores are the Python reference's.
+test("a 10,617-letter query word scores as the reference", async () => {
+  const q = Array.from("कকਕકକகకಕകকبᱚꯀa".repeat(1200)).slice(0, 10617).join("");
+  expect((await searchFor("hi")).score(q, ["five", "vi"])).toEqual([0, 0]);
+});

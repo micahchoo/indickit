@@ -132,31 +132,36 @@ func BrokenAt(s string) int { return std.brokenAt(s) }
 
 // check gives the index in run of its first broken character, or -1.
 func (s *script) check(run []rune) int {
-	h := "" // the classes so far
+	// h: the last three classes so far; n: how many classes so far. Every rule
+	// reads at most three classes back, so a longer history (h += y on the
+	// whole run) only made the check quadratic in the run.
+	h, n := "", 0
 	for i, c := range run {
 		y := s.class[c]
-		n := len(h)
 		var bad bool
 		switch {
 		case n == 0:
 			bad = s.start[y]
-		case n >= 3 && s.qb[h[n-3:]+y]:
+		case n >= 3 && s.qb[h[len(h)-3:]+y]:
 			bad = true
-		case n >= 3 && s.qw[h[n-3:]+y]:
+		case n >= 3 && s.qw[h[len(h)-3:]+y]:
 			bad = false
-		case n >= 2 && s.tb[h[n-2:]+y]:
+		case n >= 2 && s.tb[h[len(h)-2:]+y]:
 			bad = true
-		case n >= 2 && s.tw[h[n-2:]+y]:
+		case n >= 2 && s.tw[h[len(h)-2:]+y]:
 			bad = false
 		default:
-			bad = s.pairs[h[n-1:]+y]
+			bad = s.pairs[h[len(h)-1:]+y]
 		}
 		if bad {
 			return i
 		}
-		h += y
+		h, n = h+y, n+len(y)
+		if len(h) > 3 {
+			h = h[len(h)-3:]
+		}
 	}
-	if n := len(h); n > 0 && s.pending[h[n-1:]] {
+	if n > 0 && s.pending[h[len(h)-1:]] {
 		return len(run) - 1
 	}
 	return -1

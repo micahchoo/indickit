@@ -427,27 +427,72 @@ func (x *mix) logp(sa, sb *ctxStats, tok int32) float64 {
 	return math.Log(x.lam*pa + (1-x.lam)*pb)
 }
 
+// A spelling is a chain: each hypothesis holds its parent and the piece it
+// adds, and a whole string is built only at the last position. A copy of the
+// whole string in every candidate made a long word cost (length)^2 in time
+// and memory (perf job, phase 1).
 type hyp struct {
-	score float64
-	out   string
-	ctx   []int32
+	score  float64
+	parent *hyp
+	piece  string
+	at     int // letters read: the root 0
+	ctx    []int32
 }
 
 // cand is a hypothesis before the beam cut: its context is built only if it survives.
 type cand struct {
 	score  float64
-	out    string
 	parent *hyp
+	piece  string
 	tok    int32 // -1 for an unknown character: the context does not move
 	idx    int   // insertion order, the stable sort's last key
+}
+
+func (c *cand) spelling() string {
+	pieces := []string{c.piece}
+	for p := c.parent; p != nil; p = p.parent {
+		pieces = append(pieces, p.piece)
+	}
+	var b strings.Builder
+	for i := len(pieces) - 1; i >= 0; i-- {
+		b.WriteString(pieces[i])
+	}
+	return b.String()
+}
+
+// compareSpellings orders two spellings as strings.Compare does. They share
+// the spelling of their nearest common hypothesis, so only the pieces after
+// it are read: a few letters, where a whole spelling is the word so far.
+func compareSpellings(a, b *cand) int {
+	ra, rb := []string{a.piece}, []string{b.piece}
+	pa, pb := a.parent, b.parent
+	for pa != pb {
+		switch {
+		case pb == nil || pa != nil && pa.at > pb.at:
+			ra, pa = append(ra, pa.piece), pa.parent
+		case pa == nil || pb.at > pa.at:
+			rb, pb = append(rb, pb.piece), pb.parent
+		default:
+			ra, pa = append(ra, pa.piece), pa.parent
+			rb, pb = append(rb, pb.piece), pb.parent
+		}
+	}
+	join := func(r []string) string {
+		var b strings.Builder
+		for i := len(r) - 1; i >= 0; i-- {
+			b.WriteString(r[i])
+		}
+		return b.String()
+	}
+	return strings.Compare(join(ra), join(rb))
 }
 
 func before(a, b *cand) bool { // the stable sort's order: score down, spelling up, then insertion
 	if a.score != b.score {
 		return a.score > b.score
 	}
-	if a.out != b.out {
-		return a.out < b.out
+	if c := compareSpellings(a, b); c != 0 {
+		return c < 0
 	}
 	return a.idx < b.idx
 }
@@ -460,65 +505,81 @@ func (c *cand) context(h int) []int32 {
 	return ctx[len(ctx)-h:]
 }
 
-// top returns the first k candidates of cs in the stable sort's order.
-func top(cs []cand, k int) []*cand {
-	best := make([]*cand, 0, k+1)
-	for i := range cs {
-		c := &cs[i]
-		if len(best) == k && !before(c, best[k-1]) {
-			continue
-		}
-		j := sort.Search(len(best), func(p int) bool { return before(c, best[p]) })
-		best = append(best, nil)
-		copy(best[j+1:], best[j:])
-		best[j] = c
-		if len(best) > k {
-			best = best[:k]
-		}
+// beam holds the first k candidates of one position in the stable sort's
+// order, kept as they arrive: the same k that sorting them all gives. n counts
+// every candidate, for the insertion order. With all set, it keeps every
+// candidate (the last position, where the end-of-word score reorders them).
+type beam struct {
+	k    int
+	all  bool
+	n    int
+	best []*cand
+}
+
+func (bm *beam) add(c cand) {
+	c.idx = bm.n
+	bm.n++
+	full := !bm.all && len(bm.best) == bm.k
+	if full && c.score < bm.best[bm.k-1].score {
+		return // the common case: nothing is built for a candidate that loses
 	}
-	return best
+	p := new(cand)
+	*p = c
+	if bm.all {
+		bm.best = append(bm.best, p)
+		return
+	}
+	if full && !before(p, bm.best[bm.k-1]) {
+		return
+	}
+	j := sort.Search(len(bm.best), func(q int) bool { return before(p, bm.best[q]) })
+	if !full {
+		bm.best = append(bm.best, nil)
+	}
+	copy(bm.best[j+1:], bm.best[j:])
+	bm.best[j] = p
 }
 
 // decode: beam search over the ways to cut w into chunks; the n best spellings.
 func (x *mix) decode(word string, n int) []string {
 	w := []rune(stripJoiners(word))
 	h := rules.Order - 1
-	root := &hyp{0, "", x.start}
-	beams := make([][]cand, len(w)+1)
-	beams[0] = []cand{{0, "", nil, -1, 0}}
+	root := &hyp{ctx: x.start}
+	beams := make([]beam, len(w)+1)
+	for i := range beams {
+		beams[i] = beam{k: x.beam, all: i == len(w)}
+	}
+	beams[0].add(cand{tok: -1})
 	for i := 0; i < len(w); i++ {
-		if len(beams[i]) == 0 {
-			continue
-		}
-		for _, c := range top(beams[i], x.beam) {
+		for _, c := range beams[i].best {
 			hy := root
 			if i > 0 {
-				hy = &hyp{c.score, c.out, c.context(h)}
+				hy = &hyp{score: c.score, parent: c.parent, piece: c.piece, at: i, ctx: c.context(h)}
 			}
 			moved := false
 			sa, sb := x.a.stats(hy.ctx), x.b.stats(hy.ctx)
 			for k := 1; k <= rules.MaxN && i+k <= len(w); k++ {
 				for _, o := range x.options[string(w[i:i+k])] {
-					beams[i+k] = append(beams[i+k], cand{hy.score + x.logp(&sa, &sb, o.tok), hy.out + o.en, hy, o.tok, len(beams[i+k])})
+					beams[i+k].add(cand{score: hy.score + x.logp(&sa, &sb, o.tok), parent: hy, piece: o.en, tok: o.tok})
 					moved = true
 				}
 			}
 			if !moved {
-				beams[i+1] = append(beams[i+1], cand{hy.score - rules.UnknownPenalty, hy.out, hy, -1, len(beams[i+1])})
+				beams[i+1].add(cand{score: hy.score - rules.UnknownPenalty, parent: hy, tok: -1})
 			}
 		}
 	}
 	final := map[string]float64{}
-	for i := range beams[len(w)] {
-		c := &beams[len(w)][i]
+	for _, c := range beams[len(w)].best {
 		ctx := x.start
 		if c.parent != nil {
 			ctx = c.context(h)
 		}
 		sa, sb := x.a.stats(ctx), x.b.stats(ctx)
 		s := c.score + x.logp(&sa, &sb, x.eos)
-		if v, ok := final[c.out]; !ok || s > v {
-			final[c.out] = s
+		o := c.spelling()
+		if v, ok := final[o]; !ok || s > v {
+			final[o] = s
 		}
 	}
 	type res struct {
