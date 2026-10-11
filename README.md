@@ -258,7 +258,8 @@ words of a text. A score is relative to the other candidates of its search.
 
 A cursor, a backspace, a letter count and a cut at a length limit must
 treat ಕ್ಷ್ಮಿ as one letter. `Intl.Segmenter` splits it in Kannada and
-Gurmukhi; `segment` keeps it whole.
+Gurmukhi; `segment` keeps it whole. Each letter is an akshara, the
+orthographic syllable of the script.
 
 ```ts
 import { segment, count } from "indickit/segment";

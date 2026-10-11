@@ -8,7 +8,10 @@ to use it: the [README](../README.md).
 
 Text in any other script gets Unicode 17.0's grapheme clusters, which
 indickit computes itself: every browser and every Go version gives the same
-letters.
+letters. Unicode 18 changed one rule (GB9c): it also joins a virama typed
+after a vowel sign or at the start of a word (कि्न्तु, ्माता), which fonts
+draw as two shapes with a dotted circle. `segment` keeps the Unicode 17
+rule, so on such broken text it can differ from a Unicode 18 segmenter.
 
 ## How good it is
 
