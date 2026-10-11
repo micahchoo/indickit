@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"sort"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -137,13 +138,15 @@ func TestNameKeys(t *testing.T) {
 	if len(a) == 0 || !shareOne(a, b) { // written apart in one script, joined in another
 		t.Errorf("JoinedKeys do not meet: %v and %v", a, b)
 	}
-	if RulesVersion != "2026-10-11" {
+	if RulesVersion != "2026-10-11.1" {
 		t.Errorf("RulesVersion = %q", RulesVersion)
 	}
 	// rules 2026-10-11: titles dropped, initials read, the demo's misses
 	for _, p := range [][2]string{
 		{"Smt. J. Shantha", "श्रीमती जे. शान्ता"}, {"Dr. C. P. Joshi", "डॉ. सी.पी. जोशी"},
 		{"Singh", "সিং"}, {"Lakshmi", "லட்சுமி"}, {"Shri", "श्री"},
+		// rules 2026-10-11.1: a title after a comma; the Tamil bundle
+		{"Bajwa, Sardar Partap Singh", "बाजवा, सरदार प्रताप सिंह"}, {"Kanimozhi", "கனிமொழி"}, {"Antony", "ആന്റണി"},
 	} {
 		if !Match(p[0], p[1]) {
 			t.Errorf("Match(%q, %q) = false", p[0], p[1])
@@ -155,5 +158,43 @@ func BenchmarkKeys(b *testing.B) {
 	words := []string{"मोहनलाल", "മോഹൻലാൽ", "சுரேஷ்", "عمران", "bhattacharya", "ꯃꯤꯇꯩ"}
 	for i := 0; i < b.N; i++ {
 		Keys(words[i%len(words)])
+	}
+}
+
+// Names as typed (brackets, commas, titles): NameKeys and JoinedKeys against
+// the reference (linguistic-utilities jobs/phonetic/reference.py#name_keys).
+func TestNamesConformance(t *testing.T) {
+	f, err := os.Open("testdata/conformance-names.jsonl.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := bufio.NewScanner(gz)
+	n, wrong := 0, 0
+	for s.Scan() {
+		var row []json.RawMessage
+		if err := json.Unmarshal(s.Bytes(), &row); err != nil {
+			t.Fatal(err)
+		}
+		var name string
+		var keys, joined []string
+		json.Unmarshal(row[0], &name)
+		json.Unmarshal(row[1], &keys)
+		json.Unmarshal(row[2], &joined)
+		n++
+		gk, gj := NameKeys(name), JoinedKeys(name)
+		if !slices.Equal(gk, keys) || strings.Join(gj, " ") != strings.Join(joined, " ") {
+			if wrong < 10 {
+				t.Errorf("%q: NameKeys %q JoinedKeys %q, want %q %q", name, gk, gj, keys, joined)
+			}
+			wrong++
+		}
+	}
+	if n < 15_000 || wrong > 0 {
+		t.Fatalf("%d of %d names differ", wrong, n)
 	}
 }

@@ -83,8 +83,9 @@ PIB press releases of July 2019 (names in English and in 10 Indian
 languages). On names that the scorer never saw, the text numbers hold: 67%
 and 78%.
 
-- **Thresholds.** 74 for names in a list, 72 for village names, 80 for a
-  name in text when at most 10% of hits may be wrong, 70 for 20%. At 74, a
+- **Thresholds.** 75 for names in a list, 73 for village names, 81 for a
+  name in text when at most 10% of hits may be wrong, 71 for 20% (search
+  2026-10-11.1; 74, 72, 80 and 70 before). At 75, a
   search of the Lok Sabha list returns about one wrong name in 20 searches.
 - **A score belongs to its search.** It is relative to the other
   candidates the key found, so compare scores within one search, not across

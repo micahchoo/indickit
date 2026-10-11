@@ -10,7 +10,7 @@ input the same output.
 
 ## Unreleased
 
-Rules: phonetic 2026-10-11, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-11
+Rules: phonetic 2026-10-11.1, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-11.1
 
 - Changed output: normalize rules 2026-10-07 → 2026-10-11, Tamil only. A
   ZWNJ or ZWJ between consonant + pulli and a consonant is deleted, unless
@@ -38,25 +38,33 @@ Rules: phonetic 2026-10-11, normalize 2026-10-11, segment 2026-10-11, stem 2026-
   conformance rows change, all Sanskrit. On lemmas of the Digital Corpus of
   Sanskrit, read once, recall rises from 34.6% to 40.5% at 2.7% wrong hits.
 - Docs: `stem` damages some names (README Limits, `docs/stem.md#names`).
-- Changed output: phonetic 2026-10-07 → 2026-10-11. Recompute stored keys.
+- Changed output: phonetic 2026-10-07 → 2026-10-11.1. Recompute stored keys.
   `Keys` gives more keys to some words; no key a word had is lost.
   - Bengali-script ং and Devanagari ं also read as ŋ: সিং = Singh (Bengali
     and Assamese), and Bodo spelling (दं = dong; Bodo running text 74% →
     86% of words).
-  - Tamil ட்ச also reads as க்ஷ: லட்சுமி = Lakshmi.
+  - Tamil ட்ச also reads as க்ஷ: லட்சுமி = Lakshmi. A Tamil name ending in
+    ன் or ர் is also keyed without it; a Tamil word starting with a vowel
+    also keys with h (உசைன் = Hussain). Latin zh is ழ (Kanimozhi);
+    Malayalam റ്റ is tt and ന്റ nt (ആന്റണി = Antony). Tamil +1.6 and
+    Malayalam +1.9 points on Wikidata (DEV); on BPCC name pairs, read once,
+    Tamil +0.9 and Malayalam +1.5.
   - Assamese: ৱ after a vowel (not before i) is also a glide (গোৱেল =
     Goyal), and the case endings ৰ, ৱে, লৈ, ৰপৰা are also read off.
   - A one-letter Latin word also keys as its spoken name: M = em = एम =
     எம். M and N, and H and S, now share a key as initials.
 - Changed output: `NameKeys`, `JoinedKeys` and `Match` (`nameKeys`,
-  `joinedKeys`, `match`) drop a name's leading titles (Shri, Smt., Dr,
-  श्रीमती, திரு, …; `titles` in rules.json), keeping at least one word.
-  `Words` still splits only. A second roster as written, the Rajya Sabha:
-  the key finds 54.8% → 87.7%.
-- Changed output: phonetic search 2026-10-09 → 2026-10-11. It keys with
-  phonetic rules 2026-10-11 and drops leading titles in queries and names.
-- Size: the title list and the letter names add about 1 KB gzipped:
-  `phonetic` 6.9 → 7.8 KB, `phonetic-search` 17.0 → 18.0 KB.
+  `joinedKeys`, `match`) drop the leading titles (Shri, Smt., Dr, श्रीमती,
+  திரு, …; `titles` in rules.json) of each comma-separated part of a name:
+  "Bajwa, Sardar Partap Singh" reads as Bajwa Partap Singh. A name of titles
+  only keeps its last word. `Words` still splits only. A second roster as
+  written, the Rajya Sabha: the key finds 54.8% → 87.7%.
+- Changed output: phonetic search 2026-10-09 → 2026-10-11.1. It keys with
+  phonetic rules 2026-10-11.1, drops titles as `NameKeys` does, and its
+  thresholds were chosen again on the same data: names 74 → 75, villages
+  72 → 73, text 80 → 81 and 70 → 71 (`Thresholds` / `THRESHOLDS`).
+- Size: the title list, the letter names and the Tamil rules add about
+  1.1 KB gzipped: `phonetic` 6.9 → 8.0 KB, `phonetic-search` 17.0 → 18.2 KB.
 
 ## 0.10.0 (2026-10-09)
 - New in `stem`: Odia (`or`), in the same rules 2026-10-11. 11 endings

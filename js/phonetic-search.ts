@@ -77,16 +77,19 @@ const rounded = (num: number, den: number) => floor((2 * num + den) / (2 * den))
 const isAscii = (s: string) => /^[\x00-\x7f]*$/.test(s);
 const keysOf = (w: string): string[] => engine(w);
 
-// Latin read a-z and digits, anything else in NFC; leading titles dropped;
-// words with no key dropped (scorer.py#words).
+// Latin read a-z and digits, anything else in NFC; each comma-separated
+// part's leading titles dropped; words with no key dropped (scorer.py#words).
 function searchWords(name: string): string[] {
-  const ws: string[] = [];
-  for (let w of words(name)) {
-    w = normalize(w);
-    if (isAscii(w)) w = w.replace(/[^a-z0-9]/g, "");
-    if (w) ws.push(w);
-  }
-  return dropTitles(ws).filter((w) => keysOf(w).length);
+  const parts = name.replace(/\([^)]*\)/g, " ").split(",").map((part) => {
+    const ws: string[] = [];
+    for (let w of words(part)) {
+      w = normalize(w);
+      if (isAscii(w)) w = w.replace(/[^a-z0-9]/g, "");
+      if (w) ws.push(w);
+    }
+    return ws;
+  });
+  return dropTitles(parts).filter((w) => keysOf(w).length);
 }
 
 const latSyms = (w: string): string[] => [...w.toLowerCase()].filter((c) => c >= "a" && c <= "z");

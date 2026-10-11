@@ -32,14 +32,17 @@ export function keys(word: string): string[] {
 // (linguistic-utilities lu/names.py#words): JavaScript's \s without U+FEFF,
 // with U+001C-001F and U+0085. Go's \s is ASCII only.
 /** A name split on spaces and punctuation, with anything in brackets removed.
- * nameKeys, joinedKeys and match split this way, then drop the name's leading
- * titles (Shri, Smt., श्रीमती, திரு), keeping one word. */
+ * nameKeys, joinedKeys and match split this way, then drop the leading
+ * titles (Shri, Smt., श्रीमती, திரு) of each comma-separated part ("Bajwa,
+ * Sardar Partap Singh"); a name of titles only keeps its last word. */
 export function words(name: string): string[] {
   return name.replace(/\([^)]*\)/g, " ").split(/[^\S\ufeff]|[\x1c-\x1f\x85.\-,'’]/u).filter(Boolean);
 }
 
-// The name's words, normalized, without its leading titles.
-const nameWords = (name: string): string[] => dropTitles(words(name).map(normalize).filter(Boolean));
+// The name's words, normalized, brackets out, each comma-separated part
+// without its leading titles ("Bajwa, Sardar Partap Singh").
+const nameWords = (name: string): string[] =>
+  dropTitles(name.replace(/\([^)]*\)/g, " ").split(",").map((p) => words(p).map(normalize).filter(Boolean)));
 
 /** The keys of a whole name, one per combination of its words' keys, words
  * separated by a space. Two names match when these share an element, so

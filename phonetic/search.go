@@ -126,10 +126,25 @@ func rounded(num, den int64) int64 { return (2*num + den) / (2 * den) }
 // ---- words -------------------------------------------------------------------
 
 // searchWords splits a name as the reference does: Latin read a-z and digits,
-// anything else in NFC; leading titles dropped; words with no key dropped.
+// anything else in NFC; each comma-separated part's leading titles dropped;
+// words with no key dropped (scorer.py#words).
 func searchWords(name string) []string {
+	var parts [][]string
+	for _, part := range strings.Split(bracketed.ReplaceAllString(name, " "), ",") {
+		parts = append(parts, partWords(part))
+	}
+	var out []string
+	for _, w := range std.dropTitles(parts) {
+		if len(std.keys(w)) > 0 {
+			out = append(out, w)
+		}
+	}
+	return out
+}
+
+func partWords(part string) []string {
 	var ws []string
-	for _, w := range Words(name) {
+	for _, w := range Words(part) {
 		w = normalize(w)
 		if isASCII(w) {
 			w = strings.Map(func(r rune) rune {
@@ -143,13 +158,7 @@ func searchWords(name string) []string {
 			ws = append(ws, w)
 		}
 	}
-	var out []string
-	for _, w := range std.dropTitles(ws) {
-		if len(std.keys(w)) > 0 {
-			out = append(out, w)
-		}
-	}
-	return out
+	return ws
 }
 
 func isASCII(s string) bool {

@@ -53,9 +53,9 @@ test("every match(...) example returns what its comment says", () => {
   for (const [, a, b, want] of claims) expect([a, b, match(a, b)]).toEqual([a, b, want === "true"]);
 });
 
-test("the two-key example has two keys", () => {
-  expect(readme).toContain("மோகன், Mohan, has two");
-  expect(keys("மோகன்")).toHaveLength(2);
+test("the many-key example has four keys", () => {
+  expect(readme.replace(/\s+/g, " ")).toContain("மோகன், Mohan, has four");
+  expect(keys("மோகன்")).toHaveLength(4);
 });
 
 test("every normalize(...) and fold(...) example returns what its comment says", () => {

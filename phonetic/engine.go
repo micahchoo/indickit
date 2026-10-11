@@ -22,6 +22,7 @@ type rawRules struct {
 		NuktaOffset       rune              `json:"nukta_offset"`
 		FlapOffsets       []rune            `json:"flap_offsets"`
 		FlapClass         string            `json:"flap_class"`
+		Rewrite           [][2]string       `json:"rewrite"`
 	} `json:"brahmic"`
 	Extra map[string]string `json:"extra"`
 	Urdu  struct {
@@ -61,6 +62,11 @@ type rawRules struct {
 		Before    *string `json:"before"`
 		NotBefore string  `json:"not_before"`
 	} `json:"branches"`
+	InitialBranches []struct {
+		From rune   `json:"from"`
+		To   rune   `json:"to"`
+		Also string `json:"also"`
+	} `json:"initial_branches"`
 	Joined struct {
 		MinClasses int `json:"min_classes"`
 	} `json:"joined"`
@@ -128,6 +134,8 @@ type engine struct {
 	joinedMin                int                 // joined keys shorter than this find too many names
 	initials                 map[string][]string // a one-letter Latin word also keys as its spoken name
 	titles                   map[string]bool     // a name's leading words in this set are dropped
+	rewrite                  [][2]string         // Brahmic spellings rewritten, in order, before reading (ml-tta)
+	initialBranches          []branch            // a word in range whose first class is a vowel also keys with it read as also
 }
 
 func one(s string) rune { r, _ := utf8.DecodeRuneInString(s); return r }
@@ -166,6 +174,10 @@ func load(data []byte) (*engine, error) {
 	for _, t := range r.Titles {
 		k.titles[t] = true
 	}
+	k.rewrite = r.Brahmic.Rewrite
+	for _, b := range r.InitialBranches {
+		k.initialBranches = append(k.initialBranches, branch{from: b.From, to: b.To, also: one(b.Also)})
+	}
 	for o, c := range r.Brahmic.ClassByOffset {
 		n, _ := strconv.Atoi(o)
 		k.byOffset[n] = one(c)
@@ -194,6 +206,9 @@ func load(data []byte) (*engine, error) {
 }
 
 func (k *engine) readBrahmic(word string, out []rune) []rune {
+	for _, p := range k.rewrite {
+		word = strings.ReplaceAll(word, p[0], p[1])
+	}
 	last := rune(-1) // offset of the last letter read, for the nukta
 	for _, ch := range word {
 		if x, ok := k.extra[ch]; ok {
@@ -400,6 +415,17 @@ func (k *engine) variants(word string) [][]rune {
 			}
 		}
 	}
+	for _, b := range k.initialBranches { // after the branches, as reference.py#_variants
+		if len(classes) == 0 || !k.isVowel[classes[0]] || len(vs)*2 > k.maxKeys || !inRange(word, b.from, b.to) {
+			continue
+		}
+		n := len(vs)
+		for _, v := range vs[:n] {
+			w := append([]rune(nil), v...)
+			w[0] = b.also
+			vs = append(vs, w)
+		}
+	}
 	for j, v := range vs { // every variant kept the reader's length; now drop the deleted
 		n := 0
 		for _, c := range v {
@@ -413,14 +439,32 @@ func (k *engine) variants(word string) [][]rune {
 	return vs
 }
 
-// dropTitles drops a name's leading titles (normalized words), keeping at
-// least one word (reference.py#name_words).
-func (k *engine) dropTitles(ws []string) []string {
-	i := 0
-	for i < len(ws)-1 && k.titles[ws[i]] {
-		i++
+// dropTitles gives the words of a name written in comma-separated parts
+// (normalized words), each part without its leading titles; if every word
+// is a title, the last word stays (reference.py#name_parts).
+func (k *engine) dropTitles(parts [][]string) []string {
+	var out, all []string
+	for _, ws := range parts {
+		i := 0
+		for i < len(ws) && k.titles[ws[i]] {
+			i++
+		}
+		out = append(out, ws[i:]...)
+		all = append(all, ws...)
 	}
-	return ws[i:]
+	if len(out) == 0 && len(all) > 0 {
+		return all[len(all)-1:]
+	}
+	return out
+}
+
+func inRange(word string, from, to rune) bool {
+	for _, ch := range word {
+		if ch >= from && ch <= to {
+			return true
+		}
+	}
+	return false
 }
 
 // fits reports whether position i of the reader's classes stands in the

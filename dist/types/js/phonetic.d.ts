@@ -17,8 +17,9 @@ export declare const RULES_VERSION: string;
 /** The sorted keys of one word; empty when it holds no letter the rules read. */
 export declare function keys(word: string): string[];
 /** A name split on spaces and punctuation, with anything in brackets removed.
- * nameKeys, joinedKeys and match split this way, then drop the name's leading
- * titles (Shri, Smt., श्रीमती, திரு), keeping one word. */
+ * nameKeys, joinedKeys and match split this way, then drop the leading
+ * titles (Shri, Smt., श्रीमती, திரு) of each comma-separated part ("Bajwa,
+ * Sardar Partap Singh"); a name of titles only keeps its last word. */
 export declare function words(name: string): string[];
 /** The keys of a whole name, one per combination of its words' keys, words
  * separated by a space. Two names match when these share an element, so

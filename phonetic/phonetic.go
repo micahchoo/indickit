@@ -90,7 +90,8 @@ var (
 
 // Words splits a name on spaces and punctuation, with anything in brackets
 // removed. NameKeys, JoinedKeys and Match split this way, then drop the
-// name's leading titles (Shri, Smt., श्रीमती, திரு), keeping one word.
+// leading titles (Shri, Smt., श्रीमती, திரு) of each comma-separated part
+// ("Bajwa, Sardar Partap Singh"); a name of titles only keeps its last word.
 func Words(name string) []string {
 	var out []string
 	for _, w := range separator.Split(bracketed.ReplaceAllString(name, " "), -1) {
@@ -101,15 +102,20 @@ func Words(name string) []string {
 	return out
 }
 
-// nameWords is the name's words, normalized, without its leading titles.
+// nameWords is the name's words, normalized, brackets out, each
+// comma-separated part without its leading titles ("Bajwa, Sardar Partap Singh").
 func nameWords(name string) []string {
-	var ws []string
-	for _, w := range Words(name) {
-		if n := normalize(w); n != "" {
-			ws = append(ws, n)
+	var parts [][]string
+	for _, part := range strings.Split(bracketed.ReplaceAllString(name, " "), ",") {
+		var ws []string
+		for _, w := range Words(part) {
+			if n := normalize(w); n != "" {
+				ws = append(ws, n)
+			}
 		}
+		parts = append(parts, ws)
 	}
-	return std.dropTitles(ws)
+	return std.dropTitles(parts)
 }
 
 // NameKeys returns the keys of a whole name, one per combination of its

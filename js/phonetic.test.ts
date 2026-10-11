@@ -22,6 +22,23 @@ test("every word gives the reference keys", () => {
   expect(wrong.slice(0, 10)).toEqual([]);
 });
 
+// phonetic/testdata/conformance-names.jsonl.gz: names as typed (brackets,
+// commas, titles) with the reference's nameKeys and joinedKeys; Go reads it too.
+test("every name as typed gives the reference nameKeys and joinedKeys", () => {
+  const file = new URL("../phonetic/testdata/conformance-names.jsonl.gz", import.meta.url);
+  const wrong: string[] = [];
+  let n = 0;
+  for (const line of gunzipSync(readFileSync(file)).toString("utf8").split("\n")) {
+    if (!line) continue;
+    const [name, keysWant, joinedWant] = JSON.parse(line) as [string, string[], string[]];
+    n++;
+    const got = [nameKeys(name).join("|"), joinedKeys(name).join(" ")];
+    if (got[0] !== keysWant.join("|") || got[1] !== joinedWant.join(" ")) wrong.push(`${name}: ${got} ≠ ${keysWant}, ${joinedWant}`);
+  }
+  expect(n).toBeGreaterThan(15_000);
+  expect(wrong.slice(0, 10)).toEqual([]);
+});
+
 // phonetic/testdata/conformance-joined.jsonl.gz: a sample of names with the
 // joined keys the reference gave them; the Go package reads the same file.
 test("every sampled name gives the reference joined keys", () => {
@@ -69,8 +86,10 @@ test("nameKeys meet across scripts; the rules are versioned", () => {
   expect(joinedKeys("Ram Nath")).toEqual([]); // rnnt: 4 classes, below the floor
   const j = new Set(joinedKeys("Subramanian Swaminathan"));
   expect(j.size > 0 && joinedKeys("சுப்ரமணியன்சுவாமிநாதன்").some((k) => j.has(k))).toBe(true);
-  expect(RULES_VERSION).toBe("2026-10-11");
+  expect(RULES_VERSION).toBe("2026-10-11.1");
   // rules 2026-10-11: titles dropped, initials read, the demo's misses
   for (const [a, b] of [["Smt. J. Shantha", "श्रीमती जे. शान्ता"], ["Dr. C. P. Joshi", "डॉ. सी.पी. जोशी"],
-    ["Singh", "সিং"], ["Lakshmi", "லட்சுமி"], ["Shri", "श्री"]]) expect(match(a, b)).toBe(true);
+    ["Singh", "সিং"], ["Lakshmi", "லட்சுமி"], ["Shri", "श्री"],
+    // rules 2026-10-11.1: a title after a comma; the Tamil bundle
+    ["Bajwa, Sardar Partap Singh", "बाजवा, सरदार प्रताप सिंह"], ["Kanimozhi", "கனிமொழி"], ["Antony", "ആന്റണി"]]) expect(match(a, b)).toBe(true);
 });

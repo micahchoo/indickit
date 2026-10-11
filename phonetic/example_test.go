@@ -23,7 +23,7 @@ func ExampleKeys() {
 	// ರಾಮ [rn]
 	// رام [rn]
 	// Ram [rn]
-	// மோகன் [nhn nkn]
+	// மோகன் [nh nhn nk nkn]
 }
 
 func ExampleNameKeys() {

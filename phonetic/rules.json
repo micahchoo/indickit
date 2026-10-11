@@ -1,5 +1,5 @@
 {
- "version": "2026-10-11",
+ "version": "2026-10-11.1",
  "folds": [
   "as-case-narrow",
   "as-w-glide-ni",
@@ -14,14 +14,18 @@
   "latin-initials",
   "latin-ngh",
   "latin-w-u",
+  "latin-zh",
   "ml-case",
+  "ml-tta",
   "nasal-all",
   "ng-k",
   "or-case",
   "retroflex",
   "s-c",
   "ta-case",
+  "ta-initial-h",
   "ta-k-h",
+  "ta-name-end",
   "ta-tc-k",
   "te-case",
   "ur-w-u",
@@ -114,7 +118,21 @@
    33,
    34
   ],
-  "flap_class": "ṛ"
+  "flap_class": "ṛ",
+  "rewrite": [
+   [
+    "റ്റ",
+    "ത്ത"
+   ],
+   [
+    "ന്റ",
+    "ന്ത"
+   ],
+   [
+    "ൻറ",
+    "ന്ത"
+   ]
+  ]
  },
  "extra": {
   "ৎ": "t",
@@ -335,6 +353,10 @@
  "latin": {
   "groups": [
    [
+    "zh",
+    "l"
+   ],
+   [
     "ngh",
     "nĝ"
    ],
@@ -529,6 +551,13 @@
    "also": "u"
   }
  ],
+ "initial_branches": [
+  {
+   "from": 2944,
+   "to": 3071,
+   "also": "h"
+  }
+ ],
  "joined": {
   "min_classes": 8,
   "when": "the strict keys find nobody"
@@ -716,6 +745,14 @@
     "ில்",
     "ால்",
     "ும்"
+   ]
+  },
+  {
+   "from": 2944,
+   "to": 3071,
+   "endings": [
+    "ன்",
+    "ர்"
    ]
   },
   {

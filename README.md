@@ -206,7 +206,8 @@ match("राम", "काम"); // false: Rām is not kām
 
 To search a list of names, store every key of each name, and look up every
 key of the query. A name can have more than one key: Tamil writes both k
-and h with க, so மோகன், Mohan, has two.
+and h with க, and a Tamil name ending in ன் is also keyed without it, so
+மோகன், Mohan, has four.
 
 ```ts
 import { nameKeys, RULES_VERSION } from "indickit/phonetic";
@@ -235,9 +236,9 @@ ix.search("Narendra Modi", THRESHOLDS.names); // [{ name: 1, score: 100 }]
 ix.search("Manmohan Singh", THRESHOLDS.names); // [{ name: 2, score: 96 }]
 ```
 
-Use the threshold for your task: `THRESHOLDS.names` (74) for a list of
-people, `THRESHOLDS.villages` (72) for place names, `THRESHOLDS.text_10`
-(80) or `text_20` (70) with `s.index(words, "text")` for a name among the
+Use the threshold for your task: `THRESHOLDS.names` (75) for a list of
+people, `THRESHOLDS.villages` (73) for place names, `THRESHOLDS.text_10`
+(81) or `text_20` (71) with `s.index(words, "text")` for a name among the
 words of a text. A score is relative to the other candidates of its search.
 
 ### Count and cut letters

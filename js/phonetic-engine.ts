@@ -10,7 +10,11 @@ import rulesJson from "../phonetic/rules.json" with { type: "json" };
 import { isMn, nfc, nfd } from "./unidata";
 
 // initials and titles are absent from the scorer's fine rules files
-type Rules = Omit<typeof rulesJson, "initials" | "titles"> & { initials?: Record<string, string[]> };
+type Rules = Omit<typeof rulesJson, "initials" | "titles" | "initial_branches" | "brahmic"> & {
+  initials?: Record<string, string[]>;
+  initial_branches?: { from: number; to: number; also: string }[];
+  brahmic: Omit<typeof rulesJson.brahmic, "rewrite"> & { rewrite?: string[][] };
+};
 
 // A branch gives a word a second key with one class read as another (also; ""
 // deletes it). after/before name the classes that may stand next to it ("^"
@@ -43,7 +47,13 @@ export function compile(rules: Rules) {
     return rules.meetei.ranges.some(([lo, hi]) => o >= lo && o <= hi);
   }
 
+  // ml-tta: Brahmic spellings rewritten, in order, before reading
+  const rewrite: [string, string][] = (rules.brahmic.rewrite ?? []) as [string, string][];
+  // a word in range whose first class is a vowel also keys with it read as also
+  const initialBranches: { from: number; to: number; also: string }[] = rules.initial_branches ?? [];
+
   function readBrahmic(word: string): string {
+    for (const [a, b] of rewrite) word = word.replaceAll(a, b);
     let out = "";
     let last = -1; // offset of the last letter read, for the nukta
     for (let i = 0; i < word.length; i++) {
@@ -192,6 +202,15 @@ export function compile(rules: Rules) {
         }
       }
     }
+    for (const ib of initialBranches) { // after the branches, as reference.py#_variants
+      if (!classes || !vowels.has(classes[0]) || vs.length * 2 > rules.max_keys) continue;
+      let inRange = false;
+      for (let i = 0; i < word.length; i++) {
+        const o = word.charCodeAt(i);
+        if (o >= ib.from && o <= ib.to) { inRange = true; break; }
+      }
+      if (inRange) vs = vs.concat(vs.map((v) => ib.also + v.slice(1)));
+    }
     return vs.map((v) => v.replaceAll(DELETED, ""));
   }
 
@@ -233,12 +252,18 @@ export const engine = compile(rulesJson);
 
 const titles = new Set<string>(rulesJson.titles);
 
-/** A name's normalized words without its leading titles (Shri, Smt., श्रीमती,
- * திரு); at least one word stays (reference.py#name_words). */
-export function dropTitles(ws: string[]): string[] {
-  let i = 0;
-  while (i < ws.length - 1 && titles.has(ws[i])) i++;
-  return ws.slice(i);
+/** The words of a name written in comma-separated parts (normalized words),
+ * each part without its leading titles (Shri, Smt., श्रीमती, திரு); if every
+ * word is a title, the last word stays (reference.py#name_parts). */
+export function dropTitles(parts: string[][]): string[] {
+  const out: string[] = [];
+  for (const ws of parts) {
+    let i = 0;
+    while (i < ws.length && titles.has(ws[i])) i++;
+    out.push(...ws.slice(i));
+  }
+  const all = parts.flat();
+  return out.length || !all.length ? out : all.slice(-1);
 }
 
 /** nameKeys and the search index stop here: a long Tamil name can have many key combinations. */
