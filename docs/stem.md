@@ -14,7 +14,8 @@ Each language has a list of 20–71 endings. `stem` cuts the longest one
 that leaves at least two code points; in nine languages it then drops one
 final vowel sign (the Tamil ு in ஆண்டு). So a stem is a key, not a word:
 ஆண்ட is not Tamil, but ஆண்டு "year" and ஆண்டில் "in the year" both give it.
-Kannada endings stack, so in Kannada `stem` does all of this twice:
+Kannada endings stack, so in Kannada `stem` does all of this twice (so it
+does in Gujarati, Marathi, Maithili and Santali):
 ಪ್ರಧಾನಮಂತ್ರಿಯವರು "the Prime Minister" (honorific) and ಪ್ರಧಾನಮಂತ್ರಿ give one key.
 `stem` may cut a stem again, as Snowball and Lucene do: apply it once.
 
@@ -90,6 +91,12 @@ was chosen on and which were read once, the second cut finds 0.9 points
 more of the right sentences (95%: +0.7 to +1.1), and precision falls by
 0.75 points (95%: −1.2 to −0.4).
 
+Gujarati and Marathi cut twice since the same rules 2026-10-11. On the
+same August 2023 sentences, read once, Gujarati finds 1.7 points more of
+the right sentences (95%: +1.1 to +2.5) and Marathi 1.6 (+1.1 to +2.2);
+precision falls by 0.2 and 0.4 points. Of the other languages tried, five
+lose more precision than the budget allows and three gain nothing.
+
 Sanskrit has 17 more endings since rules 2026-10-11; the Sanskrit row
 above was measured before that change. The endings were chosen on lemmas
 of the Digital Corpus of Sanskrit (DCS, CC BY 4.0), on words that also
@@ -116,6 +123,14 @@ once on a part no rule had seen (recall / precision; 300 queries each):
 | Sindhi (Devanagari) | 5,022 | 37.1% / 62.3% | 45.7% / 59.1% | +8.5 (+7.1, +9.9) | 14 |
 | Dogri | 9,036 | 45.0% / 64.9% | 50.8% / 62.6% | +5.8 (+4.7, +7.0) | 9 |
 | Santali | 6,438 | 40.9% / 50.6% | 44.7% / 49.1% | +3.7 (+2.9, +4.7) | 12 |
+
+Maithili and Santali used less than half the precision budget, so their
+tables grew afterwards: 7 more endings each, and two cuts. Each change was
+checked once on text neither table had seen. Maithili (BPCC, 7,907
+sentences): recall 52.4% → 53.3% (+0.95; 95%: +0.5 to +1.6), precision
+63.9% → 62.6%. Santali (FLORES+, 2,009 sentences): recall 37.9% → 38.5%
+(+0.56; 95%: +0.3 to +0.8), precision 47.0% → 45.9%. The table above shows
+the first tables. Dogri found nothing more to add.
 
 BPCC writes Sindhi in Devanagari, Manipuri in Meetei Mayek and Kashmiri in
 Perso-Arabic. Sindhi in Perso-Arabic and Manipuri in Bengali script have

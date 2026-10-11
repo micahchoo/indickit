@@ -26,6 +26,12 @@
     "RULES_VERSION",
     "stem"
   ],
+  "stem-compounds": [
+    "compoundKey"
+  ],
+  "search-key": [
+    "searchKey"
+  ],
   "romanize": [
     "CDN",
     "RULES_VERSION",

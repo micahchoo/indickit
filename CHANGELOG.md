@@ -108,8 +108,13 @@ Rules: phonetic 2026-10-11.6, normalize 2026-10-11, segment 2026-10-11, stem 202
   1.3 KB gzipped to `phonetic`: 6.9 → 8.2 KB. `phonetic-search` falls
   17.0 → 14.5 KB: its 2^x tables are stored as second differences, and its
   two fine rules files as patches over `rules.json` (every score unchanged).
-
-## 0.10.0 (2026-10-09)
+- Changed output: stem, in the same rules 2026-10-11. Gujarati, Marathi,
+  Maithili and Santali run their endings twice, as Kannada does; Maithili
+  and Santali gain 7 endings each. On text no rule saw, read once:
+  Gujarati +1.7 and Marathi +1.6 points of recall (PIB), Maithili +0.95
+  (BPCC), Santali +0.56 (FLORES+); precision falls by at most 1.3 points
+  against the old output. About 12,900 conformance rows change, in these
+  four languages only.
 - `stem`: Sindhi in Perso-Arabic and Manipuri in Bengali script get their
   own endings in the same tables, chosen on FLORES+ and checked once on its
   unseen half (Manipuri: 5.6 points more of the right sentences than exact
@@ -144,6 +149,8 @@ Rules: phonetic 2026-10-11.6, normalize 2026-10-11, segment 2026-10-11, stem 202
   chosen on PIB search; on FLORES+, read once, 6.9 points more of the right
   sentences than exact search, 3.4 points less precise. Odia's 24,578
   conformance rows are new.
+
+## 0.10.0 (2026-10-09)
 
 Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-09, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-09
 
