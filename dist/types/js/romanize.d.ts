@@ -3,9 +3,10 @@
  * लक्ष्मी → lakshmi, മലൈക → malaika, پرویز → parvez.
  *
  * A ranked list: one word has several accepted spellings (Choudhury,
- * Chowdhury), and the first is the most likely. Two modes: "words" for
- * running text (the default) and "names" for fields known to hold person
- * names, where a lookup of known names comes first.
+ * Chowdhury), and the first is the most likely. Three modes: "words" for
+ * running text (the default); "names" for fields known to hold person
+ * names, where a lookup of known names comes first; and "places" for place
+ * names (its own tables in eight languages, the "words" tables in the others).
  *
  * The tables are learned from data and loaded per language, on demand:
  *
@@ -17,8 +18,11 @@
  *
  * @module
  */
-/** The tables: "words" for running text, "names" for person names. */
-export type Mode = "words" | "names";
+/**
+ * The tables: "words" for running text, "names" for person names, "places" for
+ * place names (own tables for bn hi ml or sat ta te ur; the "words" tables elsewhere).
+ */
+export type Mode = "words" | "names" | "places";
 /** Changes whenever any output changes: store it beside romanized text. */
 export declare const RULES_VERSION: string;
 /** The language codes that have tables, for one mode. */

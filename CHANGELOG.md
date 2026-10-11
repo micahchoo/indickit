@@ -10,7 +10,7 @@ input the same output.
 
 ## Unreleased
 
-Rules: phonetic 2026-10-11.2, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-11.2
+Rules: phonetic 2026-10-11.2, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-11.1, deromanize 2026-10-09.2, phonetic-search 2026-10-11.2
 
 - Changed output: normalize rules 2026-10-07 → 2026-10-11, Tamil only. A
   ZWNJ or ZWJ between consonant + pulli and a consonant is deleted, unless
@@ -32,6 +32,23 @@ Rules: phonetic 2026-10-11.2, normalize 2026-10-11, segment 2026-10-11, stem 202
   L3Cube-HingLID, read once, 87.4% of words are called right (IndicLID
   roman: 72.1%); 2.4% of Hindi words stay in Latin. Every other output is
   unchanged, so the deromanize rules version is unchanged.
+- Added: romanize mode `"places"` (Go `romanize.Places`), rules
+  2026-10-11 → 2026-10-11.1, for place names. Own tables for bn hi ml or sat
+  ta te ur, learned from Wikidata place names; the words tables in the other
+  languages. On OpenStreetMap place names (read once, the training's own
+  names left out) the first spelling is right 46.9% of the time, against
+  43.3% for the words mode (IndicXlit 52.4%). The words and names modes are
+  unchanged since 2026-10-11.
+- Changed output: romanize rules 2026-10-09 → 2026-10-11, words mode.
+  Bodo writes ख थ फ as kh th ph, as Bodo speakers type them (थाखाय →
+  thakhai, was takai), not as Aksharantar's k t f. On typed Bodo sentences
+  (Bhasha-Abhijnaanam, read once) the first spelling is right 71.9% of the
+  time, was 50.3% (IndicXlit 49.3%); on Aksharantar's word list it falls
+  from 75.6% to 45.6%. The shared Brahmic table was retrained, so a few
+  lower-ranked spellings in other languages change too (61 of 1,018 words
+  conformance rows; no language's first spelling moved by more than 0.2
+  points). The names mode is unchanged.
+
 - Changed output: stem rules 2026-10-09 → 2026-10-11, Sanskrit only. 17
   endings added (the anusvara spellings ानां ां ायां, the passive यते यन्ते,
   the infinitive तुं, the absolutive त्वा, and others); 1,301 of the 418,730

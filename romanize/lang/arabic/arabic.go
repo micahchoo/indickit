@@ -12,10 +12,14 @@ import (
 //go:embed names-arabic.bin
 var f0 []byte
 
-//go:embed words-arabic.bin
+//go:embed places-arabic.bin
 var f1 []byte
+
+//go:embed words-arabic.bin
+var f2 []byte
 
 func init() {
 	romanize.Register("names-arabic.bin", f0)
-	romanize.Register("words-arabic.bin", f1)
+	romanize.Register("places-arabic.bin", f1)
+	romanize.Register("words-arabic.bin", f2)
 }

@@ -39,6 +39,17 @@ export interface Deromanizer {
     word(latin: string, n?: number): string[];
     /** Every run of Latin letters written as its first native spelling; everything else kept. */
     text(text: string): string;
+    /**
+     * Is the Latin-typed word, read as `word` reads it, in the language's English list
+     * (an English word a typist of the language writes in English)? Only Hindi has a list:
+     * load it with `{ english: true }`. False for a language with no list.
+     */
+    isEnglish(word: string): boolean;
+    /**
+     * `text` for mixed text such as Hinglish: a word in the English list stays as typed
+     * ("kal meeting hai" → "कल meeting है"). Equals `text` for a language with no list.
+     */
+    textMixed(text: string): string;
 }
 /** The input as the training pairs were read: accents removed, lower case, a-z only. */
 export declare function clean(s: string): string;
@@ -52,6 +63,7 @@ export declare function clean(s: string): string;
 export declare function load(lang: string, mode?: Mode, opts?: {
     fetch?: Fetcher;
     base?: URL | string;
+    english?: boolean;
 }): Promise<Deromanizer>;
 /** Builds a Deromanizer from its files, by file name (for tests and offline use). */
 export declare function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8Array>): Deromanizer;

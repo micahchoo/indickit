@@ -95,7 +95,7 @@ against 39.9%. No held-out set was read for this comparison, because no
 tool came within reach.
 
 The browser file is 7 KB gzipped. The tables load on demand, one language
-and mode at a time: about 0.4 MB for names and 1.8 MB for text in a Brahmic
+and mode at a time: about 0.4 MB for names and 1.9 MB for text in a Brahmic
 language, 0.2 MB and 1.0 MB in Urdu (brotli, as jsDelivr serves them). They
 are read beside the module, else from jsDelivr at the package's version; the
 npm package carries none of them. In Go, `go get` downloads every language's
@@ -139,13 +139,54 @@ IndicXlit: the index side is its native-to-Latin model distilled into
 `romanize`'s tables, the query side its Latin-to-native model. The result
 says which direction to romanize in.
 
+## Place names
+
+The `"places"` mode (Go `romanize.Places`) is for a field that holds a place
+name. Eight languages have their own places tables: Bengali, Hindi,
+Malayalam, Odia, Santali, Tamil, Telugu and Urdu. The others use their words
+tables, which did better on their place names. Use it for addresses, maps and
+gazetteers; use `"words"` for running text.
+
+```ts
+const ta = await load("ta", "places");
+ta.word("காஞ்சிபுரம்", 1);  // ["kanchipuram"]; the words mode gives ["kanjipuram"]
+```
+
+**How it is made.** 114,380 place-name pairs from Wikidata (a native label and
+the English label of the same place) are trained beside the words data, under
+their own tag; each language uses the places tables only where they were
+better on the development half of OpenStreetMap's place names.
+
+**How good it is.** On OpenStreetMap place names in India, held out and read
+once, leaving out the names that are also in the Wikidata training pairs
+(8,238 words), the first spelling is right:
+
+| Mode | All | Tamil | Malayalam | Hindi | Telugu |
+|---|---|---|---|---|---|
+| `"places"` | **46.9%** | 29.5% | 38.8% | 43.4% | 48.1% |
+| `"words"` | 43.3% | 16.7% | 30.7% | 39.3% | 44.5% |
+| IndicXlit | 52.4% | 34.2% | 40.6% | 45.4% | 53.0% |
+
+A places page is a little larger than a words page in a Brahmic language:
+2.2 MB for Hindi against 1.9 MB (brotli); in Urdu both are 1.0 MB. A language
+without its own places tables downloads its words page. OpenStreetMap data is © OpenStreetMap
+contributors (ODbL); it was used only to measure, and no OpenStreetMap name is
+in the tables.
+
 ## Weak spots
 
-- **Places.** On village and town names, IndicXlit is 7–13 points ahead.
+- **Places.** On OpenStreetMap place names IndicXlit is 5.5 points ahead of the places mode
+  ([Place names](#place-names)), most in Kannada (10.7), whose places mode uses its words tables.
 - **Rare words out of context**, as above: IndicXlit is 5.5 points ahead.
-- **Santali** has names only; **Bodo** and **Dogri** have words only, and
-  were measured on Aksharantar's words (Bodo 48.6%, Dogri 32.2% for the first
-  spelling; IndicXlit has no Dogri).
+- **Santali** has names only; **Bodo** and **Dogri** have words only.
+  Dogri was measured on Aksharantar's words (32.2% for the first spelling;
+  IndicXlit has no Dogri).
+- **Bodo follows the typists' spelling.** Since rules 2026-10-11, ख थ फ
+  are written kh th ph (थाखाय → thakhai), as Bodo speakers type them, not
+  k t f as Aksharantar writes them. On typed Bodo sentences
+  (Bhasha-Abhijnaanam, held out) the first spelling is right 71.9% of the
+  time, up from 50.3% (IndicXlit: 49.3%); on Aksharantar's word list, which
+  keeps k t f, it falls from 75.6% to 45.6%.
 - **Exact match is harsh.** One word has several accepted spellings
   (sushil, susheel), and the score counts only the one the person typed or
   Wikidata holds.

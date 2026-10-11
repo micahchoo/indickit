@@ -2,9 +2,11 @@
 // people spell it: लक्ष्मी → lakshmi, മലൈക → malaika, پرویز → parvez.
 //
 // It returns a ranked list: one word has several accepted spellings
-// (Choudhury, Chowdhury), and the first is the most likely. Two modes:
-// Words, for running text (the default), and Names, for fields known to
-// hold person names, where a lookup of known names comes first.
+// (Choudhury, Chowdhury), and the first is the most likely. Three modes:
+// Words, for running text (the default); Names, for fields known to hold
+// person names, where a lookup of known names comes first; and Places, for
+// place names (its own tables in eight languages, the Words tables in the
+// others).
 //
 // The tables are learned from data (see the README for what, and how good
 // they are) and loaded per language: import the languages you need,
@@ -20,6 +22,7 @@ import (
 	_ "embed"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"math"
 	"sort"
 	"strings"
@@ -33,12 +36,17 @@ import (
 //go:embed rules.json
 var rulesJSON []byte
 
-// Mode chooses the tables: Words for running text, Names for person names.
+// Mode chooses the tables: Words for running text, Names for person names,
+// Places for place names.
 type Mode string
 
 const (
 	Words Mode = "words"
 	Names Mode = "names"
+	// Places has its own tables for Bengali, Hindi, Malayalam, Odia,
+	// Santali, Tamil, Telugu and Urdu, learned from Wikidata place names;
+	// every other language uses its Words tables.
+	Places Mode = "places"
 )
 
 var rules struct {
@@ -212,15 +220,16 @@ func unify(w string) string {
 }
 
 func get(lang string, mode Mode) *mix {
-	key := lang + "." + string(mode)
 	mu.Lock()
 	defer mu.Unlock()
-	if x, ok := tables[key]; ok {
-		return x
-	}
 	l, ok := rules.Families[mode][lang]
 	if !ok || files[l.File] == nil || files[l.Pooled] == nil {
 		return nil
+	}
+	// keyed by the tables, not the mode: Places reuses the Words tables of most languages
+	key := fmt.Sprintf("%s|%s|%s|%d", l.File, l.Pooled, l.Tag, rules.Beam[mode])
+	if x, ok := tables[key]; ok {
+		return x
 	}
 	x := newMix(files[l.File], files[l.Pooled], l.Tag, rules.Beam[mode])
 	tables[key] = x

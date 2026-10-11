@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -177,5 +178,26 @@ func TestManipuriInBengaliScript(t *testing.T) {
 	}
 	if got := romanize.Text("ꯔꯥꯝ, রামেন", "mni", romanize.Names); got != "ram, ramen" {
 		t.Errorf("Text in both scripts: %q", got)
+	}
+}
+
+// Places mode (rules 2026-10-11.1): its own tables on the route, the Words tables elsewhere.
+func TestPlacesRoute(t *testing.T) {
+	if n := len(romanize.Languages(romanize.Places)); n != 22 {
+		t.Errorf("places mode: %d languages, want 22", n)
+	}
+	for _, w := range []string{"ಬೆಂಗಳೂರು", "ಮೈಸೂರು", "ಹುಬ್ಬಳ್ಳಿ"} { // Kannada is off the route
+		if p, q := romanize.Word(w, "kn", romanize.Places, 4), romanize.Word(w, "kn", romanize.Words, 4); !reflect.DeepEqual(p, q) {
+			t.Errorf("kn %s: places %v, words %v", w, p, q)
+		}
+	}
+	differ := 0
+	for _, w := range []string{"திருச்சிராப்பள்ளி", "காஞ்சிபுரம்", "தஞ்சாவூர்", "கோயம்புத்தூர்"} { // Tamil is on it
+		if !reflect.DeepEqual(romanize.Word(w, "ta", romanize.Places, 4), romanize.Word(w, "ta", romanize.Words, 4)) {
+			differ++
+		}
+	}
+	if differ == 0 {
+		t.Error("ta: places mode gives the words mode's lists: its own tables are not loaded")
 	}
 }

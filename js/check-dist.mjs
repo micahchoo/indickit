@@ -154,6 +154,24 @@ if (dmiss || dn < 2000) {
   process.exit(1);
 }
 console.log(`dist/deromanize.js: all ${dn} rows agree (rules ${D.RULES_VERSION})`);
+// its English list (Hindi): deromanize/testdata/english-conformance.jsonl.gz
+const engRows = gunzipSync(readFileSync(new URL("../deromanize/testdata/english-conformance.jsonl.gz", import.meta.url))).toString("utf8");
+const eloaded = new Map();
+let en = 0, emiss = 0;
+for (const line of engRows.split("\n")) {
+  if (!line) continue;
+  const [kind, lang, input, want] = JSON.parse(line);
+  if (!eloaded.has(lang)) eloaded.set(lang, await D.load(lang, "words", { fetch: disk, english: true }));
+  const d = eloaded.get(lang);
+  const got = kind === "english" ? d.isEnglish(input) : d.textMixed(input);
+  en++;
+  if (JSON.stringify(got) !== JSON.stringify(want) && emiss++ < 10) console.error(JSON.stringify([kind, lang, input, want, got]));
+}
+if (emiss || en < 40) {
+  console.error(`dist/deromanize.js: ${emiss} of ${en} English-list rows differ`);
+  process.exit(1);
+}
+console.log(`dist/deromanize.js: all ${en} English-list rows agree`);
 
 // dist/phonetic-search.js against phonetic/testdata/scorer-conformance.jsonl.gz, loading its
 // tables from the default place beside the bundle (../phonetic/scorer/), as jsDelivr serves it

@@ -13,10 +13,14 @@ import (
 //go:embed or.names.bin
 var f0 []byte
 
-//go:embed or.words.bin
+//go:embed or.places.bin
 var f1 []byte
+
+//go:embed or.words.bin
+var f2 []byte
 
 func init() {
 	romanize.Register("or.names.bin", f0)
-	romanize.Register("or.words.bin", f1)
+	romanize.Register("or.places.bin", f1)
+	romanize.Register("or.words.bin", f2)
 }

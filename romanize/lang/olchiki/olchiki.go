@@ -12,6 +12,10 @@ import (
 //go:embed names-olchiki.bin
 var f0 []byte
 
+//go:embed places-olchiki.bin
+var f1 []byte
+
 func init() {
 	romanize.Register("names-olchiki.bin", f0)
+	romanize.Register("places-olchiki.bin", f1)
 }

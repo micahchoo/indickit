@@ -93,3 +93,27 @@ test("a cut-short spelling is not first", async () => {
   const { RULES_VERSION } = await import("./deromanize");
   expect(RULES_VERSION >= "2026-10-09").toBe(true);
 }, 120_000);
+
+// deromanize/testdata/english-conformance.jsonl.gz: ["english", lang, word, bool] and
+// ["text-mixed", lang, text, output] from the Python reference; the same file the Go test reads.
+test("the English list: every english-conformance row", async () => {
+  const rows = gunzipSync(readFileSync(new URL("../deromanize/testdata/english-conformance.jsonl.gz", import.meta.url)))
+    .toString("utf8").trim().split("\n").map((l) => JSON.parse(l) as [string, string, string, boolean | string]);
+  expect(rows.length).toBeGreaterThanOrEqual(40);
+  const ds = new Map<string, Deromanizer>();
+  for (const [kind, lang, input, want] of rows) {
+    if (!ds.has(lang)) ds.set(lang, await load(lang, "words", { fetch: disk, english: true }));
+    const d = ds.get(lang)!;
+    expect([kind, lang, input, kind === "english" ? d.isEnglish(input) : d.textMixed(input)]).toEqual([kind, lang, input, want]);
+  }
+});
+
+test("the English list loads only when asked", async () => {
+  const hi = await get("hi", "words"); // loaded without { english: true }
+  expect(() => hi.isEnglish("meeting")).toThrow(/english: true/);
+  expect(() => hi.textMixed("kal meeting hai")).toThrow(/english: true/);
+  expect(hi.text("kal meeting hai")).not.toMatch(/[a-z]/); // text() is unchanged
+  const mr = await get("mr", "words"); // no list: nothing is English, textMixed is text
+  expect(mr.isEnglish("meeting")).toBe(false);
+  expect(mr.textMixed("kal meeting hai")).toBe(mr.text("kal meeting hai"));
+});

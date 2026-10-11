@@ -19,3 +19,12 @@ func ExampleText() {
 	fmt.Println(romanize.Text("भारत के प्रधानमंत्री", "hi", romanize.Words))
 	// Output: bharat ke pradhaanmantri
 }
+
+// Place names: Places mode has its own tables in eight languages.
+func ExampleWord_places() {
+	fmt.Println(romanize.Word("காஞ்சிபுரம்", "ta", romanize.Places, 1))
+	fmt.Println(romanize.Word("காஞ்சிபுரம்", "ta", romanize.Words, 1))
+	// Output:
+	// [kanchipuram]
+	// [kanjipuram]
+}

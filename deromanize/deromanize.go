@@ -185,7 +185,23 @@ func Word(latin, lang string, mode Mode, n int) []string {
 
 // Text writes every run of Latin letters in text as its first native
 // spelling, and keeps everything else as it is.
-func Text(text, lang string, mode Mode) string {
+func Text(text, lang string, mode Mode) string { return write(text, lang, mode, false) }
+
+// TextMixed is Text for mixed text such as Hinglish: a word in the
+// language's English list stays as typed ("kal meeting hai" → "कल meeting
+// है"). Only Hindi has a list; for another language it equals Text.
+func TextMixed(text, lang string, mode Mode) string { return write(text, lang, mode, true) }
+
+// English reports whether a Latin-typed word, read as Word reads it, is in
+// the language's English list: an English word that a typist of the
+// language writes in English. Only Hindi has a list; for another language,
+// or when its package is not imported, it returns false.
+func English(word, lang string) bool {
+	_, ok := englishList(langtag.Code(lang))[clean(word)]
+	return ok
+}
+
+func write(text, lang string, mode Mode, keepEnglish bool) string {
 	var b strings.Builder
 	rs := []rune(text)
 	for i := 0; i < len(rs); {
@@ -198,7 +214,9 @@ func Text(text, lang string, mode Mode) string {
 		for j < len(rs) && isLatin(rs[j]) {
 			j++
 		}
-		if out := Word(string(rs[i:j]), lang, mode, 1); len(out) > 0 {
+		if keepEnglish && English(string(rs[i:j]), lang) {
+			b.WriteString(string(rs[i:j]))
+		} else if out := Word(string(rs[i:j]), lang, mode, 1); len(out) > 0 {
 			b.WriteString(out[0])
 		} else {
 			b.WriteString(string(rs[i:j]))
@@ -352,26 +370,45 @@ func list(lang string, mode Mode) map[string]int {
 		kinds = append(kinds, "names")
 	}
 	for _, k := range kinds {
-		name := rules.Lists[lang][k]
-		if name == "" || files[name] == nil {
-			continue
-		}
-		b := files[name]
-		if !bytes.HasPrefix(b, []byte("IKL2")) {
-			panic("deromanize: not an IKL2 file")
-		}
-		r := &reader{b: b, pos: 4}
-		var prev []byte
-		for n := r.varint(); n > 0; n-- {
-			shared, l := r.varint(), r.varint()
-			key := append(append([]byte(nil), prev[:shared]...), r.b[r.pos:r.pos+l]...)
-			r.pos += l
-			prev = key
-			counts[string(key)] += r.varint()
-		}
+		readList(rules.Lists[lang][k], counts)
 	}
 	lists[key] = counts
 	return counts
+}
+
+// englishList is the language's English list (rules.json lists.<lang>.english);
+// empty when the language has none or its package is not imported.
+func englishList(lang string) map[string]int {
+	key := lang + ".english"
+	mu.Lock()
+	defer mu.Unlock()
+	if c, ok := lists[key]; ok {
+		return c
+	}
+	counts := map[string]int{}
+	readList(rules.Lists[lang]["english"], counts)
+	lists[key] = counts
+	return counts
+}
+
+// readList adds an IKL2 list file's counts to counts; a missing file adds nothing.
+func readList(name string, counts map[string]int) {
+	if name == "" || files[name] == nil {
+		return
+	}
+	b := files[name]
+	if !bytes.HasPrefix(b, []byte("IKL2")) {
+		panic("deromanize: not an IKL2 file")
+	}
+	r := &reader{b: b, pos: 4}
+	var prev []byte
+	for n := r.varint(); n > 0; n-- {
+		shared, l := r.varint(), r.varint()
+		key := append(append([]byte(nil), prev[:shared]...), r.b[r.pos:r.pos+l]...)
+		r.pos += l
+		prev = key
+		counts[string(key)] += r.varint()
+	}
 }
 
 // ---- the file format (linguistic-utilities jobs/deromanize/export.py)

@@ -68,8 +68,10 @@ others hold tables for some languages only.
 | Telugu | `te` | Telugu | ✓ | ✓ | words, names | words, names |
 | Urdu | `ur` | Perso-Arabic | ✓ | ✓ | words, names | words, names |
 
-"words" and "names" are the two modes of `romanize` and `deromanize`. In
-`deromanize`, the names mode of Bodo and Dogri uses their words tables.
+"words" and "names" are the two modes of `romanize` and `deromanize`;
+`romanize` has a third, "places", in all 22 languages (its own tables in
+eight, the words tables in the others). In `deromanize`, the names mode of
+Bodo and Dogri uses their words tables.
 Santali has no words tables: no dataset of Santali words in Latin letters
 was found. `phonetic-search` in Santali ranks by the keys alone. Measured
 quality differs by language; see `docs/` for each utility.
@@ -270,8 +272,8 @@ count("ಕನ್ನಡ"); // 3
 ### Write it in Latin letters
 
 `romanize` gives a ranked list of spellings, most likely first. Use the
-`"words"` mode for text and the `"names"` mode for a field that holds a
-person's name:
+`"words"` mode for text, the `"names"` mode for a field that holds a
+person's name, and the `"places"` mode for a place name:
 
 ```ts
 import { load } from "indickit/romanize";
@@ -281,6 +283,8 @@ hi.word("लक्ष्मी", 2);                 // ["lakshmi","laxmi"]
 hi.text("भारत के प्रधानमंत्री");          // "bharat ke pradhaanmantri"
 const ur = await load("ur", "names");
 ur.word("پرویز", 1);                   // ["parvez"]
+const ta = await load("ta", "places");
+ta.word("காஞ்சிபுரம்", 1);              // ["kanchipuram"]
 ```
 
 In Go, import the languages you need; a program carries only their tables:
@@ -334,8 +338,9 @@ ranked list the romanized index is as good and needs no second download.
 
 `deromanize` is the reverse: it gives a ranked list of native spellings for
 a Latin-typed word, most likely first. It writes every word it is given in
-the Indian script, English words too: in mixed text, find each word's
-language first.
+the Indian script, English words too. For Hindi typed with English words in
+it (Hinglish), load the English list and use `textMixed`: a word on the list
+stays as typed.
 
 ```ts
 import { load } from "indickit/deromanize";
@@ -345,6 +350,8 @@ hi.word("namaste", 1);                // ["नमस्ते"]
 hi.text("bharat ke pradhanmantri");   // "भारत के प्रधानमंत्री"
 const ur = await load("ur", "names");
 ur.word("ahmad", 1);                  // ["احمد"]
+const mixed = await load("hi", "words", { english: true });  // also fetches the English list (27 KB)
+mixed.textMixed("mera office band hai");  // "मेरा office बंद है"
 ```
 
 In Go:
@@ -442,10 +449,12 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
 
 ## Limits
 
-- **`deromanize` writes English words in the Indian script too.** About 8%
-  of the words of romanized Hinglish are English; find each word's language
-  first. On rare words out of context it is 10 points behind IndicXlit. See
-  [docs/deromanize.md](docs/deromanize.md).
+- **`deromanize` writes English words in the Indian script too**, unless
+  you use `textMixed` (Hindi only). Its English list finds 62% of the English
+  words of typed Hinglish and leaves 2.4% of the Hindi words in Latin, most
+  of them chat spellings ("to" for तो, "he" for है). On rare words out of
+  context it is 10 points behind IndicXlit. See
+  [docs/deromanize.md](docs/deromanize.md#english-in-hindi-text).
 - **Only HarfBuzz was tested** for "looks the same" (`normalize`,
   `segment`). Windows and Apple draw text with their own engines.
 - **The `phonetic` key reads names, not addresses.** It drops a name's
@@ -475,9 +484,11 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
   only in Devanagari and Manipuri only in Meetei Mayek; a word in their
   other script comes back unchanged. Eight languages rest on one test
   source (BPCC); Santali gains little (3.7 points).
-- **`romanize` is behind IndicXlit on places and on rare single words**
-  (by 7–13 and 5.5 points). Santali has names only; Bodo and Dogri have
-  text only. Manipuri in Bengali script loses syllables in the words mode;
+- **`romanize` is behind IndicXlit on place names and on rare single
+  words**, by 5.5 points each: on OpenStreetMap place names (held out) the
+  places mode is right 46.9% of the time, IndicXlit 52.4%. Santali has names only; Bodo and Dogri have
+  text only. Bodo writes ख थ फ as kh th ph, as typists do, not as
+  Aksharantar's k t f. Manipuri in Bengali script loses syllables in the words mode;
   its tables were trained on Meetei Mayek. See [docs/romanize.md](docs/romanize.md).
 - **`normalize` keeps the direction marks LRM and RLM** (U+200E, U+200F).
   Text copied from the web carries them, and they hide a match on 0.04% of

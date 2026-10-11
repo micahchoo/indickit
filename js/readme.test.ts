@@ -133,10 +133,12 @@ test("every version tag in the README is package.json's version", () => {
 
 test("every romanize example in the recipe returns what its comment says", async () => {
   const recipe = readme.slice(readme.indexOf("### Write it in Latin letters"), readme.indexOf("### Find native text with a Latin query"));
-  const tables: Record<string, Promise<Awaited<ReturnType<typeof romanizer>>>> = {
-    hi: romanizer("hi"),
-    ur: romanizer("ur", "names"),
-  };
+  // every `const x = await load("lang"[, "mode"]);` of the recipe, so a new example is tested too
+  const tables: Record<string, Promise<Awaited<ReturnType<typeof romanizer>>>> = {};
+  for (const [, v, lang, mode] of recipe.matchAll(/^const (\w+) = await load\("(\w+)"(?:, "(\w+)")?\);/gm)) {
+    tables[v] = romanizer(lang, (mode ?? "words") as Mode);
+  }
+  expect(Object.keys(tables).sort()).toEqual(["hi", "ta", "ur"]);
   const words = [...recipe.matchAll(/^(\w+)\.word\(("[^"]*"), (\d+)\);\s*\/\/ (\[[^\]]*\])/gm)];
   const texts = [...recipe.matchAll(/^(\w+)\.text\(("[^"]*")\);\s*\/\/ ("[^"]*")/gm)];
   expect(words.length + texts.length).toBeGreaterThan(2);
@@ -178,6 +180,12 @@ test("every deromanize example in the recipe returns what its comment says", asy
   }
   for (const [, v, input, want] of texts) {
     expect([v, input, (await tables[v]).text(JSON.parse(input))]).toEqual([v, input, JSON.parse(want)]);
+  }
+  const mixed = [...recipe.matchAll(/^(\w+)\.textMixed\(("[^"]*")\);\s*\/\/ ("[^"]*")/gm)];
+  expect(mixed.length).toBeGreaterThan(0);
+  const hiEnglish = loadDeromanize("hi", "words", { fetch: disk, english: true });
+  for (const [, v, input, want] of mixed) {
+    expect([v, input, (await hiEnglish).textMixed(JSON.parse(input))]).toEqual([v, input, JSON.parse(want)]);
   }
 }, 120_000);
 

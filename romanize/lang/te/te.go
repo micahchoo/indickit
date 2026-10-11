@@ -13,10 +13,14 @@ import (
 //go:embed te.names.bin
 var f0 []byte
 
-//go:embed te.words.bin
+//go:embed te.places.bin
 var f1 []byte
+
+//go:embed te.words.bin
+var f2 []byte
 
 func init() {
 	romanize.Register("te.names.bin", f0)
-	romanize.Register("te.words.bin", f1)
+	romanize.Register("te.places.bin", f1)
+	romanize.Register("te.words.bin", f2)
 }

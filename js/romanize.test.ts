@@ -121,3 +121,13 @@ test("without the tables beside it, load() asks jsDelivr at this package's versi
     globalThis.fetch = real;
   }
 });
+
+// Places mode (rules 2026-10-11.1): its own tables on the route, the words tables elsewhere.
+test("places mode: own tables for Tamil, the words tables for Kannada", async () => {
+  expect(languages("places").length).toBe(22);
+  expect((await get("ta", "places")).word("காஞ்சிபுரம்", 1)).toEqual(["kanchipuram"]);
+  expect((await get("ta", "words")).word("காஞ்சிபுரம்", 1)).toEqual(["kanjipuram"]);
+  for (const w of ["ಬೆಂಗಳೂರು", "ಮೈಸೂರು"]) {
+    expect((await get("kn", "places")).word(w)).toEqual((await get("kn", "words")).word(w));
+  }
+});

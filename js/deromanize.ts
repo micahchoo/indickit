@@ -47,7 +47,7 @@ type Rules = {
   blocks: Record<string, number>;
   groups: Record<string, [number, number][]>;
   families: Record<Mode, Record<string, FamilyEntry>>;
-  lists: Record<string, { words?: string; names?: string }>;
+  lists: Record<string, { words?: string; names?: string; english?: string }>;
 };
 const RULES = rulesJson as unknown as Rules;
 
@@ -93,6 +93,17 @@ export interface Deromanizer {
   word(latin: string, n?: number): string[];
   /** Every run of Latin letters written as its first native spelling; everything else kept. */
   text(text: string): string;
+  /**
+   * Is the Latin-typed word, read as `word` reads it, in the language's English list
+   * (an English word a typist of the language writes in English)? Only Hindi has a list:
+   * load it with `{ english: true }`. False for a language with no list.
+   */
+  isEnglish(word: string): boolean;
+  /**
+   * `text` for mixed text such as Hinglish: a word in the English list stays as typed
+   * ("kal meeting hai" → "कल meeting है"). Equals `text` for a language with no list.
+   */
+  textMixed(text: string): string;
 }
 
 
@@ -119,7 +130,7 @@ const pooledCache = new Map<string, Model>();
 export async function load(
   lang: string,
   mode: Mode = "words",
-  opts: { fetch?: Fetcher; base?: URL | string } = {},
+  opts: { fetch?: Fetcher; base?: URL | string; english?: boolean } = {},
 ): Promise<Deromanizer> {
   const c = langCode(lang);
   const fams = familiesOf(mode).filter((f) => RULES.families[f][c]);
@@ -141,6 +152,7 @@ export async function load(
   for (const k of mode === "names" ? (["words", "names"] as const) : (["words"] as const)) {
     if (lists[k]) want.push(`${c}/${lists[k]}`);
   }
+  if (opts.english && lists.english) want.push(`${c}/${lists.english}`);
   const got = await Promise.all(want.map(once));
   want.forEach((p, i) => (files[p.slice(p.indexOf("/") + 1)] = new Uint8Array(got[i])));
   return fromBytes(c, mode, files);
@@ -167,6 +179,19 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
     const name = lists[k];
     if (name && files[name]) readList(files[name], counts);
   }
+  // the English list: absent for most languages; for Hindi, present only when loaded with { english: true }
+  let english: Set<string> | null = new Set();
+  if (lists.english) {
+    if (files[lists.english]) {
+      const c = new Map<string, number>();
+      readList(files[lists.english], c);
+      english = new Set(c.keys());
+    } else english = null;
+  }
+  const isEnglish = (latin: string): boolean => {
+    if (english === null) throw new Error(`deromanize: load("${lang}", …, { english: true }) to read its English list`);
+    return english.has(clean(latin));
+  };
   const alpha = RULES.alpha[mode];
   const guard = RULES.cut_modes.includes(mode); // the re-rank skips cut-short spellings
   const word = (latin: string, n = 4): string[] => {
@@ -202,25 +227,31 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
     // a spelling that writes nothing is no suggestion: dropped, as in romanize
     return [...known.sort(byScore).map((e) => e[0]), ...rest].filter((o) => o !== "").slice(0, n);
   };
+  const write = (t: string, keepEnglish: boolean): string => {
+    const cs = [...t];
+    let out = "";
+    for (let i = 0; i < cs.length; ) {
+      if (!isLatin(cs[i])) {
+        out += cs[i++];
+        continue;
+      }
+      let j = i;
+      while (j < cs.length && isLatin(cs[j])) j++;
+      const run = cs.slice(i, j).join("");
+      out += keepEnglish && isEnglish(run) ? run : (word(run, 1)[0] ?? run);
+      i = j;
+    }
+    return out;
+  };
   return {
     lang,
     mode,
     word,
-    text(t: string): string {
-      const cs = [...t];
-      let out = "";
-      for (let i = 0; i < cs.length; ) {
-        if (!isLatin(cs[i])) {
-          out += cs[i++];
-          continue;
-        }
-        let j = i;
-        while (j < cs.length && isLatin(cs[j])) j++;
-        const run = cs.slice(i, j).join("");
-        out += word(run, 1)[0] ?? run;
-        i = j;
-      }
-      return out;
+    text: (t: string): string => write(t, false),
+    isEnglish,
+    textMixed: (t: string): string => {
+      if (english === null) isEnglish(""); // throws: the list was not loaded
+      return write(t, true);
     },
   };
 }

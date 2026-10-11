@@ -139,3 +139,59 @@ func TestCutShortSpellingIsNotFirst(t *testing.T) {
 		t.Errorf("rules version %s predates the cut-short guard", deromanize.RulesVersion)
 	}
 }
+
+// testdata/english-conformance.jsonl.gz: from the Python reference (linguistic-utilities
+// jobs/deromanize/export.py --conformance): ["english", lang, word, bool] and
+// ["text-mixed", lang, text, output].
+func TestEnglishConformance(t *testing.T) {
+	f, err := os.Open("testdata/english-conformance.jsonl.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sc := bufio.NewScanner(gz)
+	rows := 0
+	for sc.Scan() {
+		var row [4]json.RawMessage
+		if err := json.Unmarshal(sc.Bytes(), &row); err != nil {
+			t.Fatal(err)
+		}
+		var kind, lang, in string
+		json.Unmarshal(row[0], &kind)
+		json.Unmarshal(row[1], &lang)
+		json.Unmarshal(row[2], &in)
+		rows++
+		switch kind {
+		case "english":
+			var want bool
+			json.Unmarshal(row[3], &want)
+			if got := deromanize.English(in, lang); got != want {
+				t.Errorf("English(%q, %s) = %v, want %v", in, lang, got, want)
+			}
+		case "text-mixed":
+			var want string
+			json.Unmarshal(row[3], &want)
+			if got := deromanize.TextMixed(in, lang, deromanize.Words); got != want {
+				t.Errorf("TextMixed(%q, %s) = %q, want %q", in, lang, got, want)
+			}
+		default:
+			t.Fatalf("unknown row kind %q", kind)
+		}
+	}
+	if rows < 40 {
+		t.Fatalf("only %d rows", rows)
+	}
+}
+
+// A language with no English list: TextMixed is Text.
+func TestTextMixedWithoutList(t *testing.T) {
+	for _, s := range []string{"kal meeting hai", "the office", ""} {
+		if a, b := deromanize.TextMixed(s, "mr", deromanize.Words), deromanize.Text(s, "mr", deromanize.Words); a != b {
+			t.Errorf("mr %q: TextMixed %q, Text %q", s, a, b)
+		}
+	}
+}

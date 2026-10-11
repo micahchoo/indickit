@@ -294,6 +294,7 @@
   "gu.names-list.bin": 14290,
   "gu.names.bin": 28406,
   "gu.words.bin": 269838,
+  "hi.english.bin": 53027,
   "hi.list.bin": 2135004,
   "hi.names-list.bin": 67117,
   "hi.names.bin": 95894,
@@ -424,6 +425,7 @@
    "words": "gu.list.bin"
   },
   "hi": {
+   "english": "hi.english.bin",
    "names": "hi.names-list.bin",
    "words": "hi.list.bin"
   },

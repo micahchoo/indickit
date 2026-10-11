@@ -84,12 +84,55 @@ right word first 58.8% of the time and had no word at all for 26.1%;
 
 ## What it does not do
 
-- **English in the middle of Indian text.** About 8% of the words of
-  romanized Hinglish are English ("kal meeting hai"). `deromanize` writes
-  every word it is given in the Indian script. Find each word's language
-  first.
+- **English in the middle of Indian text**, except in Hindi with
+  `textMixed` (below). About 8% of the words of romanized Hinglish are
+  English. `word` and `text` write every word they are given in the Indian
+  script.
 - **Rare words out of context** are 10 points behind IndicXlit.
 - **Santali** has names only; **Bodo** and **Dogri** have words only.
+
+## English in Hindi text
+
+`textMixed` (Go `TextMixed`) is `text` with one change: a word on the
+language's English list stays as typed. `isEnglish` (Go `English`) asks the
+list about one word. Only Hindi has a list; for another language nothing is
+English and `textMixed` equals `text`. In the browser, load the list with
+`load("hi", "words", { english: true })`: 27 KB gzipped, fetched only then.
+
+```ts
+const hi = await load("hi", "words", { english: true });
+hi.text("mera office band hai");       // "मेरा ऑफिस बंद है"
+hi.textMixed("mera office band hai");  // "मेरा office बंद है"
+```
+
+**How the list is made.** The 10,000 most frequent words of English
+Wikipedia, less every word that a typist of Hindi writes often: the 50,000
+most frequent Hindi words, each romanized by `romanize`, give how often a
+Latin spelling stands for a Hindi word ("main" for मैं, "the" for थे), and a
+word stays on the list only if it is at least twice as frequent in English.
+Without that filter a list this size calls a third of the Hindi words
+English.
+
+**How good it is.** On L3Cube-HingLID (Hinglish tweets with each word tagged
+Hindi or English; its test split, read once, 191,535 words), word by word:
+
+| | Right | Hindi called English | English found | Size |
+|---|---|---|---|---|
+| none (every word Hindi) | 71.4% | 0 | 0 | — |
+| `textMixed`'s list | **87.4%** | **2.4%** | **62.0%** | 27 KB |
+| IndicLID, roman model | 72.1% | 4.6% | 14.0% | 282 MB |
+
+IndicLID judges sentences; one word at a time it does little better than
+calling every word Hindi. The list size and the filter's factor were chosen
+on HingLID's validation split; no HingLID word is in the list (its licence
+allows measurement only).
+
+**What it gets wrong.** Chat spellings of frequent Hindi words that are also
+English words stay in Latin: "to" (तो), "he" (है), "ap" (आप), "maine" (मैंने),
+"per" (पर). English words that Hindi writes in its own script are not on the
+list, so they are written in Devanagari: "video" → वीडियो, as a Hindi writer
+would. HingLID itself tags some Hindi shorthand as English ("h" for है, "kr"
+for कर), so part of the 38% of English words not found is the key's error.
 
 ## Size
 

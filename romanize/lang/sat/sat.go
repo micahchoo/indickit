@@ -13,6 +13,10 @@ import (
 //go:embed sat.names.bin
 var f0 []byte
 
+//go:embed sat.places.bin
+var f1 []byte
+
 func init() {
 	romanize.Register("sat.names.bin", f0)
+	romanize.Register("sat.places.bin", f1)
 }

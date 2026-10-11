@@ -14,3 +14,12 @@ func ExampleWord() {
 	// [नमस्ते]
 	// [احمد]
 }
+
+// Mixed Hinglish text: a word in the Hindi English list stays as typed.
+func ExampleTextMixed() {
+	fmt.Println(deromanize.TextMixed("mera office band hai", "hi", deromanize.Words))
+	fmt.Println(deromanize.English("office", "hi"), deromanize.English("hai", "hi"))
+	// Output:
+	// मेरा office बंद है
+	// true false
+}
