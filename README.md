@@ -453,7 +453,10 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
 - **An n-gram field can find more than `stem`** in passage search: in
   Malayalam, Kannada, Tamil, Bengali, Marathi and Hindi, indexing each
   word's three-letter pieces found 3–10 points more, at 2–3 times the
-  index size. See [docs/stem.md](docs/stem.md#in-a-search-engine).
+  index size. Index `stem` beside the trigram field, not instead of it: in
+  Hindi, Bengali and Telugu, both fields together found 3.0 points more
+  than trigrams alone and ranked better. See
+  [docs/stem.md](docs/stem.md#in-a-search-engine).
 - **Some languages have no table.** `stem` covers 13 languages; Bodo,
   Dogri, Kashmiri, Konkani, Maithili, Manipuri, Odia, Santali and Sindhi
   are not among them.

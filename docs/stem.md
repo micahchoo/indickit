@@ -153,6 +153,15 @@ names survive: a cut that keeps a name apart from other words does no harm
 person spans projected from English by machine; the frequent-name rows
 agree, so span errors do not drive the numbers.
 
+- **Beside a trigram field** (MIRACL dev, Hindi, Bengali and Telugu, 802
+  questions written without seeing the passage, over all of Wikipedia;
+  read once, added 2026-10-11): an engine that indexes both fields finds
+  more than trigrams alone, Recall@100 +3.0 (95%: +1.8 to +4.2), and ranks
+  better, nDCG@10 +3.8 to +4.4 per language. Against a second field of
+  plain words, the stem field still adds +2.3 (+1.1 to +3.6); in recall
+  that gain is Telugu's (+4.7; Hindi and Bengali level), in ranking it is
+  +1.8 to +1.9 in all three. Malayalam, Kannada, Tamil and Marathi are not
+  in MIRACL: there, two fields are untested.
 - **Swamped:** more than half of a stem search's hits are other words.
 - **Meets a word:** the stem is shared with at least one other word.
 - **Wrong hits:** of a stem search's hits, the share that are other words.
