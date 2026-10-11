@@ -10,7 +10,7 @@ input the same output.
 
 ## Unreleased
 
-Rules: phonetic 2026-10-11.1, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-11.1
+Rules: phonetic 2026-10-11.2, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-11.2
 
 - Changed output: normalize rules 2026-10-07 → 2026-10-11, Tamil only. A
   ZWNJ or ZWJ between consonant + pulli and a consonant is deleted, unless
@@ -38,7 +38,7 @@ Rules: phonetic 2026-10-11.1, normalize 2026-10-11, segment 2026-10-11, stem 202
   conformance rows change, all Sanskrit. On lemmas of the Digital Corpus of
   Sanskrit, read once, recall rises from 34.6% to 40.5% at 2.7% wrong hits.
 - Docs: `stem` damages some names (README Limits, `docs/stem.md#names`).
-- Changed output: phonetic 2026-10-07 → 2026-10-11.1. Recompute stored keys.
+- Changed output: phonetic 2026-10-07 → 2026-10-11.2. Recompute stored keys.
   `Keys` gives more keys to some words; no key a word had is lost.
   - Bengali-script ং and Devanagari ं also read as ŋ: সিং = Singh (Bengali
     and Assamese), and Bodo spelling (दं = dong; Bodo running text 74% →
@@ -53,14 +53,21 @@ Rules: phonetic 2026-10-11.1, normalize 2026-10-11, segment 2026-10-11, stem 202
     Goyal), and the case endings ৰ, ৱে, লৈ, ৰপৰা are also read off.
   - A one-letter Latin word also keys as its spoken name: M = em = एम =
     எம். M and N, and H and S, now share a key as initials.
+  - Santali: an initial ᱚ is also a (Ol Chiki writes the Indic short a
+    with it: Arjun = ᱚᱨᱡᱩᱱ), and ᱣ ᱶ after a vowel is also a glide;
+    Santali 74.1% → 84.7% on Wikidata (DEV).
+  - Sindhi in Devanagari: the implosives ॻ ॼ ॾ ॿ are read (they had no
+    key); व्ह is also v (चव्हाण = Chavan); Marathi / Konkani case endings,
+    the Sanskrit -स्य and the Sindhi / Bodo -नि are also read off. On BPCC
+    name pairs, read once, +0.49 points (Bodo +3.5).
 - Changed output: `NameKeys`, `JoinedKeys` and `Match` (`nameKeys`,
   `joinedKeys`, `match`) drop the leading titles (Shri, Smt., Dr, श्रीमती,
   திரு, …; `titles` in rules.json) of each comma-separated part of a name:
   "Bajwa, Sardar Partap Singh" reads as Bajwa Partap Singh. A name of titles
   only keeps its last word. `Words` still splits only. A second roster as
   written, the Rajya Sabha: the key finds 54.8% → 87.7%.
-- Changed output: phonetic search 2026-10-09 → 2026-10-11.1. It keys with
-  phonetic rules 2026-10-11.1, drops titles as `NameKeys` does, and its
+- Changed output: phonetic search 2026-10-09 → 2026-10-11.2. It keys with
+  phonetic rules 2026-10-11.2, drops titles as `NameKeys` does, and its
   thresholds were chosen again on the same data: names 74 → 75, villages
   72 → 73, text 80 → 81 and 70 → 71 (`Thresholds` / `THRESHOLDS`).
 - Size: the title list, the letter names and the Tamil rules add about

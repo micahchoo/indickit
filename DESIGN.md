@@ -285,20 +285,6 @@ The budget is a product choice: how many wrong results a user accepts. The
 owner of the utility makes it, and the log records it. The text fold's budget is
 the strict one, chosen by the owner.
 
-Measure the cost at the size the budget was set on. A precision cost
-against exact search grows as the corpus shrinks, because each wrong
-merge is a larger share of what a search finds: `stem`'s Konkani table
-lost 2.9 points of precision on 77,000 sentences, 4.1 on 9,500 and 5.2 on
-1,900, and failed a 4.9 budget twice on held-out sets of the wrong size
-before it passed on one of the right size.
-
-Set the bar for the gain the same way, against the user's default rival,
-not as a round number. Where a rival exists (Lucene, Snowball), beat it.
-Where none exists, the default is no tool at all, and any gain whose 95%
-interval is above 0, within the cost budget, is worth shipping: a fixed
-"+4 points" bar kept Santali, which had no stemmer, from a table that found
-3.7 points more at 1.6 points of precision.
-
 ### Aim at the ceiling, not only at the rival
 
 The rival says whether we beat what people use today. It does not say how

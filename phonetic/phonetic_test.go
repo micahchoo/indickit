@@ -138,7 +138,7 @@ func TestNameKeys(t *testing.T) {
 	if len(a) == 0 || !shareOne(a, b) { // written apart in one script, joined in another
 		t.Errorf("JoinedKeys do not meet: %v and %v", a, b)
 	}
-	if RulesVersion != "2026-10-11.1" {
+	if RulesVersion != "2026-10-11.2" {
 		t.Errorf("RulesVersion = %q", RulesVersion)
 	}
 	// rules 2026-10-11: titles dropped, initials read, the demo's misses
@@ -147,6 +147,9 @@ func TestNameKeys(t *testing.T) {
 		{"Singh", "সিং"}, {"Lakshmi", "லட்சுமி"}, {"Shri", "श्री"},
 		// rules 2026-10-11.1: a title after a comma; the Tamil bundle
 		{"Bajwa, Sardar Partap Singh", "बाजवा, सरदार प्रताप सिंह"}, {"Kanimozhi", "கனிமொழி"}, {"Antony", "ആന്റണി"},
+		// rules 2026-10-11.2: व्ह is v; Sindhi Devanagari implosives
+		{"Chavan", "चव्हाण"}, {"Tarabai", "ताराॿाई"}, {"Advani", "आॾवाणी"},
+		{"Arjun", "ᱚᱨᱡᱩᱱ"}, {"Gautami", "ᱜᱚᱣᱛᱚᱢᱤ"}, // Santali: initial ᱚ, the ᱣ glide
 	} {
 		if !Match(p[0], p[1]) {
 			t.Errorf("Match(%q, %q) = false", p[0], p[1])

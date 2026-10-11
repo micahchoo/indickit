@@ -1,12 +1,15 @@
 {
- "version": "2026-10-11.1",
+ "version": "2026-10-11.2",
  "folds": [
   "as-case-narrow",
   "as-w-glide-ni",
   "bn-case",
   "bn-ng",
   "brahmic-av-u",
+  "deva-case",
   "deva-ng",
+  "deva-ni",
+  "deva-vh",
   "drop-vowels",
   "drop-y",
   "flap-r",
@@ -22,6 +25,10 @@
   "or-case",
   "retroflex",
   "s-c",
+  "sa-case",
+  "sat-o-a",
+  "sat-w-u",
+  "sd-implosive",
   "ta-case",
   "ta-initial-h",
   "ta-k-h",
@@ -156,7 +163,11 @@
   "ঢ়": "ṛ",
   "ଡ଼": "ṛ",
   "ଢ଼": "ṛ",
-  "ੜ": "ṛ"
+  "ੜ": "ṛ",
+  "ॻ": "k",
+  "ॼ": "c",
+  "ॾ": "ṭ",
+  "ॿ": "p"
  },
  "urdu": {
   "from": 1536,
@@ -514,6 +525,13 @@
    "also": "ṅ"
   },
   {
+   "from": 2304,
+   "to": 2431,
+   "class": "h",
+   "also": "",
+   "after": "v"
+  },
+  {
    "from": 1536,
    "to": 7295,
    "class": "ṛ",
@@ -530,6 +548,20 @@
    "to": 127,
    "class": "w",
    "also": "u"
+  },
+  {
+   "from": 7248,
+   "to": 7295,
+   "class": "o",
+   "also": "a",
+   "after": "^"
+  },
+  {
+   "from": 7248,
+   "to": 7295,
+   "class": "v",
+   "also": "",
+   "after": "aiueo"
   },
   {
    "from": 2944,
@@ -687,6 +719,30 @@
    ]
   },
   {
+   "from": 2304,
+   "to": 2431,
+   "endings": [
+    "ांच्या",
+    "मध्ये",
+    "च्या",
+    "ांना",
+    "ची",
+    "चा",
+    "चे",
+    "ला",
+    "ने",
+    "ना",
+    "नी"
+   ]
+  },
+  {
+   "from": 2304,
+   "to": 2431,
+   "endings": [
+    "नि"
+   ]
+  },
+  {
    "from": 2688,
    "to": 2815,
    "endings": [
@@ -728,6 +784,13 @@
     "ରେ",
     "ରୁ",
     "କୁ"
+   ]
+  },
+  {
+   "from": 2304,
+   "to": 2431,
+   "endings": [
+    "स्य"
    ]
   },
   {

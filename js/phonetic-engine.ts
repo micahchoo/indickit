@@ -10,7 +10,9 @@ import rulesJson from "../phonetic/rules.json" with { type: "json" };
 import { isMn, nfc, nfd } from "./unidata";
 
 // initials and titles are absent from the scorer's fine rules files
-type Rules = Omit<typeof rulesJson, "initials" | "titles" | "initial_branches" | "brahmic"> & {
+// extra differs between rules files (sd-implosive adds four letters), so it is a plain map
+type Rules = Omit<typeof rulesJson, "initials" | "titles" | "initial_branches" | "brahmic" | "extra"> & {
+  extra: Record<string, string>;
   initials?: Record<string, string[]>;
   initial_branches?: { from: number; to: number; also: string }[];
   brahmic: Omit<typeof rulesJson.brahmic, "rewrite"> & { rewrite?: string[][] };
