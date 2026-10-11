@@ -67,6 +67,12 @@ Rules: phonetic 2026-10-11.1, normalize 2026-10-11, segment 2026-10-11, stem 202
   1.1 KB gzipped: `phonetic` 6.9 → 8.0 KB, `phonetic-search` 17.0 → 18.2 KB.
 
 ## 0.10.0 (2026-10-09)
+- New: `indickit/search-key` (Go `searchkey.Key`), one search key per word:
+  normalize, stem, then fold, the order measured best. Fold after stem
+  finds 2.4 points more of the right passages in Hindi (MIRACL) and changes
+  nothing in Bengali or Telugu. The README's search recipe now uses it, and
+  `docs/stem.md` gives an OpenSearch/Elasticsearch setup with a trigram
+  field beside the keys.
 - New in `stem`: two options. `minStem` (Go `StemWith`, `Options.MinStem`)
   keeps stems longer, for fields of names; 4 halves the names a search
   loses. `indickit/stem-compounds` (Go `CompoundKey`), a separate 1.6 KB

@@ -181,6 +181,43 @@ was read once, later, to confirm the advice on `fold` above.
   written before the passage was found, `stem` holds. SQLite FTS5's `trigram` tokenizer is a substring index,
   not this.
 
+### A setup for OpenSearch and Elasticsearch
+
+The measurement above added the BM25 scores of two fields: the words'
+search keys, and the words cut into three-letter pieces. The keys come from
+your code (`searchKey` in TypeScript, `searchkey.Key` in Go), not from the
+engine, so index them as a field of space-separated keys. This setup was
+measured in Python BM25, not in these engines:
+
+```json
+PUT /docs
+{
+  "settings": { "analysis": {
+    "filter": { "tri": { "type": "ngram", "min_gram": 3, "max_gram": 3, "preserve_original": true } },
+    "analyzer": { "tri": { "tokenizer": "whitespace", "filter": ["tri"] } }
+  } },
+  "mappings": { "properties": {
+    "keys": { "type": "text", "analyzer": "whitespace" },
+    "text": { "type": "text", "analyzer": "tri" }
+  } }
+}
+```
+
+Index `keys` as the document's words through `searchKey`, joined with
+spaces, and `text` as the normalized text. Query both, so the scores add:
+
+```json
+{ "query": { "bool": { "should": [
+  { "match": { "keys": "<the query's words through searchKey>" } },
+  { "match": { "text": "<the normalized query>" } }
+] } } }
+```
+
+The whitespace tokenizer keeps a word whole (a standard tokenizer splits
+Indian words at vowel signs, which it does not count as letters).
+`preserve_original` keeps words shorter than three code points; the
+measurement kept them as one piece.
+
 ## Names
 
 `stem` treats a name as a word, and cuts what looks like an ending. Most

@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { searchKey } from "./search-key";
 import { gzipSync } from "node:zlib";
 import { existsSync, readFileSync } from "node:fs";
 import { keys, match } from "./phonetic";
@@ -67,11 +68,11 @@ test("every normalize(...) and fold(...) example returns what its comment says",
   }
 });
 
-test("every stem(normalize(...)) example returns what its comment says", () => {
-  const claims = [...readme.matchAll(/^stem\(normalize\(("[^"]*"), "([a-z]+)"\), "\2"\); \/\/ ("[^"]*")/gm)];
+test("every searchKey(...) example returns what its comment says", () => {
+  const claims = [...readme.matchAll(/^searchKey\(("[^"]*"), "([a-z]+)"\); \/\/ ("[^"]*")/gm)];
   expect(claims.length).toBeGreaterThan(4);
   for (const [, input, lang, want] of claims) {
-    expect([input, lang, stem(normalize(JSON.parse(input), lang), lang)]).toEqual([input, lang, JSON.parse(want)]);
+    expect([input, lang, searchKey(JSON.parse(input), lang)]).toEqual([input, lang, JSON.parse(want)]);
   }
 });
 

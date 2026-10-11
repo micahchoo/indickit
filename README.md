@@ -151,19 +151,28 @@ brokenAt("क्ि"); // 2: a vowel sign after a virama
 
 ### Search words in their other forms
 
-Give every word of a document a key, and give the query the same key. The
-key for a word is `stem(normalize(word, lang), lang)`:
+Give every word of a document a key, and give the query the same key.
+`searchKey` normalizes, stems, then folds accepted spellings, in the order
+that was measured best:
 
 ```ts
-import { normalize } from "indickit/normalize";
-import { stem } from "indickit/stem";
+import { searchKey } from "indickit/search-key";
 
-stem(normalize("किताबों", "hi"), "hi"); // "किताब"
-stem(normalize("ஆண்டில்", "ta"), "ta"); // "ஆண்ட"
-stem(normalize("ஆண்டு", "ta"), "ta"); // "ஆண்ட"
-stem(normalize("ಸರ್ಕಾರಕ್ಕೆ", "kn"), "kn"); // "ಸರ್ಕಾರ"
-stem(normalize("حکومتوں", "ur"), "ur"); // "حکومت"
+searchKey("किताबों", "hi"); // "किताब"
+searchKey("हिन्दी", "hi"); // "हिंद"
+searchKey("हिंदी", "hi"); // "हिंद"
+searchKey("ஆண்டில்", "ta"); // "ஆண்ட"
+searchKey("ஆண்டு", "ta"); // "ஆண்ட"
+searchKey("ಸರ್ಕಾರಕ್ಕೆ", "kn"); // "ಸರ್ಕಾರ"
+searchKey("حکومتوں", "ur"); // "حکومت"
 ```
+
+In a search engine, index the key beside a trigram field (each word cut
+into its three-letter pieces), and add the two scores: over Wikipedia in
+Hindi, Bengali and Telugu, the two fields found 3.0 points more of the
+right passages than trigrams alone, and ranked them better. A setup for
+OpenSearch and Elasticsearch is in [docs/stem.md](docs/stem.md#in-a-search-engine).
+In Go: `searchkey.Key(word, lang)`.
 
 In 22 languages, a search with stems finds more of the right sentences
 than an exact search: 6–15 points in the 14 measured on FLORES+, 3.7–11.4
@@ -173,8 +182,9 @@ Hindi or Punjabi. It also finds some wrong ones: a stem merges forms by
 their endings, not by their meaning. Do not add fuzzy matching to stems:
 together they find less than stems alone.
 
-You need only one of `stem` and `fold`. If you use both, stem first, then
-fold: `fold` before `stem` loses 3–10 points in Assamese. `fold` alone
+If you call the steps yourself, stem first, then fold: `fold` before
+`stem` loses 3–10 points in Assamese, and fold after stem finds 2.4 points
+more in Hindi. `fold` alone
 merges accepted spellings of one word (हिन्दी and हिंदी) and keeps the word
 whole, for a search that must not merge forms:
 

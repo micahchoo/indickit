@@ -90,6 +90,22 @@ if (ckMiss) {
 }
 console.log(`dist/stem-compounds.js: all ${ck} inputs agree`);
 
+// dist/search-key.js against stem/testdata/conformance-search-key.jsonl.gz
+const { searchKey } = await import("../dist/search-key.js");
+const keyRows = gunzipSync(readFileSync(new URL("../stem/testdata/conformance-search-key.jsonl.gz", import.meta.url))).toString("utf8");
+let sk = 0, skMiss = 0;
+for (const line of keyRows.split("\n")) {
+  if (!line) continue;
+  const [lang, word, want] = JSON.parse(line);
+  sk++;
+  if (searchKey(word, lang) !== want) skMiss++;
+}
+if (skMiss) {
+  console.error(`dist/search-key.js: ${skMiss} of ${sk} inputs differ`);
+  process.exit(1);
+}
+console.log(`dist/search-key.js: all ${sk} inputs agree`);
+
 // dist/romanize.js against romanize/testdata/conformance.jsonl.gz, loading its data from the
 // default place beside the bundle (../romanize/lang/), as jsDelivr serves it
 const R = await import("../dist/romanize.js");
