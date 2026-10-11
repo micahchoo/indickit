@@ -76,7 +76,7 @@ func undiff(d2 []int64) []int64 {
 var SearchVersion = searchRules.Version
 
 // Thresholds are the scores measured for each use (README): names in a list
-// 75, villages 73, a name in text 81 (at most 10% of hits wrong) or 71 (20%).
+// 76, villages 73, a name in text 81 (at most 10% of hits wrong) or 71 (20%).
 var Thresholds = searchRules.Thresholds
 
 // mustEngine builds a fine engine: scorer/<name> is a patch over rules.json,

@@ -1,5 +1,5 @@
 {
- "version": "2026-10-11.5",
+ "version": "2026-10-11.6",
  "folds": [
   "as-case-narrow",
   "as-w-glide-ni",
@@ -15,6 +15,7 @@
   "drop-vowels",
   "drop-y",
   "flap-r",
+  "gom-case",
   "gu-case",
   "latin-initials",
   "latin-ngh",
@@ -670,7 +671,7 @@
   }
  ],
  "joined": {
-  "min_classes": 8,
+  "min_classes": 6,
   "when": "the strict keys find nobody"
  },
  "digit_zeros": [
@@ -812,6 +813,19 @@
    "to": 2431,
    "endings": [
     "नि"
+   ]
+  },
+  {
+   "from": 2304,
+   "to": 2431,
+   "endings": [
+    "ाचें",
+    "ाईन",
+    "ाचो",
+    "ाची",
+    "ान",
+    "ीन",
+    "ाक"
    ]
   },
   {

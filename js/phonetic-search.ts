@@ -47,7 +47,7 @@ const R = { ...S, pow: undiff(S.pow_d2), exp2: undiff(S.exp2_d2) };
 /** Changes whenever any score changes. */
 export const SEARCH_VERSION: string = R.version;
 
-/** The scores measured for each use: names in a list 75, villages 73, a name
+/** The scores measured for each use: names in a list 76, villages 73, a name
  * in text 81 (at most 10% of hits wrong) or 71 (20%). */
 export const THRESHOLDS: Readonly<Record<string, number>> = R.thresholds;
 

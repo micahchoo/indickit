@@ -249,7 +249,7 @@ ix.search("Narendra Modi", THRESHOLDS.names); // [{ name: 1, score: 100 }]
 ix.search("Manmohan Singh", THRESHOLDS.names); // [{ name: 2, score: 96 }]
 ```
 
-Use the threshold for your task: `THRESHOLDS.names` (75) for a list of
+Use the threshold for your task: `THRESHOLDS.names` (76) for a list of
 people, `THRESHOLDS.villages` (73) for place names, `THRESHOLDS.text_10`
 (81) or `text_20` (71) with `s.index(words, "text")` for a name among the
 words of a text. A score is relative to the other candidates of its search.
