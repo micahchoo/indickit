@@ -220,8 +220,41 @@ agree, so span errors do not drive the numbers.
 Assamese has few sentences; its row is thin. Two causes: a final vowel read
 as an ending (योगी → योग, ਰਾਜੂ → ਰਾਜ "state") and a final cluster cut
 (ஸ்டாலின் → ஸ்ட, പിള്ള → പി). Place names are swamped less often (0.9–2.3%; Assamese 2.8%, thin),
-except in Tamil (3.7%). Do not stem a field of names; for name search, use
-`phonetic`.
+except in Tamil (3.7%). For a field of names, keep stems longer (Options,
+below); for name search, use `phonetic`.
+
+## Options
+
+Two choices change the trade between finding more and finding wrong words.
+
+**`minStem`** keeps every stem at least that many code points long
+(default 2, at most 9). For a field of names, 4 halves the person-name
+tokens whose search is swamped by other words (Hindi 1.9% → 0.5%, Punjabi
+3.0% → 0.8%), and finds 0.5–2 points less of the right sentences in
+ordinary text.
+
+```ts
+stem("करीना", "hi");                  // "कर": meets करने
+stem("करीना", "hi", { minStem: 4 });  // "करीन"
+```
+
+In Go: `stem.StemWith(w, "hi", stem.Options{MinStem: 4})`.
+
+**Malayalam compounds** (`indickit/stem-compounds`, 1.6 KB gzipped, a
+separate file): `compoundKey(w)` returns the first member that starts the
+word (കേരളസർക്കാർ, "Kerala government", and കേരളത്തിലെ both give കേരള), or
+null. Use it in place of the stem:
+
+```ts
+import { compoundKey } from "indickit/stem-compounds";
+const key = compoundKey(w) ?? stem(w, "ml");
+```
+
+In Go: `stem.CompoundKey(w)`. On held-out news, this key found 5.5 points
+more of the right sentences than `stem` alone and was 2.9 points less
+precise; Morfessor, which runs only in Python, found 6.2 more. Its 226
+members are first parts from SMC's mlmorph analyser (MIT), at least five
+code points long, without Sanskrit prefixes (പ്രതി, പരി).
 
 Known weak spots:
 

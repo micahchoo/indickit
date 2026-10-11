@@ -67,6 +67,12 @@ Rules: phonetic 2026-10-11.1, normalize 2026-10-11, segment 2026-10-11, stem 202
   1.1 KB gzipped: `phonetic` 6.9 → 8.0 KB, `phonetic-search` 17.0 → 18.2 KB.
 
 ## 0.10.0 (2026-10-09)
+- New in `stem`: two options. `minStem` (Go `StemWith`, `Options.MinStem`)
+  keeps stems longer, for fields of names; 4 halves the names a search
+  loses. `indickit/stem-compounds` (Go `CompoundKey`), a separate 1.6 KB
+  file, keys a Malayalam word by its first compound member; on held-out
+  news it finds 5.5 points more than `stem` alone. The default output does
+  not change.
 - New in `stem`: Bodo, Dogri, Kashmiri, Konkani, Maithili, Manipuri
   (Meetei Mayek), Santali and Sindhi (Devanagari), in the same rules
   2026-10-11: `stem` now covers all 22 languages. Endings chosen on BPCC's

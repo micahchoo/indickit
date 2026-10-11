@@ -26,6 +26,10 @@
       "types": "./dist/types/js/stem.d.ts",
       "default": "./dist/stem.js"
     },
+    "./stem-compounds": {
+      "types": "./dist/types/js/stem-compounds.d.ts",
+      "default": "./dist/stem-compounds.js"
+    },
     "./romanize": {
       "types": "./dist/types/js/romanize.d.ts",
       "default": "./dist/romanize.js"
@@ -48,7 +52,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "bun build js/phonetic.ts --outfile dist/phonetic.js --target browser --format esm --minify && bun build js/normalize.ts --outfile dist/normalize.js --target browser --format esm --minify && bun build js/segment.ts --outfile dist/segment.js --target browser --format esm --minify && bun build js/stem.ts --outfile dist/stem.js --target browser --format esm --minify && bun build js/romanize.ts --outfile dist/romanize.js --target browser --format esm --minify && bun build js/phonetic-search.ts --outfile dist/phonetic-search.js --target browser --format esm --minify && bun build js/deromanize.ts --outfile dist/deromanize.js --target browser --format esm --minify && bun build js/wellformed.ts --outfile dist/wellformed.js --target browser --format esm --minify && tsc -p tsconfig.json",
+    "build": "bun build js/phonetic.ts --outfile dist/phonetic.js --target browser --format esm --minify && bun build js/normalize.ts --outfile dist/normalize.js --target browser --format esm --minify && bun build js/segment.ts --outfile dist/segment.js --target browser --format esm --minify && bun build js/stem.ts --outfile dist/stem.js --target browser --format esm --minify && bun build js/stem-compounds.ts --outfile dist/stem-compounds.js --target browser --format esm --minify && bun build js/romanize.ts --outfile dist/romanize.js --target browser --format esm --minify && bun build js/phonetic-search.ts --outfile dist/phonetic-search.js --target browser --format esm --minify && bun build js/deromanize.ts --outfile dist/deromanize.js --target browser --format esm --minify && bun build js/wellformed.ts --outfile dist/wellformed.js --target browser --format esm --minify && tsc -p tsconfig.json",
     "test": "bun test",
     "check-dist": "node js/check-dist.mjs"
   },

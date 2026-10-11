@@ -74,6 +74,22 @@ if (miss || j < 400_000) {
 }
 console.log(`dist/stem.js: all ${j} inputs agree (rules ${STEM_VERSION})`);
 
+// dist/stem-compounds.js against stem/testdata/conformance-compounds-ml.jsonl.gz
+const { compoundKey } = await import("../dist/stem-compounds.js");
+const compoundRows = gunzipSync(readFileSync(new URL("../stem/testdata/conformance-compounds-ml.jsonl.gz", import.meta.url))).toString("utf8");
+let ck = 0, ckMiss = 0;
+for (const line of compoundRows.split("\n")) {
+  if (!line) continue;
+  const [word, want] = JSON.parse(line);
+  ck++;
+  if (compoundKey(word) !== want) ckMiss++;
+}
+if (ckMiss) {
+  console.error(`dist/stem-compounds.js: ${ckMiss} of ${ck} inputs differ`);
+  process.exit(1);
+}
+console.log(`dist/stem-compounds.js: all ${ck} inputs agree`);
+
 // dist/romanize.js against romanize/testdata/conformance.jsonl.gz, loading its data from the
 // default place beside the bundle (../romanize/lang/), as jsDelivr serves it
 const R = await import("../dist/romanize.js");

@@ -39,3 +39,22 @@ test("versions", () => {
   expect(LANGUAGES.length).toBe(22);
   expect(RULES_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 });
+
+// stem/testdata/conformance-min4.jsonl.gz: [lang, word, stem at minStem 4],
+// every tenth input of the main file, from the Python reference.
+test("minStem 4 gives the reference stems", () => {
+  const file = new URL("../stem/testdata/conformance-min4.jsonl.gz", import.meta.url);
+  const wrong: string[] = [];
+  let n = 0;
+  for (const line of gunzipSync(readFileSync(file)).toString("utf8").split("\n")) {
+    if (!line) continue;
+    const [lang, word, want] = JSON.parse(line) as [string, string, string];
+    n++;
+    const got = stem(word, lang, { minStem: 4 });
+    if (got !== want) wrong.push(`${lang} ${JSON.stringify(word)}: ${got} ≠ ${want}`);
+  }
+  expect(n).toBeGreaterThan(50_000);
+  expect(wrong.slice(0, 10)).toEqual([]);
+  expect(stem("करीना", "hi", {})).toBe(stem("करीना", "hi"));
+  expect(() => stem("करीना", "hi", { minStem: 10 })).toThrow();
+}, 120_000);

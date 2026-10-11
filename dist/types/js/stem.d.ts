@@ -23,4 +23,13 @@ export declare const LANGUAGES: readonly string[];
  * sa ta te ur). Only the tag's language counts: "ta-IN", "TA" and "tam" are
  * "ta". For any other `lang`, `word` unchanged.
  */
-export declare function stem(word: string, lang: string): string;
+export declare function stem(word: string, lang: string, options?: StemOptions): string;
+/** Options for {@link stem}. */
+export type StemOptions = {
+    /**
+     * The fewest code points a stem keeps (default 2, at most 9). A field of
+     * names wants 4: it halves the names that lose their end (करीना → कर) and
+     * costs 0.5–2 points of search recall.
+     */
+    minStem?: number;
+};

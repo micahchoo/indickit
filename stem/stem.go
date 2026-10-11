@@ -89,22 +89,46 @@ func Languages() []string {
 	return out
 }
 
-// Stem returns the search key of word in language lang (as bn gu hi kn ml
-// mr ne pa sa ta te ur). Only the tag's language counts: "ta-IN", "TA" and
+// Stem returns the search key of word in language lang (any of the 22
+// languages of the Eighth Schedule). Only the tag's language counts: "ta-IN", "TA" and
 // "tam" are "ta". For any other lang it returns word unchanged.
 func Stem(word, lang string) string {
+	return stemWith(word, lang, minStem)
+}
+
+// Options change how Stem cuts. The zero Options is Stem.
+type Options struct {
+	// MinStem is the fewest code points a stem keeps: 0 means the default
+	// (2). A field of names wants 4: it halves the names that lose their
+	// end (करीना → कर) and costs 0.5–2 points of search recall. At most 9.
+	MinStem int
+}
+
+// StemWith is Stem with options. It panics on a MinStem above 9.
+func StemWith(word, lang string, o Options) string {
+	ms := o.MinStem
+	if ms == 0 {
+		ms = minStem
+	}
+	if ms < minStem || maxEnd+ms >= maxWalk {
+		panic("stem: MinStem must be " + strconv.Itoa(minStem) + ".." + strconv.Itoa(maxWalk-maxEnd-1))
+	}
+	return stemWith(word, lang, ms)
+}
+
+func stemWith(word, lang string, ms int) string {
 	t, ok := tables[langtag.Code(lang)]
 	if !ok {
 		return word
 	}
 	for range t.passes {
-		word = t.cut(word)
+		word = t.cut(word, ms)
 	}
 	return word
 }
 
 // cut is one pass: the longest listed ending, then the vowel step.
-func (t table) cut(word string) string {
+func (t table) cut(word string, minStem int) string {
 	// Walk back over code points; every candidate ending is a substring of
 	// word, so no lookup copies. starts[k] is the byte where the last k code
 	// points begin.
