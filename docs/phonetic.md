@@ -102,7 +102,7 @@ and 78%.
   श्रीमती, திரு) are dropped in the query and in the list: "Narendra Modi"
   scores 100 against "श्री नरेंद्र मोदी" in a list of four names (73
   before). A title in the middle of a name still weighs as much as a name.
-- **Size.** The browser file is 18 KB gzipped, and a language's table 2–6
+- **Size.** The browser file is 15 KB gzipped, and a language's table 2–6
   KB more, loaded when you call `loadSearch`.
 - **Cap what users type.** The scorer compares each query word with each
   candidate word, so its cost grows with their product, and a name's

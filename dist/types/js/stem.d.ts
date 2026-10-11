@@ -19,8 +19,8 @@ export declare const RULES_VERSION: string;
 /** The language codes that have a table. */
 export declare const LANGUAGES: readonly string[];
 /**
- * The search key of `word` in language `lang` (any of the 22
- * languages of the Eighth Schedule). Only the tag's language counts: "ta-IN", "TA" and "tam" are
+ * The search key of `word` in language `lang` (as bn gu hi kn ml mr ne pa
+ * sa ta te ur). Only the tag's language counts: "ta-IN", "TA" and "tam" are
  * "ta". For any other `lang`, `word` unchanged.
  */
 export declare function stem(word: string, lang: string, options?: StemOptions): string;

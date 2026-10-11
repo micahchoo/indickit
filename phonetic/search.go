@@ -8,6 +8,7 @@ package phonetic
 import (
 	"embed"
 	"encoding/json"
+	"fmt"
 	"math"
 	"sort"
 	"strings"
@@ -44,8 +45,9 @@ var searchRules = func() (r struct {
 	DeletionMin int                `json:"deletion_min_classes"`
 	LooseMin    int                `json:"loose_joined_min_classes"`
 	Thresholds  map[string]int     `json:"thresholds"`
-	Pow         []int64            `json:"pow"`
-	Exp2        []int64            `json:"exp2"`
+	PowD2       []int64            `json:"pow_d2"`
+	ExpD2       []int64            `json:"exp2_d2"`
+	Pow, Exp2   []int64            `json:"-"`
 }) {
 	data, err := scorerFiles.ReadFile("scorer/search.json")
 	if err == nil {
@@ -54,22 +56,60 @@ var searchRules = func() (r struct {
 	if err != nil {
 		panic("phonetic: bad embedded scorer/search.json: " + err.Error())
 	}
+	r.Pow, r.Exp2 = undiff(r.PowD2), undiff(r.ExpD2)
 	return
 }()
+
+// undiff reads a table stored as second differences: sum twice (scorer.py#undiff).
+func undiff(d2 []int64) []int64 {
+	out := make([]int64, len(d2))
+	var d, v int64
+	for i, x := range d2 {
+		d += x
+		v += d
+		out[i] = v
+	}
+	return out
+}
 
 // SearchVersion names the scorer's tables; scores change when it does.
 var SearchVersion = searchRules.Version
 
 // Thresholds are the scores measured for each use (README): names in a list
-// 74, villages 72, a name in text 80 (at most 10% of hits wrong) or 70 (20%).
+// 75, villages 73, a name in text 81 (at most 10% of hits wrong) or 71 (20%).
 var Thresholds = searchRules.Thresholds
 
+// mustEngine builds a fine engine: scorer/<name> is a patch over rules.json,
+// the fields it sets and the fields it drops (scorer_export.py).
 func mustEngine(name string) *engine {
 	data, err := scorerFiles.ReadFile("scorer/" + name)
 	if err == nil {
-		var e *engine
-		if e, err = load(data); err == nil {
-			return e
+		var patch struct {
+			BaseVersion string                     `json:"base_version"`
+			Set         map[string]json.RawMessage `json:"set"`
+			Drop        []string                   `json:"drop"`
+		}
+		var rules map[string]json.RawMessage
+		if err = json.Unmarshal(data, &patch); err == nil {
+			err = json.Unmarshal(rulesJSON, &rules)
+		}
+		if err == nil && patch.BaseVersion != RulesVersion {
+			err = fmt.Errorf("made for rules %s, not %s", patch.BaseVersion, RulesVersion)
+		}
+		if err == nil {
+			for k, v := range patch.Set {
+				rules[k] = v
+			}
+			for _, k := range patch.Drop {
+				delete(rules, k)
+			}
+			var merged []byte
+			if merged, err = json.Marshal(rules); err == nil {
+				var e *engine
+				if e, err = load(merged); err == nil {
+					return e
+				}
+			}
 		}
 	}
 	panic("phonetic: bad embedded scorer/" + name + ": " + err.Error())

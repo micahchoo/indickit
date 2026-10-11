@@ -16,6 +16,7 @@
  * @module
  */
 
+import rulesJson from "../phonetic/rules.json" with { type: "json" };
 import searchJson from "../phonetic/scorer/search.json" with { type: "json" };
 import fineJson from "../phonetic/scorer/fine.json" with { type: "json" };
 import fine2Json from "../phonetic/scorer/fine2.json" with { type: "json" };
@@ -29,21 +30,37 @@ import { isLetter, nfc } from "./unidata";
 export type Profile = "names" | "text";
 
 type ProfileRules = { key: number; cost: number; vowel: number; div: number; stop_permille: number | null; stop_min_names: number; round: boolean };
-const R = searchJson as unknown as {
+const S = searchJson as unknown as {
   version: string; profiles: Record<Profile, ProfileRules>; posterior_temperature: number;
   deletion_min_classes: number; loose_joined_min_classes: number; thresholds: Record<string, number>;
-  pow: number[]; exp2: number[];
+  pow_d2: number[]; exp2_d2: number[];
 };
+
+// search.json stores its tables as second differences: sum twice (scorer.py#undiff).
+// Every value stays below 2^53, so the sums are exact.
+function undiff(d2: number[]): number[] {
+  let d = 0, v = 0;
+  return d2.map((x) => (v += d += x));
+}
+const R = { ...S, pow: undiff(S.pow_d2), exp2: undiff(S.exp2_d2) };
 
 /** Changes whenever any score changes. */
 export const SEARCH_VERSION: string = R.version;
 
-/** The scores measured for each use: names in a list 74, villages 72, a name
- * in text 80 (at most 10% of hits wrong) or 70 (20%). */
+/** The scores measured for each use: names in a list 75, villages 73, a name
+ * in text 81 (at most 10% of hits wrong) or 71 (20%). */
 export const THRESHOLDS: Readonly<Record<string, number>> = R.thresholds;
 
-const fineEngine = compile(fineJson);
-const fine2Engine = compile(fine2Json);
+// scorer/fine*.json are patches over rules.json: the fields they set and drop.
+type Patch = { base_version: string; set: Record<string, unknown>; drop: string[] };
+function patched(p: Patch) {
+  if (p.base_version !== rulesJson.version) throw new Error(`phonetic: scorer rules made for ${p.base_version}, not ${rulesJson.version}`);
+  const r: Record<string, unknown> = { ...rulesJson, ...p.set };
+  for (const k of p.drop) delete r[k];
+  return compile(r as Parameters<typeof compile>[0]);
+}
+const fineEngine = patched(fineJson as Patch);
+const fine2Engine = patched(fine2Json as Patch);
 const JOINED_MIN = JOINED_MIN_CLASSES;
 const INF = 2 ** 30;
 const floor = Math.floor;

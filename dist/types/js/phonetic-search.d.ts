@@ -28,8 +28,8 @@ type ProfileRules = {
 };
 /** Changes whenever any score changes. */
 export declare const SEARCH_VERSION: string;
-/** The scores measured for each use: names in a list 74, villages 72, a name
- * in text 80 (at most 10% of hits wrong) or 70 (20%). */
+/** The scores measured for each use: names in a list 75, villages 73, a name
+ * in text 81 (at most 10% of hits wrong) or 71 (20%). */
 export declare const THRESHOLDS: Readonly<Record<string, number>>;
 type Sparse = [number, [number, number][]];
 type RawTable = {

@@ -94,14 +94,11 @@ Rules: phonetic 2026-10-11.3, normalize 2026-10-11, segment 2026-10-11, stem 202
   thresholds were chosen again on the same data: names 74 → 75, villages
   72 → 73, text 80 → 81 and 70 → 71 (`Thresholds` / `THRESHOLDS`).
 - Size: the title list, the letter names and the new rules add about
-  1.3 KB gzipped: `phonetic` 6.9 → 8.2 KB, `phonetic-search` 17.0 → 18.4 KB.
+  1.3 KB gzipped to `phonetic`: 6.9 → 8.2 KB. `phonetic-search` falls
+  17.0 → 14.5 KB: its 2^x tables are stored as second differences, and its
+  two fine rules files as patches over `rules.json` (every score unchanged).
 
 ## 0.10.0 (2026-10-09)
-- `stem`: Sindhi in Perso-Arabic and Manipuri in Bengali script get their
-  own endings in the same tables (4 and 13), chosen on FLORES+ and checked
-  once on its unseen half: 4.1 and 5.6 points more of the right sentences
-  than exact search. Words in those scripts were returned unchanged
-  before; no Devanagari or Meetei Mayek output changes.
 - New: `indickit/search-key` (Go `searchkey.Key`), one search key per word:
   normalize, stem, then fold, the order measured best. Fold after stem
   finds 2.4 points more of the right passages in Hindi (MIRACL) and changes
