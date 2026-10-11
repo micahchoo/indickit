@@ -81,6 +81,13 @@ was chosen on and which were read once, the second cut finds 0.9 points
 more of the right sentences (95%: +0.7 to +1.1), and precision falls by
 0.75 points (95%: −1.2 to −0.4).
 
+Sanskrit has 17 more endings since rules 2026-10-11; the Sanskrit row
+above was measured before that change. The endings were chosen on lemmas
+of the Digital Corpus of Sanskrit (DCS, CC BY 4.0), on words that also
+occur in modern Sanskrit text. On DCS texts that no rule was chosen on,
+read once, `stem` finds 40.5% of the forms of one word together (34.6%
+before), and 2.7% of what a search finds is another word (2.3% before).
+
 The browser file is 3 KB gzipped.
 
 ## In a search engine

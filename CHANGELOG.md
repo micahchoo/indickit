@@ -8,6 +8,17 @@ version, and compare `RULES_VERSION` (or `SEARCH_VERSION`) to know which
 rows. A version whose rules line equals the one before it gives every
 input the same output.
 
+## Unreleased
+
+Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-11, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-09
+
+- Changed output: stem rules 2026-10-09 → 2026-10-11, Sanskrit only. 17
+  endings added (the anusvara spellings ानां ां ायां, the passive यते यन्ते,
+  the infinitive तुं, the absolutive त्वा, and others); 1,301 of the 418,730
+  conformance rows change, all Sanskrit. On lemmas of the Digital Corpus of
+  Sanskrit, read once, recall rises from 34.6% to 40.5% at 2.7% wrong hits.
+- Docs: `stem` damages some names (README Limits, `docs/stem.md#names`).
+
 ## 0.10.0 (2026-10-09)
 
 Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-09, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-09
