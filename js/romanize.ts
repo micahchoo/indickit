@@ -371,6 +371,9 @@ class Beam {
 }
 
 /** One language's two models, mixed: λ × own + (1 − λ) × pooled. */
+// pooled bytes (their buffer) → the parsed pooled model and the interner its ids belong to
+const pooledModels = new WeakMap<ArrayBufferLike, { byteOffset: number; ids: Interner; model: Model }>();
+
 class Mix {
   a: Model;
   b: Model;
@@ -386,12 +389,21 @@ class Mix {
     tag: string,
     readonly beam: number,
   ) {
-    const ids = new Interner();
-    let r = new Reader(pool);
-    let strs = readStrings(r);
-    this.b = new Model(r, strs, ids);
-    r = new Reader(own);
-    strs = readStrings(r);
+    // The pooled model is parsed once per pooled file and shared by every language and mode
+    // that reads it (a Brahmic page with several languages held one copy each before); its
+    // interner is shared too: a language's own strings are added to it, and no id that a
+    // model holds changes. Output does not depend on the ids, only on the strings.
+    let shared = pooledModels.get(pool.buffer);
+    if (!shared || shared.byteOffset !== pool.byteOffset) {
+      const ids = new Interner();
+      const pr = new Reader(pool);
+      shared = { byteOffset: pool.byteOffset, ids, model: new Model(pr, readStrings(pr), ids) };
+      pooledModels.set(pool.buffer, shared);
+    }
+    const ids = shared.ids;
+    this.b = shared.model;
+    const r = new Reader(own);
+    const strs = readStrings(r);
     this.lam = r.float64();
     this.a = new Model(r, strs, ids);
     for (let k = r.varint(); k > 0; k--) {

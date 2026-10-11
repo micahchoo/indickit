@@ -351,7 +351,7 @@ hi.word("namaste", 1);                // ["नमस्ते"]
 hi.text("bharat ke pradhanmantri");   // "भारत के प्रधानमंत्री"
 const ur = await load("ur", "names");
 ur.word("ahmad", 1);                  // ["احمد"]
-const mixed = await load("hi", "words", { english: true });  // also fetches the English list (27 KB)
+const mixed = await load("hi", "words", { english: true });  // also fetches the English list (22 KB)
 mixed.textMixed("mera office band hai");  // "मेरा office बंद है"
 ```
 

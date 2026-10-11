@@ -27,7 +27,7 @@ Rules: phonetic 2026-10-11.7, normalize 2026-10-11, segment 2026-10-11, stem 202
 - Added: deromanize `textMixed` / Go `TextMixed`, and `isEnglish` / Go
   `English`, for Hindi typed with English words in it (Hinglish): a word on
   the Hindi English list (10,000 English Wikipedia words, less those a Hindi
-  typist writes often) stays as typed. TypeScript fetches the list (27 KB
+  typist writes often) stays as typed. TypeScript fetches the list (22 KB
   gzipped) only with `load("hi", "words", { english: true })`. On
   L3Cube-HingLID, read once, 87.4% of words are called right (IndicLID
   roman: 72.1%); 2.4% of Hindi words stay in Latin. Every other output is

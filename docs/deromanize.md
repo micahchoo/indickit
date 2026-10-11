@@ -97,7 +97,7 @@ right word first 58.8% of the time and had no word at all for 26.1%;
 language's English list stays as typed. `isEnglish` (Go `English`) asks the
 list about one word. Only Hindi has a list; for another language nothing is
 English and `textMixed` equals `text`. In the browser, load the list with
-`load("hi", "words", { english: true })`: 27 KB gzipped, fetched only then.
+`load("hi", "words", { english: true })`: 22 KB gzipped, fetched only then.
 
 ```ts
 const hi = await load("hi", "words", { english: true });
@@ -119,7 +119,7 @@ Hindi or English; its test split, read once, 191,535 words), word by word:
 | | Right | Hindi called English | English found | Size |
 |---|---|---|---|---|
 | none (every word Hindi) | 71.4% | 0 | 0 | — |
-| `textMixed`'s list | **87.4%** | **2.4%** | **62.0%** | 27 KB |
+| `textMixed`'s list | **87.4%** | **2.4%** | **62.0%** | 22 KB |
 | IndicLID, roman model | 72.1% | 4.6% | 14.0% | 282 MB |
 
 IndicLID judges sentences; one word at a time it does little better than
