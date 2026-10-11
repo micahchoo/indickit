@@ -366,6 +366,31 @@ import (
 deromanize.Word("namaste", "hi", deromanize.Words, 1) // [नमस्ते]
 ```
 
+### Match two Latin spellings of one word
+
+People type one word in many ways: "zindagi" and "jindagi", "bahut" and
+"bohot". To match them, write each in the Indian script and fold it; the
+result is a key for search or for removing duplicates:
+
+```ts
+import { load } from "indickit/deromanize";
+import { fold } from "indickit/normalize";
+
+const hi = await load("hi");
+const key = (w: string) => fold(hi.word(w, 1)[0] ?? w, "hi");
+key("zindagi") === key("jindagi"); // true: ज़िंदगी and जिंदगी fold to one
+key("bahut") === key("bohot");     // true: both are बहुत
+key("kahaan") === key("kahan");    // false: कहाँ and कहा
+```
+
+On words `deromanize` never trained on (Dakshina's lexicons, Bengali,
+Hindi, Marathi, Tamil, Telugu and Urdu), this key matches 30–67% of the
+pairs of spellings of one word and gives 3–20% of spellings the key of
+another word. Fuzzy matching (one edit) matches 28–65% and gives 28–51% a
+wrong match. Keys from all four spellings match 52–88%, at 16–46% wrong.
+Tamil is the weakest language. The `phonetic` key is not for this: it drops
+vowels, which carry a Latin-typed word.
+
 ### The same in Go
 
 ```go

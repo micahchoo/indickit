@@ -209,3 +209,12 @@ test("the languages table is what each utility's tables cover", () => {
     ]);
   }
 });
+
+test("the README's Latin-spellings recipe gives what it says", async () => {
+  const section = readme.split("### Match two Latin spellings of one word")[1].split("\n### ")[0];
+  const lines = [...section.matchAll(/^key\("(\w+)"\) === key\("(\w+)"\);\s*\/\/ (true|false)/gm)];
+  expect(lines.length).toBe(3);
+  const hi = await deromanizer("hi");
+  const key = (w: string) => fold(hi.word(w, 1)[0] ?? w, "hi");
+  for (const [, a, b, want] of lines) expect(`${a} ${b} ${key(a) === key(b)}`).toBe(`${a} ${b} ${want}`);
+});
