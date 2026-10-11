@@ -75,7 +75,13 @@ type rawRules struct {
 	Scripts   [][2]json.RawMessage `json:"scripts"`
 	Classes   [][3]json.RawMessage `json:"classes"`
 	Tree      json.RawMessage      `json:"tree"`
-	Fold      []struct {
+	// rule 4, before the tree: consonant + virama + ZWNJ/ZWJ + consonant, by the pair
+	Pairs map[string]struct {
+		Virama     string              `json:"virama"`
+		Consonants string              `json:"consonants"`
+		Keep       map[string][]string `json:"keep"` // joiner symbol -> the pairs that keep it
+	} `json:"pairs"`
+	Fold []struct {
 		Step     string            `json:"step"`
 		Map      map[string]string `json:"map"`
 		Blocks   []rune            `json:"blocks"`
@@ -94,6 +100,13 @@ type node struct {
 	invisible bool
 	f         int
 	kids      map[byte]*node
+}
+
+// pairRule decides a joiner between consonant + virama and a consonant, for
+// one script: it stays only for the pairs in keep.
+type pairRule struct {
+	consonants map[rune]bool
+	keep       map[byte]map[[2]rune]bool
 }
 
 type foldStep struct {
@@ -115,6 +128,7 @@ type engine struct {
 	scripts          [][][2]rune // index i is the script digits[i]
 	classes          map[rune]byte
 	tree             *node
+	pairs            map[rune]pairRule // by virama
 	chillu           map[rune]rune
 	chVirama, chJoin rune
 	chNotBefore      rune
@@ -198,6 +212,21 @@ func load(data []byte) (*engine, error) {
 			e.classes[o] = k[0]
 		}
 	}
+	e.pairs = map[rune]pairRule{}
+	for _, p := range r.Pairs {
+		pr := pairRule{consonants: map[rune]bool{}, keep: map[byte]map[[2]rune]bool{}}
+		for _, c := range p.Consonants {
+			pr.consonants[c] = true
+		}
+		for sym, pairs := range p.Keep {
+			pr.keep[sym[0]] = map[[2]rune]bool{}
+			for _, ab := range pairs {
+				r := []rune(ab)
+				pr.keep[sym[0]][[2]rune{r[0], r[1]}] = true
+			}
+		}
+		e.pairs[first(p.Virama)] = pr
+	}
 	var err error
 	if e.tree, err = parseTree(r.Tree); err != nil {
 		return nil, err
@@ -252,8 +281,14 @@ func (e *engine) sym(c rune) byte {
 }
 
 // deletes says whether invisible character c, between before and after, is
-// invisible in its context. A context the tree does not hold keeps it.
+// invisible in its context: by the pair in a conjunct context of a pairs
+// script, else by the tree. A context the tree does not hold keeps it.
 func (e *engine) deletes(before []rune, c rune, after []rune) bool {
+	if (c == '\u200c' || c == '\u200d') && len(before) >= 2 && len(after) > 0 {
+		if p, ok := e.pairs[before[len(before)-1]]; ok && p.consonants[before[len(before)-2]] && p.consonants[after[0]] {
+			return !p.keep[e.invisible[c]][[2]rune{before[len(before)-2], after[0]}]
+		}
+	}
 	var sc byte
 	for i := len(before) - 1; i >= 0; i-- {
 		if _, inv := e.invisible[before[i]]; !inv {

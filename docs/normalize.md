@@ -34,6 +34,15 @@ chosen on:
   equal (the most possible: 91.5%).
 - **Invisible characters planted** at every position of 58,914 real words:
   72 of 3.6M variants changed their look, nearly all in Odia.
+- **Odia, Meetei Mayek and Ol Chiki**, which that Wikipedia sample did not
+  reach: 1.2M words of news and typed sentences, no word changed its look.
+
+Rules 2026-10-11 decide a Tamil joiner between two consonants by the pair:
+Tamil draws only three conjuncts across a pulli (க்ஷ, ஶ்ர, ஸ்ர), so a ZWNJ or
+ZWJ there stays, and elsewhere it goes. On Tamil web text never used to build
+it (IndicCorp), look-alike groups that hold a joiner made equal: 89.6% →
+98.8%, and no word changed its look in Noto, Anek or 5 other Tamil fonts.
+The numbers above are for rules 2026-10-07.
 
 `fold` was measured against the two tools a user can pick today, each with
 its best options: Indic NLP Library, and Lucene, which Elasticsearch,
@@ -57,7 +66,16 @@ The browser file is 16 KB gzipped.
 
 Known weak spots:
 
-- **Malayalam** is furthest from the most possible (69.9% against 82.8%).
+- **Malayalam** is furthest from the most possible in Noto and Anek (69.9%
+  against 82.8%). Asked of 15 Malayalam fonts, the most possible is 71.0%:
+  fonts with traditional conjuncts draw what a ZWNJ blocks, so most of
+  those joiners are not invisible.
+- **A ZWJ between a Malayalam consonant and its vowel sign** (ന + ZWJ + ു) is
+  deleted, but fonts with traditional ligatures (Rachana, Manjari, Meera and
+  7 more) draw the sign joined without it: 4 words in 1.1M changed their
+  look in those fonts.
+- **Suruma**, a Malayalam font older than Unicode 5.1, has no atomic chillus
+  (ൻ ർ ൽ ൾ ൺ): text after `normalize` shows boxes in it.
 - **The nukta merge can join two words:** राज "rule" and राज़ "secret". Many
   writers leave the nukta out, so text often writes them alike already.
 - **Only HarfBuzz was tested.** Windows and Apple draw text with their own

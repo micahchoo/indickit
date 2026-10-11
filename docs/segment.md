@@ -24,6 +24,11 @@ Wikipedia articles never used to build the rules (share of words):
 | Tamil | 0.06% | 0.01% | 0 |
 | Hindi, Marathi, Gujarati, Telugu, Nepali, Malayalam, Urdu | the same | the same | 0 |
 
+Odia news text (Naamapadam, 1.1M words, never used to build the rule): `Intl.Segmenter`
+0.13%, `segment` 0.04% (rules 2026-10-11), 0 joined by mistake. Odia news
+writes the English "w" as ଓ୍ବ (ଓ୍ବିକେଟ୍ "wicket"), one shape, and Unicode keeps
+a conjunct whole only after a consonant, not after the vowel ଓ.
+
 In Kannada text, `Intl.Segmenter` counts 17% more letters than a reader
 sees. The same holds for the other languages written in Kannada script:
 Tulu (44% of words split; 0.02% with `segment`) and Konkani as written in
@@ -46,6 +51,8 @@ Known weak spots:
 - **Malayalam ൻ്റ** is one shape in Noto, but two in the Rachana and
   Gayathri fonts. `segment` follows Unicode and keeps it two letters.
 - **Tamil க்ஷ** stays two letters: it occurs in 0.04% of Tamil words.
+- **Odia ଓ୍ୱ** stays two letters: Samyak Oriya and Utkal draw it as two
+  shapes. With acronyms such as ଆର୍ଏସ୍ଏସ୍, these are the 0.04% left.
 - **Only HarfBuzz was tested.** Windows and Apple draw text with their own
   engines.
 - **Go reads invalid UTF-8 as U+FFFD**, so for such input the letters do not

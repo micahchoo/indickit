@@ -48,6 +48,6 @@ test("the letters give the text back", () => {
 });
 
 test("versions", () => {
-  expect(RULES_VERSION).toBe("2026-10-06");
+  expect(RULES_VERSION).toBe("2026-10-11");
   expect(UNICODE_VERSION).toBe("17.0.0");
 });

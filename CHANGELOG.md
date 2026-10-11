@@ -10,8 +10,28 @@ input the same output.
 
 ## Unreleased
 
-Rules: phonetic 2026-10-11, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-11, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-11
+Rules: phonetic 2026-10-11, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-11
 
+- Changed output: normalize rules 2026-10-07 → 2026-10-11, Tamil only. A
+  ZWNJ or ZWJ between consonant + pulli and a consonant is deleted, unless
+  the pair is one of the three Tamil conjuncts (க்ஷ, ஶ்ர, ஸ்ர): ப் + ZWNJ + ப →
+  ப்ப. Before, a class-based rule kept most of these and deleted the ZWNJ of
+  க்ஷ in some words, a change a reader could see. On IndicCorp Tamil text,
+  look-alike groups with a joiner made equal: 89.6% → 98.8%. `fold` follows.
+  `rules.json` gains `pairs`; the ports read it.
+- Changed output: segment rules 2026-10-06 → 2026-10-11, Odia only. ଓ +
+  virama + ବ is one letter (ଓ୍ବି in ଓ୍ବିକେଟ୍ "wicket"); Odia news words split
+  wrongly: 0.13% → 0.04%. ଓ୍ୱ stays two letters (two fonts draw it apart).
+- Docs: normalize's Malayalam limits (the most possible is 71.0% in 15
+  fonts; a ZWJ before a vowel sign; Suruma lacks the atomic chillus).
+- Added: deromanize `textMixed` / Go `TextMixed`, and `isEnglish` / Go
+  `English`, for Hindi typed with English words in it (Hinglish): a word on
+  the Hindi English list (10,000 English Wikipedia words, less those a Hindi
+  typist writes often) stays as typed. TypeScript fetches the list (27 KB
+  gzipped) only with `load("hi", "words", { english: true })`. On
+  L3Cube-HingLID, read once, 87.4% of words are called right (IndicLID
+  roman: 72.1%); 2.4% of Hindi words stay in Latin. Every other output is
+  unchanged, so the deromanize rules version is unchanged.
 - Changed output: stem rules 2026-10-09 → 2026-10-11, Sanskrit only. 17
   endings added (the anusvara spellings ानां ां ायां, the passive यते यन्ते,
   the infinitive तुं, the absolutive त्वा, and others); 1,301 of the 418,730

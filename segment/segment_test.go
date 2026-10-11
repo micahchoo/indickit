@@ -85,7 +85,7 @@ func TestCases(t *testing.T) {
 			t.Errorf("Segment(%q) joins to %q", s, got)
 		}
 	}
-	if RulesVersion != "2026-10-06" || UnicodeVersion != "17.0.0" {
+	if RulesVersion != "2026-10-11" || UnicodeVersion != "17.0.0" {
 		t.Errorf("versions %q %q", RulesVersion, UnicodeVersion)
 	}
 }

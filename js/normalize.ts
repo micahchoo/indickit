@@ -75,9 +75,27 @@ function compile(r: Rules) {
   }
   const tree = node(r.tree as Tree);
 
+  // Rule 4, before the tree: consonant + virama + ZWNJ/ZWJ + consonant in a
+  // pairs script is decided by the pair; the joiner stays only for the pairs
+  // in keep (by virama: the consonants, and per joiner symbol the pairs).
+  type PairRule = { virama: string; consonants: string; keep: { [sym: string]: string[] } };
+  const pairs = new Map<number, { consonants: Set<number>; keep: Map<string, Set<string>> }>();
+  for (const p of Object.values(r.pairs as { [script: string]: PairRule })) {
+    pairs.set(cp(p.virama), {
+      consonants: new Set([...p.consonants].map(cp)),
+      keep: new Map(Object.entries(p.keep).map(([sym, ps]) => [sym, new Set(ps)])),
+    });
+  }
+
   // Rule 4: is invisible character c, between before and after, invisible
   // in its context? A context the tree does not hold keeps the character.
   function deletes(before: number[], c: number, after: number[]): boolean {
+    if ((c === 0x200c || c === 0x200d) && before.length >= 2 && after.length > 0) {
+      const a = before[before.length - 2];
+      const p = pairs.get(before[before.length - 1]);
+      if (p && p.consonants.has(a) && p.consonants.has(after[0]))
+        return !(p.keep.get(invisible.get(c)!)?.has(String.fromCodePoint(a, after[0])) ?? false);
+    }
     const nearLeft = [...before].reverse().find((x) => !invisible.has(x));
     const nearRight = after.find((x) => !invisible.has(x));
     let script: string | undefined;
