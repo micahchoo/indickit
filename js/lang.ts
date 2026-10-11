@@ -9,7 +9,7 @@
 // ISO 639-1 code. The other six (brx doi gom kok mai mni sat) have only a
 // three-letter code, which BCP 47 uses as it is.
 // Seven characters an entry: "hin hi ".
-const ISO_639_2 = "asm as ben bn guj gu hin hi kan kn kas ks mal ml mar mr nep ne ori or pan pa san sa snd sd tam ta tel te urd ur ";
+const ISO_639_2 = "asm as ben bn guj gu hin hi kan kn kas ks mal ml mar mr nep ne ori or pan pa san sa snd sd tam ta tel te urd ur ory or npi ne ";
 
 export function langCode(tag: string | undefined): string {
   const t = (tag ?? "").toLowerCase().split(/[-_]/)[0];

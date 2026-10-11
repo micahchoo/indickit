@@ -65,7 +65,7 @@ in the research log):
 - **A trade:** in Bengali, Punjabi, Tamil and Sanskrit, Morfessor or
   Snowball finds as much or more, and `stem` is more precise.
 - **Behind:** Nepali, by 0.1–3 points of recall.
-- **No other stemmer:** Assamese and Odia.
+- **No other stemmer:** Assamese and Odia, and the eight languages measured on BPCC.
 
 Odia was added in rules 2026-10-11. Its endings were chosen with a
 different cost: precision on the same search, at most 4.9 points below
@@ -97,7 +97,35 @@ occur in modern Sanskrit text. On DCS texts that no rule was chosen on,
 read once, `stem` finds 40.5% of the forms of one word together (34.6%
 before), and 2.7% of what a search finds is another word (2.3% before).
 
-The browser file is 3 KB gzipped.
+The browser file is 4 KB gzipped.
+
+## Measured on BPCC
+
+Eight languages had no FLORES+ table and no test set to climb on until
+BPCC (AI4Bharat, CC BY 4.0): about 100,000 English sentences each, with
+human translations. Their endings were chosen on most of it, and checked
+once on a part no rule had seen (recall / precision; 300 queries each):
+
+| Language | sentences | exact search | `stem` | recall gain (95%) | endings |
+|---|---|---|---|---|---|
+| Maithili | 9,813 | 40.9% / 63.8% | 51.2% / 61.5% | +10.2 (+8.7, +11.9) | 10 |
+| Manipuri (Meetei Mayek) | 9,733 | 38.9% / 59.7% | 50.3% / 55.2% | +11.4 (+10.0, +12.7) | 11 |
+| Bodo | 8,331 | 39.3% / 60.8% | 50.6% / 56.5% | +11.3 (+9.4, +13.3) | 14 |
+| Konkani | 7,699 | 34.6% / 62.7% | 44.1% / 58.9% | +9.5 (+8.2, +10.9) | 27 |
+| Kashmiri | 9,872 | 33.0% / 67.2% | 40.3% / 62.9% | +7.2 (+6.0, +8.6) | 12 |
+| Sindhi (Devanagari) | 5,022 | 37.1% / 62.3% | 45.7% / 59.1% | +8.5 (+7.1, +9.9) | 14 |
+| Dogri | 9,036 | 45.0% / 64.9% | 50.8% / 62.6% | +5.8 (+4.7, +7.0) | 9 |
+| Santali | 6,438 | 40.9% / 50.6% | 44.7% / 49.1% | +3.7 (+2.9, +4.7) | 12 |
+
+Each table covers the script BPCC writes: Sindhi in Devanagari, Manipuri
+in Meetei Mayek, Kashmiri in Perso-Arabic. A Sindhi word in Perso-Arabic
+or a Manipuri word in Bengali script comes back unchanged. Santali gains
+little (+3.7), at almost no cost in precision; it is the only stemmer for
+Santali there is. These numbers rest on one source; the others in the
+table above rest on FLORES+.
+
+Across all 22 languages, `stem` finds 3.7–15 points more of the right
+sentences than exact search.
 
 ## In a search engine
 
@@ -203,7 +231,6 @@ Known weak spots:
   రాష్ట్రం / రాష్ట్రాల, and the Malayalam chillu (സർക്കാർ / സർക്കാരിന്റെ).
 - **Out of context**: a word with two readings gets one stem. ஆண்டு is also
   "having ruled".
-- **No table**: Kashmiri, Konkani, Manipuri, Santali and Sindhi
-  have too few test words to measure one; Bodo, Dogri and Maithili have
-  none.
+- **One script per language**: Sindhi in Devanagari and Manipuri in
+  Meetei Mayek only; their other scripts come back unchanged.
 

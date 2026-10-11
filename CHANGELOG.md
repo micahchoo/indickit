@@ -67,6 +67,15 @@ Rules: phonetic 2026-10-11.1, normalize 2026-10-11, segment 2026-10-11, stem 202
   1.1 KB gzipped: `phonetic` 6.9 → 8.0 KB, `phonetic-search` 17.0 → 18.2 KB.
 
 ## 0.10.0 (2026-10-09)
+- New in `stem`: Bodo, Dogri, Kashmiri, Konkani, Maithili, Manipuri
+  (Meetei Mayek), Santali and Sindhi (Devanagari), in the same rules
+  2026-10-11: `stem` now covers all 22 languages. Endings chosen on BPCC's
+  human translations; on a part no rule saw, 3.7–11.4 points more of the
+  right sentences than exact search, at most 4.4 points less precise.
+  About 254,000 conformance rows are new; none changed. The browser file
+  grows to 4 KB gzipped.
+- Language tags: `ory` (Odia) and `npi` (Nepali), as FLORES+ and NLLB
+  write them, now name the `or` and `ne` tables.
 - New in `stem`: Odia (`or`), in the same rules 2026-10-11. 11 endings
   chosen on PIB search; on FLORES+, read once, 6.9 points more of the right
   sentences than exact search, 3.4 points less precise. Odia's 24,578

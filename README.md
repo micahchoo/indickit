@@ -47,23 +47,23 @@ others hold tables for some languages only.
 |---|---|---|---|---|---|---|
 | Assamese | `as` | Bengali-Assamese | ✓ | ✓ | words, names | words, names |
 | Bengali | `bn` | Bengali-Assamese | ✓ | ✓ | words, names | words, names |
-| Bodo | `brx` | Devanagari | – | ✓ | words | words |
-| Dogri | `doi` | Devanagari | – | ✓ | words | words |
+| Bodo | `brx` | Devanagari | ✓ | ✓ | words | words |
+| Dogri | `doi` | Devanagari | ✓ | ✓ | words | words |
 | Gujarati | `gu` | Gujarati | ✓ | ✓ | words, names | words, names |
 | Hindi | `hi` | Devanagari | ✓ | ✓ | words, names | words, names |
 | Kannada | `kn` | Kannada | ✓ | ✓ | words, names | words, names |
-| Kashmiri | `ks` | Perso-Arabic | – | ✓ | words, names | words, names |
-| Konkani | `gom` | Devanagari | – | ✓ | words, names | words, names |
-| Maithili | `mai` | Devanagari | – | ✓ | words, names | words, names |
+| Kashmiri | `ks` | Perso-Arabic | ✓ | ✓ | words, names | words, names |
+| Konkani | `gom` | Devanagari | ✓ | ✓ | words, names | words, names |
+| Maithili | `mai` | Devanagari | ✓ | ✓ | words, names | words, names |
 | Malayalam | `ml` | Malayalam | ✓ | ✓ | words, names | words, names |
-| Manipuri | `mni` | Meetei Mayek, Bengali-Assamese | – | ✓ | words, names | words, names |
+| Manipuri | `mni` | Meetei Mayek, Bengali-Assamese | ✓ | ✓ | words, names | words, names |
 | Marathi | `mr` | Devanagari | ✓ | ✓ | words, names | words, names |
 | Nepali | `ne` | Devanagari | ✓ | ✓ | words, names | words, names |
 | Odia | `or` | Odia | ✓ | ✓ | words, names | words, names |
 | Punjabi | `pa` | Gurmukhi | ✓ | ✓ | words, names | words, names |
 | Sanskrit | `sa` | Devanagari | ✓ | ✓ | words, names | words, names |
-| Santali | `sat` | Ol Chiki | – | keys only | names | names |
-| Sindhi | `sd` | Perso-Arabic | – | ✓ | words, names | words, names |
+| Santali | `sat` | Ol Chiki | ✓ | keys only | names | names |
+| Sindhi | `sd` | Perso-Arabic | ✓ | ✓ | words, names | words, names |
 | Tamil | `ta` | Tamil | ✓ | ✓ | words, names | words, names |
 | Telugu | `te` | Telugu | ✓ | ✓ | words, names | words, names |
 | Urdu | `ur` | Perso-Arabic | ✓ | ✓ | words, names | words, names |
@@ -165,8 +165,9 @@ stem(normalize("ಸರ್ಕಾರಕ್ಕೆ", "kn"), "kn"); // "ಸರ್ಕ�
 stem(normalize("حکومتوں", "ur"), "ur"); // "حکومت"
 ```
 
-In 14 languages, a search with stems finds 6–15 points more of the right
-sentences than an exact search. In a search engine over Wikipedia passages,
+In 22 languages, a search with stems finds more of the right sentences
+than an exact search: 6–15 points in the 14 measured on FLORES+, 3.7–11.4
+in the 8 measured on BPCC. In a search engine over Wikipedia passages,
 it finds 2–11.5 points more in 10 of 13 test sets, and nothing more in
 Hindi or Punjabi. It also finds some wrong ones: a stem merges forms by
 their endings, not by their meaning. Do not add fuzzy matching to stems:
@@ -415,7 +416,7 @@ other tools tried and each weak spot are in `docs/`.
 | Utility | Result | Best other tool | Browser file | Details |
 |---|---|---|---|---|
 | `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 16 KB | [docs/normalize.md](docs/normalize.md) |
-| `stem` | finds 6–15 points more of the right sentences than exact search, in 14 languages | ahead in 5 languages, level in 2, a trade in 4, behind in Nepali; no other stemmer for Assamese or Odia | 3 KB | [docs/stem.md](docs/stem.md) |
+| `stem` | finds 3.7–15 points more of the right sentences than exact search, in 22 languages | ahead in 5 languages, level in 2, a trade in 4, behind in Nepali; no other stemmer for the other 10 | 4 KB | [docs/stem.md](docs/stem.md) |
 | `phonetic` | finds the right person 84% of the time, in 21 languages, on clean names; 42% on a real roster as written (70% with titles and initials removed); with `phonetic-search`, 86% of a real roster as written and 85% of villages | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu; ICU + fuzzy match: 78% and 65% | 8 KB | [docs/phonetic.md](docs/phonetic.md) |
 | `segment` | cuts 0.05% of Kannada words wrongly | `Intl.Segmenter`: 50.3% | 8 KB | [docs/segment.md](docs/segment.md) |
 | `romanize` | writes 48.9% of the words of running text as people typed them, in 11 languages; 71.3% of names (tables: 0.2–1.8 MB a language) | IndicXlit (Python, a 119 MB model): 37.9% and 49.0% | 7 KB | [docs/romanize.md](docs/romanize.md) |
@@ -460,9 +461,10 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
   Hindi, Bengali and Telugu, both fields together found 3.0 points more
   than trigrams alone and ranked better. See
   [docs/stem.md](docs/stem.md#in-a-search-engine).
-- **Some languages have no table.** `stem` covers 14 languages; Bodo,
-  Dogri, Kashmiri, Konkani, Maithili, Manipuri, Santali and Sindhi
-  are not among them.
+- **One script per language.** `stem` covers all 22 languages, but Sindhi
+  only in Devanagari and Manipuri only in Meetei Mayek; a word in their
+  other script comes back unchanged. Eight languages rest on one test
+  source (BPCC); Santali gains little (3.7 points).
 - **`romanize` is behind IndicXlit on places and on rare single words**
   (by 7–13 and 5.5 points). Santali has names only; Bodo and Dogri have
   text only. Manipuri in Bengali script loses syllables in the words mode;

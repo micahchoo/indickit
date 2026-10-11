@@ -31,4 +31,6 @@ var iso6392 = map[string]string{
 	"asm": "as", "ben": "bn", "guj": "gu", "hin": "hi", "kan": "kn", "kas": "ks",
 	"mal": "ml", "mar": "mr", "nep": "ne", "ori": "or", "pan": "pa", "san": "sa",
 	"snd": "sd", "tam": "ta", "tel": "te", "urd": "ur",
+	// individual-language codes, as FLORES+, BPCC and NLLB tag Odia and Nepali
+	"ory": "or", "npi": "ne",
 }
