@@ -64,8 +64,10 @@ type rawRules struct {
 	Joined struct {
 		MinClasses int `json:"min_classes"`
 	} `json:"joined"`
-	DigitZeros []rune `json:"digit_zeros"`
-	MaxKeys    int    `json:"max_keys"`
+	DigitZeros []rune              `json:"digit_zeros"`
+	Initials   map[string][]string `json:"initials"`
+	Titles     []string            `json:"titles"`
+	MaxKeys    int                 `json:"max_keys"`
 	Suffixes   []struct {
 		From    rune     `json:"from"`
 		To      rune     `json:"to"`
@@ -123,7 +125,9 @@ type engine struct {
 	maxKeys                  int
 	nukta, flapClass         rune // a nukta after a flap offset (ड ढ) reads it as the flap
 	flapOffsets              []rune
-	joinedMin                int // joined keys shorter than this find too many names
+	joinedMin                int                 // joined keys shorter than this find too many names
+	initials                 map[string][]string // a one-letter Latin word also keys as its spoken name
+	titles                   map[string]bool     // a name's leading words in this set are dropped
 }
 
 func one(s string) rune { r, _ := utf8.DecodeRuneInString(s); return r }
@@ -157,6 +161,10 @@ func load(data []byte) (*engine, error) {
 		dropFinalVowel: r.Steps["drop-final-vowel"],
 		nukta:          r.Brahmic.NuktaOffset, flapClass: one(r.Brahmic.FlapClass),
 		flapOffsets: r.Brahmic.FlapOffsets, joinedMin: r.Joined.MinClasses,
+		initials: r.Initials, titles: map[string]bool{},
+	}
+	for _, t := range r.Titles {
+		k.titles[t] = true
 	}
 	for o, c := range r.Brahmic.ClassByOffset {
 		n, _ := strconv.Atoi(o)
@@ -405,6 +413,16 @@ func (k *engine) variants(word string) [][]rune {
 	return vs
 }
 
+// dropTitles drops a name's leading titles (normalized words), keeping at
+// least one word (reference.py#name_words).
+func (k *engine) dropTitles(ws []string) []string {
+	i := 0
+	for i < len(ws)-1 && k.titles[ws[i]] {
+		i++
+	}
+	return ws[i:]
+}
+
 // fits reports whether position i of the reader's classes stands in the
 // branch's context (reference.py#_fits).
 func (b branch) fits(classes []rune, i int) bool {
@@ -445,7 +463,7 @@ func (k *engine) keys(word string) []string {
 	if n, ok := k.number(word); ok {
 		return []string{n}
 	}
-	bases := []string{word}
+	bases := append([]string{word}, k.initials[word]...) // M = em = एम = எம்
 	first, _ := utf8.DecodeRuneInString(word)
 	for _, s := range k.suffixes {
 		if first < s.from || first > s.to {

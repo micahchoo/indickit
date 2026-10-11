@@ -6,9 +6,14 @@
  * @module
  */
 import rulesJson from "../phonetic/rules.json";
-type Rules = typeof rulesJson;
+type Rules = Omit<typeof rulesJson, "initials" | "titles"> & {
+    initials?: Record<string, string[]>;
+};
 export declare function compile(rules: Rules): (word: string) => string[];
 export declare const engine: (word: string) => string[];
+/** A name's normalized words without its leading titles (Shri, Smt., श्रीमती,
+ * திரு); at least one word stays (reference.py#name_words). */
+export declare function dropTitles(ws: string[]): string[];
 /** nameKeys and the search index stop here: a long Tamil name can have many key combinations. */
 export declare const MAX_NAME_KEYS = 256;
 export declare function normalize(word: string): string;

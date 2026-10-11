@@ -9,7 +9,8 @@
 import rulesJson from "../phonetic/rules.json" with { type: "json" };
 import { isMn, nfc, nfd } from "./unidata";
 
-type Rules = typeof rulesJson;
+// initials and titles are absent from the scorer's fine rules files
+type Rules = Omit<typeof rulesJson, "initials" | "titles"> & { initials?: Record<string, string[]> };
 
 // A branch gives a word a second key with one class read as another (also; ""
 // deletes it). after/before name the classes that may stand next to it ("^"
@@ -207,10 +208,13 @@ export function compile(rules: Rules) {
   }
 
   // Never holds "": a word with no letter and no number has no key.
+  // a one-letter Latin word also keys as its spoken name: M = em = एम = எம்
+  const initials = new Map<string, string[]>(Object.entries(rules.initials ?? {}));
+
   return function keys(word: string): string[] {
     const n = number(word);
     if (n !== undefined) return [n];
-    const bases = [word];
+    const bases = [word, ...(initials.get(word) ?? [])];
     const first = word.charCodeAt(0);
     for (const sf of rules.suffixes) {
       if (first < sf.from || first > sf.to) continue;
@@ -226,6 +230,16 @@ export function compile(rules: Rules) {
 }
 
 export const engine = compile(rulesJson);
+
+const titles = new Set<string>(rulesJson.titles);
+
+/** A name's normalized words without its leading titles (Shri, Smt., श्रीमती,
+ * திரு); at least one word stays (reference.py#name_words). */
+export function dropTitles(ws: string[]): string[] {
+  let i = 0;
+  while (i < ws.length - 1 && titles.has(ws[i])) i++;
+  return ws.slice(i);
+}
 
 /** nameKeys and the search index stop here: a long Tamil name can have many key combinations. */
 export const MAX_NAME_KEYS = 256;

@@ -45,7 +45,7 @@ name among 81,000 English names returns about one wrong person.
 
 One word takes 0.6 µs in Go and 0.7 µs in Node, on one core. A million
 names index in about 2 s (Go) or 3 s (Node); a search takes 2–3 µs. The
-browser file is 7 KB gzipped.
+browser file is 8 KB gzipped.
 
 Known weak spots:
 
@@ -92,10 +92,12 @@ and 78%.
 - **One language per index.** The tables that compare English letters with
   a script are per language. For names in two Indian scripts, load the
   tables between them: `loadSearch("hi", { scripts: ["deva", "arab"] })`.
-- **Small lists.** In a list of fewer than 100 names every key counts, and
-  a title weighs as much as a name: "Narendra Modi" scores 73 against
-  "श्री नरेंद्र मोदी" in a list of four names. Remove titles in small lists.
-- **Size.** The browser file is 17 KB gzipped, and a language's table 2–6
+- **Small lists.** In a list of fewer than 100 names every key counts.
+  From search version 2026-10-11, a name's leading titles (Shri, Smt.,
+  श्रीमती, திரு) are dropped in the query and in the list: "Narendra Modi"
+  scores 100 against "श्री नरेंद्र मोदी" in a list of four names (73
+  before). A title in the middle of a name still weighs as much as a name.
+- **Size.** The browser file is 18 KB gzipped, and a language's table 2–6
   KB more, loaded when you call `loadSearch`.
 - **Cap what users type.** The scorer compares each query word with each
   candidate word, so its cost grows with their product, and a name's
@@ -130,6 +132,10 @@ The numbers are from data that no threshold was set on, with rules
 | Lok Sabha members, as written | 42% | 52% |
 | the same, titles and initials removed | 70% | 69% |
 | Village names, 8 scripts | 73% | 71% |
+
+Rules 2026-10-11 drop leading titles and read initials. On a second roster,
+the Rajya Sabha (2,546 members, as written, read once), the key alone
+finds 54.8% with rules 2026-10-07 and 87.7% with rules 2026-10-11.
 
 In the second row, only indickit's input changes. The fuzzy match reads
 the names as written, with a looser threshold that gives the same number

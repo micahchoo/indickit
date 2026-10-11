@@ -12,7 +12,7 @@
  */
 
 import rulesJson from "../phonetic/rules.json" with { type: "json" };
-import { engine, keyProduct, MAX_NAME_KEYS, normalize } from "./phonetic-engine";
+import { dropTitles, engine, keyProduct, MAX_NAME_KEYS, normalize } from "./phonetic-engine";
 
 export { MAX_NAME_KEYS };
 
@@ -31,17 +31,21 @@ export function keys(word: string): string[] {
 // spaces are Python's \s (str.isspace), the reference's splitter
 // (linguistic-utilities lu/names.py#words): JavaScript's \s without U+FEFF,
 // with U+001C-001F and U+0085. Go's \s is ASCII only.
-/** A name split the way nameKeys and match split it: on spaces and
- * punctuation, with anything in brackets removed. */
+/** A name split on spaces and punctuation, with anything in brackets removed.
+ * nameKeys, joinedKeys and match split this way, then drop the name's leading
+ * titles (Shri, Smt., श्रीमती, திரு), keeping one word. */
 export function words(name: string): string[] {
   return name.replace(/\([^)]*\)/g, " ").split(/[^\S\ufeff]|[\x1c-\x1f\x85.\-,'’]/u).filter(Boolean);
 }
+
+// The name's words, normalized, without its leading titles.
+const nameWords = (name: string): string[] => dropTitles(words(name).map(normalize).filter(Boolean));
 
 /** The keys of a whole name, one per combination of its words' keys, words
  * separated by a space. Two names match when these share an element, so
  * these are what to index. At most MAX_NAME_KEYS. */
 export function nameKeys(name: string): string[] {
-  return keyProduct(words(name).map(keys).filter((ks) => ks.length), " ");
+  return keyProduct(nameWords(name).map(engine).filter((ks) => ks.length), " ");
 }
 
 /** Joined keys shorter than this (in classes) are not returned: they find too many names. */
@@ -52,18 +56,18 @@ export const JOINED_MIN_CLASSES: number = rulesJson.joined.min_classes;
  * least JOINED_MIN_CLASSES classes. A search looks them up only when
  * nameKeys find nobody; match does not use them. */
 export function joinedKeys(name: string): string[] {
-  const joined = words(name).map(normalize).join("");
+  const joined = nameWords(name).join("");
   if (!joined) return [];
   return engine(joined).filter((k) => [...k].length >= JOINED_MIN_CLASSES);
 }
 
-/** Whether two names have the same number of words and every pair of words,
- * in order, shares a key. */
+/** Whether two names, their leading titles dropped, have the same number of
+ * words and every pair of words, in order, shares a key. */
 export function match(a: string, b: string): boolean {
-  const wa = words(a), wb = words(b);
+  const wa = nameWords(a), wb = nameWords(b);
   if (!wa.length || wa.length !== wb.length) return false;
   return wa.every((w, i) => {
-    const kb = new Set(keys(wb[i]));
-    return keys(w).some((k) => kb.has(k));
+    const kb = new Set(engine(wb[i]));
+    return engine(w).some((k) => kb.has(k));
   });
 }

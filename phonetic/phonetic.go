@@ -88,8 +88,9 @@ var (
 	separator = regexp.MustCompile(`[\t\n\v\f\r\x1c-\x1f \x{85}\x{a0}\x{1680}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f}\x{205f}\x{3000}.\-,'’]+`)
 )
 
-// Words splits a name the way NameKeys and Match do: on spaces and
-// punctuation, with anything in brackets removed.
+// Words splits a name on spaces and punctuation, with anything in brackets
+// removed. NameKeys, JoinedKeys and Match split this way, then drop the
+// name's leading titles (Shri, Smt., श्रीमती, திரு), keeping one word.
 func Words(name string) []string {
 	var out []string
 	for _, w := range separator.Split(bracketed.ReplaceAllString(name, " "), -1) {
@@ -100,14 +101,25 @@ func Words(name string) []string {
 	return out
 }
 
+// nameWords is the name's words, normalized, without its leading titles.
+func nameWords(name string) []string {
+	var ws []string
+	for _, w := range Words(name) {
+		if n := normalize(w); n != "" {
+			ws = append(ws, n)
+		}
+	}
+	return std.dropTitles(ws)
+}
+
 // NameKeys returns the keys of a whole name, one per combination of its
 // words' keys, each word's key separated by a space. Two names match when
 // their NameKeys share an element, so these are what to index. At most
 // MaxNameKeys are returned.
 func NameKeys(name string) []string {
 	var all [][]string // the keys of each word that has a key
-	for _, w := range Words(name) {
-		if ks := Keys(w); len(ks) > 0 {
+	for _, w := range nameWords(name) {
+		if ks := std.keys(w); len(ks) > 0 {
 			all = append(all, ks)
 		}
 	}
@@ -166,8 +178,8 @@ func keyProduct(all [][]string, sep byte) []string {
 // nobody; Match does not use them.
 func JoinedKeys(name string) []string {
 	var b strings.Builder
-	for _, w := range Words(name) {
-		b.WriteString(normalize(w))
+	for _, w := range nameWords(name) {
+		b.WriteString(w)
 	}
 	if b.Len() == 0 {
 		return nil
@@ -184,15 +196,15 @@ func JoinedKeys(name string) []string {
 // JoinedMinClasses is the length below which a joined key is not returned.
 var JoinedMinClasses = std.joinedMin
 
-// Match reports whether two names have the same number of words and every
-// pair of words, in order, shares a key.
+// Match reports whether two names, their leading titles dropped, have the
+// same number of words and every pair of words, in order, shares a key.
 func Match(a, b string) bool {
-	wa, wb := Words(a), Words(b)
+	wa, wb := nameWords(a), nameWords(b)
 	if len(wa) == 0 || len(wa) != len(wb) {
 		return false
 	}
 	for i := range wa {
-		if !shareOne(Keys(wa[i]), Keys(wb[i])) {
+		if !shareOne(std.keys(wa[i]), std.keys(wb[i])) {
 			return false
 		}
 	}

@@ -22,7 +22,7 @@ import fine2Json from "../phonetic/scorer/fine2.json" with { type: "json" };
 import { version as PACKAGE_VERSION } from "../package.json" with { type: "json" };
 import { langCode } from "./lang";
 import { JOINED_MIN_CLASSES, MAX_NAME_KEYS, words } from "./phonetic";
-import { compile, engine, keyProduct, normalize } from "./phonetic-engine";
+import { compile, dropTitles, engine, keyProduct, normalize } from "./phonetic-engine";
 import { isLetter, nfc } from "./unidata";
 
 /** "names": a list of names; "text": a name among a text's words. */
@@ -77,14 +77,16 @@ const rounded = (num: number, den: number) => floor((2 * num + den) / (2 * den))
 const isAscii = (s: string) => /^[\x00-\x7f]*$/.test(s);
 const keysOf = (w: string): string[] => engine(w);
 
+// Latin read a-z and digits, anything else in NFC; leading titles dropped;
+// words with no key dropped (scorer.py#words).
 function searchWords(name: string): string[] {
-  const out: string[] = [];
+  const ws: string[] = [];
   for (let w of words(name)) {
     w = normalize(w);
     if (isAscii(w)) w = w.replace(/[^a-z0-9]/g, "");
-    if (w && keysOf(w).length) out.push(w);
+    if (w) ws.push(w);
   }
-  return out;
+  return dropTitles(ws).filter((w) => keysOf(w).length);
 }
 
 const latSyms = (w: string): string[] => [...w.toLowerCase()].filter((c) => c >= "a" && c <= "z");

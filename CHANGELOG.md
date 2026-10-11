@@ -10,7 +10,7 @@ input the same output.
 
 ## Unreleased
 
-Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-11, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-09
+Rules: phonetic 2026-10-11, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-11, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-11
 
 - Changed output: stem rules 2026-10-09 → 2026-10-11, Sanskrit only. 17
   endings added (the anusvara spellings ानां ां ायां, the passive यते यन्ते,
@@ -18,6 +18,25 @@ Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-
   conformance rows change, all Sanskrit. On lemmas of the Digital Corpus of
   Sanskrit, read once, recall rises from 34.6% to 40.5% at 2.7% wrong hits.
 - Docs: `stem` damages some names (README Limits, `docs/stem.md#names`).
+- Changed output: phonetic 2026-10-07 → 2026-10-11. Recompute stored keys.
+  `Keys` gives more keys to some words; no key a word had is lost.
+  - Bengali-script ং and Devanagari ं also read as ŋ: সিং = Singh (Bengali
+    and Assamese), and Bodo spelling (दं = dong; Bodo running text 74% →
+    86% of words).
+  - Tamil ட்ச also reads as க்ஷ: லட்சுமி = Lakshmi.
+  - Assamese: ৱ after a vowel (not before i) is also a glide (গোৱেল =
+    Goyal), and the case endings ৰ, ৱে, লৈ, ৰপৰা are also read off.
+  - A one-letter Latin word also keys as its spoken name: M = em = एम =
+    எம். M and N, and H and S, now share a key as initials.
+- Changed output: `NameKeys`, `JoinedKeys` and `Match` (`nameKeys`,
+  `joinedKeys`, `match`) drop a name's leading titles (Shri, Smt., Dr,
+  श्रीमती, திரு, …; `titles` in rules.json), keeping at least one word.
+  `Words` still splits only. A second roster as written, the Rajya Sabha:
+  the key finds 54.8% → 87.7%.
+- Changed output: phonetic search 2026-10-09 → 2026-10-11. It keys with
+  phonetic rules 2026-10-11 and drops leading titles in queries and names.
+- Size: the title list and the letter names add about 1 KB gzipped:
+  `phonetic` 6.9 → 7.8 KB, `phonetic-search` 17.0 → 18.0 KB.
 
 ## 0.10.0 (2026-10-09)
 

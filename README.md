@@ -415,7 +415,7 @@ other tools tried and each weak spot are in `docs/`.
 |---|---|---|---|---|
 | `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 16 KB | [docs/normalize.md](docs/normalize.md) |
 | `stem` | finds 6–15 points more of the right sentences than exact search, in 13 languages | ahead in 5 languages, level in 2, a trade in 4, behind in Nepali | 3 KB | [docs/stem.md](docs/stem.md) |
-| `phonetic` | finds the right person 84% of the time, in 21 languages, on clean names; 42% on a real roster as written (70% with titles and initials removed); with `phonetic-search`, 86% of a real roster as written and 85% of villages | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu; ICU + fuzzy match: 78% and 65% | 7 KB | [docs/phonetic.md](docs/phonetic.md) |
+| `phonetic` | finds the right person 84% of the time, in 21 languages, on clean names; 42% on a real roster as written (70% with titles and initials removed); with `phonetic-search`, 86% of a real roster as written and 85% of villages | romanize + Soundex: 23% in Tamil, 70% in Hindi; cannot read Urdu; ICU + fuzzy match: 78% and 65% | 8 KB | [docs/phonetic.md](docs/phonetic.md) |
 | `segment` | cuts 0.05% of Kannada words wrongly | `Intl.Segmenter`: 50.3% | 8 KB | [docs/segment.md](docs/segment.md) |
 | `romanize` | writes 48.9% of the words of running text as people typed them, in 11 languages; 71.3% of names (tables: 0.2–1.8 MB a language) | IndicXlit (Python, a 119 MB model): 37.9% and 49.0% | 7 KB | [docs/romanize.md](docs/romanize.md) |
 | `deromanize` | writes the right word first for 87.1% of the words of Hindi news typed in Latin, and in four for 97.4%; 69.7% of names in 19 languages (tables: 0.3–3.1 MB a language) | IndicXlit: 86.1%, 89.7% and 66.4%; behind on rare words out of context | 21 KB | [docs/deromanize.md](docs/deromanize.md) |
@@ -436,9 +436,11 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
   [docs/deromanize.md](docs/deromanize.md).
 - **Only HarfBuzz was tested** for "looks the same" (`normalize`,
   `segment`). Windows and Apple draw text with their own engines.
-- **The `phonetic` key expects clean names.** Remove titles (Shri, Smt.)
-  and initials before you key a name, or use `phonetic-search`. On one-word
-  place names the key alone returns many wrong matches. See
+- **The `phonetic` key reads names, not addresses.** It drops a name's
+  leading titles (Shri, Smt., श्रीमती, திரு) and reads one-letter initials
+  (M = एम) from rules 2026-10-11; a title in the middle of a name, or any
+  other honorific, stays a word. On one-word place names the key alone
+  returns many wrong matches: use `phonetic-search`. See
   [docs/phonetic.md](docs/phonetic.md).
 - **Tamil is the weakest language** for `phonetic` (76%), and `stem` is
   behind Snowball's recall in Tamil.

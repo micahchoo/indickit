@@ -46,7 +46,7 @@ func btoi(b bool) int {
 // every prefix. NameKeys must give the same list in the same order.
 func nameKeysQuadratic(name string) []string {
 	out := []string{""}
-	for _, w := range Words(name) {
+	for _, w := range nameWords(name) { // the same words; this tests the product
 		ks := Keys(w)
 		if len(ks) == 0 {
 			continue

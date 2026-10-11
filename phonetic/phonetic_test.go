@@ -137,8 +137,17 @@ func TestNameKeys(t *testing.T) {
 	if len(a) == 0 || !shareOne(a, b) { // written apart in one script, joined in another
 		t.Errorf("JoinedKeys do not meet: %v and %v", a, b)
 	}
-	if RulesVersion != "2026-10-07" {
+	if RulesVersion != "2026-10-11" {
 		t.Errorf("RulesVersion = %q", RulesVersion)
+	}
+	// rules 2026-10-11: titles dropped, initials read, the demo's misses
+	for _, p := range [][2]string{
+		{"Smt. J. Shantha", "श्रीमती जे. शान्ता"}, {"Dr. C. P. Joshi", "डॉ. सी.पी. जोशी"},
+		{"Singh", "সিং"}, {"Lakshmi", "லட்சுமி"}, {"Shri", "श्री"},
+	} {
+		if !Match(p[0], p[1]) {
+			t.Errorf("Match(%q, %q) = false", p[0], p[1])
+		}
 	}
 }
 

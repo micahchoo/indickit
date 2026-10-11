@@ -28,9 +28,10 @@ func ExampleKeys() {
 
 func ExampleNameKeys() {
 	// Index every key of a name; look up every key of a query.
+	// तेंदुलकर has two keys: ं is n here, and ŋ in Bodo (दं = dong).
 	fmt.Println(phonetic.NameKeys("सचिन तेंदुलकर"))
 	// Output:
-	// [cn tntlkr]
+	// [cn tnktlkr cn tntlkr]
 }
 
 func ExampleIndex_Search() {

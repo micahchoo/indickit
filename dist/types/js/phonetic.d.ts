@@ -16,8 +16,9 @@ export { MAX_NAME_KEYS };
 export declare const RULES_VERSION: string;
 /** The sorted keys of one word; empty when it holds no letter the rules read. */
 export declare function keys(word: string): string[];
-/** A name split the way nameKeys and match split it: on spaces and
- * punctuation, with anything in brackets removed. */
+/** A name split on spaces and punctuation, with anything in brackets removed.
+ * nameKeys, joinedKeys and match split this way, then drop the name's leading
+ * titles (Shri, Smt., श्रीमती, திரு), keeping one word. */
 export declare function words(name: string): string[];
 /** The keys of a whole name, one per combination of its words' keys, words
  * separated by a space. Two names match when these share an element, so
@@ -30,6 +31,6 @@ export declare const JOINED_MIN_CLASSES: number;
  * least JOINED_MIN_CLASSES classes. A search looks them up only when
  * nameKeys find nobody; match does not use them. */
 export declare function joinedKeys(name: string): string[];
-/** Whether two names have the same number of words and every pair of words,
- * in order, shares a key. */
+/** Whether two names, their leading titles dropped, have the same number of
+ * words and every pair of words, in order, shares a key. */
 export declare function match(a: string, b: string): boolean;

@@ -56,8 +56,8 @@ test("the README example", async () => {
 test("the docs' claims about size and small lists hold", async () => {
   const docs = readFileSync(new URL("../docs/phonetic.md", import.meta.url), "utf8").replace(/\s+/g, " ");
   const gz = gzipSync(readFileSync(new URL("../dist/phonetic-search.js", import.meta.url))).length;
-  expect(docs).toContain("The browser file is 17 KB gzipped, and a language's table 2–6 KB more");
-  expect(gz).toBeLessThan(17.5 * 1024);
+  expect(docs).toContain("The browser file is 18 KB gzipped, and a language's table 2–6 KB more");
+  expect(gz).toBeLessThan(18.5 * 1024);
   const dir = new URL("../phonetic/scorer/latin/", import.meta.url);
   for (const f of readdirSync(dir)) {
     const kb = gzipSync(readFileSync(new URL(f, dir))).length / 1024;
@@ -65,8 +65,8 @@ test("the docs' claims about size and small lists hold", async () => {
   }
   const s = await loadSearch("hi", { fetcher: local });
   const four = s.index(["श्री नरेंद्र मोदी", "नरेश मोदी", "सुरेंद्र मोदी", "डॉ. मनमोहन सिंह"]);
-  expect(four.search("Narendra Modi", 0)[0]).toEqual({ name: 0, score: 73 });
-  expect(docs).toContain(`"Narendra Modi" scores 73 against "श्री नरेंद्र मोदी" in a list of four names`);
+  expect(four.search("Narendra Modi", 0)[0]).toEqual({ name: 0, score: 100 }); // the title dropped (2026-10-11; 73 before)
+  expect(docs).toContain(`"Narendra Modi" scores 100 against "श्री नरेंद्र मोदी" in a list of four names`);
 });
 
 // Perf job, phase 1. More candidates than a function call takes arguments:

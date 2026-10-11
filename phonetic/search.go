@@ -126,9 +126,9 @@ func rounded(num, den int64) int64 { return (2*num + den) / (2 * den) }
 // ---- words -------------------------------------------------------------------
 
 // searchWords splits a name as the reference does: Latin read a-z and digits,
-// anything else in NFC.
+// anything else in NFC; leading titles dropped; words with no key dropped.
 func searchWords(name string) []string {
-	var out []string
+	var ws []string
 	for _, w := range Words(name) {
 		w = normalize(w)
 		if isASCII(w) {
@@ -139,7 +139,13 @@ func searchWords(name string) []string {
 				return -1
 			}, w)
 		}
-		if w != "" && len(std.keys(w)) > 0 {
+		if w != "" {
+			ws = append(ws, w)
+		}
+	}
+	var out []string
+	for _, w := range std.dropTitles(ws) {
+		if len(std.keys(w)) > 0 {
 			out = append(out, w)
 		}
 	}
