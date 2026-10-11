@@ -446,6 +446,10 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
   question words merge with other words (ਕਿਸ "which" with ਕਿਸਾਨ "farmer"),
   and names lose their ends (सीता → सी). In Hindi, Lucene's analyzer finds
   4.8 points more, from its spelling folds. See [docs/stem.md](docs/stem.md).
+- **`stem` damages some names.** In news text, 1.3–3.0% of person-name
+  tokens are swamped: most of their stem search's hits are other words
+  (करीना → कर finds करने). Do not stem a field of names. See
+  [docs/stem.md](docs/stem.md#names).
 - **An n-gram field can find more than `stem`** in passage search: in
   Malayalam, Kannada, Tamil, Bengali, Marathi and Hindi, indexing each
   word's three-letter pieces found 3–10 points more, at 2–3 times the

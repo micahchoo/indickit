@@ -137,6 +137,39 @@ was read once, later, to confirm the advice on `fold` above.
   written before the passage was found, `stem` holds. SQLite FTS5's `trigram` tokenizer is a substring index,
   not this.
 
+## Names
+
+`stem` treats a name as a word, and cuts what looks like an ending. Most
+names survive: a cut that keeps a name apart from other words does no harm
+(மோடியின் → மோடி). Some lose the name: करीना → कर, which then finds करने,
+कर and करते. Measured on Naamapadam's news sentences (AI4Bharat, CC0), with
+person spans projected from English by machine; the frequent-name rows
+agree, so span errors do not drive the numbers.
+
+- **Swamped:** more than half of a stem search's hits are other words.
+- **Meets a word:** the stem is shared with at least one other word.
+- **Wrong hits:** of a stem search's hits, the share that are other words.
+  Exact search has none.
+
+| | name tokens | types | changed | meets a word | swamped | wrong hits |
+|---|---|---|---|---|---|---|
+| as | 1,562 | 917 | 57.2% | 8.9% | 4.0% | 4.75% |
+| bn | 888,853 | 128,705 | 45.0% | 8.2% | 2.7% | 2.83% |
+| gu | 437,544 | 53,488 | 46.4% | 9.0% | 2.2% | 2.39% |
+| hi | 1,048,763 | 82,691 | 32.8% | 9.0% | 1.9% | 2.05% |
+| kn | 417,460 | 56,905 | 83.9% | 18.4% | 2.7% | 3.24% |
+| ml | 663,061 | 94,121 | 75.5% | 18.6% | 1.7% | 2.30% |
+| mr | 467,053 | 54,792 | 42.5% | 7.8% | 1.3% | 1.50% |
+| pa | 481,040 | 52,571 | 44.8% | 12.6% | 3.0% | 3.68% |
+| ta | 344,418 | 66,141 | 66.6% | 21.6% | 2.8% | 3.68% |
+| te | 467,279 | 58,818 | 88.1% | 17.4% | 2.2% | 2.64% |
+
+Assamese has few sentences; its row is thin. Two causes: a final vowel read
+as an ending (योगी → योग, ਰਾਜੂ → ਰਾਜ "state") and a final cluster cut
+(ஸ்டாலின் → ஸ்ட, പിള്ള → പി). Place names are swamped less often (0.9–2.3%; Assamese 2.8%, thin),
+except in Tamil (3.7%). Do not stem a field of names; for name search, use
+`phonetic`.
+
 Known weak spots:
 
 - **Irregular words do not meet**: है and होना, இந்த and இது. A list of
