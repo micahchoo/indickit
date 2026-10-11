@@ -10,7 +10,7 @@ input the same output.
 
 ## Unreleased
 
-Rules: phonetic 2026-10-11.6, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-11.2, deromanize 2026-10-09.2, phonetic-search 2026-10-11.6
+Rules: phonetic 2026-10-11.7, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-11.2, deromanize 2026-10-09.2, phonetic-search 2026-10-11.7
 
 - Changed output: normalize rules 2026-10-07 → 2026-10-11, Tamil only. A
   ZWNJ or ZWJ between consonant + pulli and a consonant is deleted, unless
@@ -56,15 +56,19 @@ Rules: phonetic 2026-10-11.6, normalize 2026-10-11, segment 2026-10-11, stem 202
   conformance rows change, all Sanskrit. On lemmas of the Digital Corpus of
   Sanskrit, read once, recall rises from 34.6% to 40.5% at 2.7% wrong hits.
 - Docs: `stem` damages some names (README Limits, `docs/stem.md#names`).
-- Changed output: phonetic 2026-10-07 → 2026-10-11.6. Recompute stored keys.
-  `Keys` gives more keys to some words; no key a word had is lost.
+- Changed output: phonetic 2026-10-07 → 2026-10-11.7. Recompute stored keys.
+  `Keys` gives more keys to some words; every key a word had in 0.10.0 it
+  still has (checked on every test word, but two long Urdu words whose
+  readings exceed the cap of 32 keys a word, was 16), so every pair 0.10.0
+  matched still matches. On held-out OpenStreetMap place names the key
+  finds 89% of name pairs (romanize + Soundex: 71%).
   - Bengali-script ং and Devanagari ं also read as ŋ: সিং = Singh (Bengali
     and Assamese), and Bodo spelling (दं = dong; Bodo running text 74% →
     86% of words).
   - Tamil ட்ச also reads as க்ஷ: லட்சுமி = Lakshmi. A Tamil name ending in
     ன் or ர் is also keyed without it; a Tamil word starting with a vowel
     also keys with h (உசைன் = Hussain). Latin zh is ழ (Kanimozhi);
-    Malayalam റ്റ is tt and ന്റ nt (ആന്റണി = Antony). Tamil +1.6 and
+    Malayalam റ്റ is also tt and ന്റ also nt (ആന്റണി = Antony). Tamil +1.6 and
     Malayalam +1.9 points on Wikidata (DEV); on BPCC name pairs, read once,
     Tamil +0.9 and Malayalam +1.5.
   - Assamese: ৱ after a vowel (not before i) is also a glide (গোৱেল =
@@ -100,10 +104,12 @@ Rules: phonetic 2026-10-11.6, normalize 2026-10-11, segment 2026-10-11, stem 202
   script and as two in another meets more often (Amartya Sen =
   अमर्त्यसेन). +1.6 points on Wikidata (DEV), +2.7 on OpenStreetMap places
   (read once).
-- Changed output: phonetic search 2026-10-09 → 2026-10-11.6. It keys with
-  phonetic rules 2026-10-11.6, drops titles as `NameKeys` does, and its
+- Changed output: phonetic search 2026-10-09 → 2026-10-11.7. It keys with
+  phonetic rules 2026-10-11.7, drops titles as `NameKeys` does, and its
   thresholds were chosen again on the same data: names 74 → 76, villages
-  72 → 73, text 80 → 81 and 70 → 71 (`Thresholds` / `THRESHOLDS`).
+  72 → 73, text 80 → 81 and 70 → 71 (`Thresholds` / `THRESHOLDS`). On held-out
+  OpenStreetMap places it finds 93% of places in five languages (ICU +
+  fuzzy match: 74%), at about 3 wrong places per search per 10,000 names.
 - Size: the title list, the letter names and the new rules add about
   1.3 KB gzipped to `phonetic`: 6.9 → 8.2 KB. `phonetic-search` falls
   17.0 → 14.5 KB: its 2^x tables are stored as second differences, and its

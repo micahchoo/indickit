@@ -23,6 +23,7 @@ type rawRules struct {
 		FlapOffsets       []rune            `json:"flap_offsets"`
 		FlapClass         string            `json:"flap_class"`
 		Rewrite           [][2]string       `json:"rewrite"`
+		RewriteBases      [][2]string       `json:"rewrite_bases"`
 	} `json:"brahmic"`
 	Extra map[string]string `json:"extra"`
 	Urdu  struct {
@@ -135,6 +136,7 @@ type engine struct {
 	initials                 map[string][]string // a one-letter Latin word also keys as its spoken name
 	titles                   map[string]bool     // a name's leading words in this set are dropped
 	rewrite                  [][2]string         // Brahmic spellings rewritten, in order, before reading (ml-tta)
+	rewriteBases             [][2]string         // the same, as one more base after the suffix stems (ml-tta-add)
 	initialBranches          []branch            // a word in range whose first class is a vowel also keys with it read as also
 }
 
@@ -174,7 +176,7 @@ func load(data []byte) (*engine, error) {
 	for _, t := range r.Titles {
 		k.titles[t] = true
 	}
-	k.rewrite = r.Brahmic.Rewrite
+	k.rewrite, k.rewriteBases = r.Brahmic.Rewrite, r.Brahmic.RewriteBases
 	for _, b := range r.InitialBranches {
 		k.initialBranches = append(k.initialBranches, branch{from: b.From, to: b.To, also: one(b.Also)})
 	}
@@ -517,6 +519,17 @@ func (k *engine) keys(word string) []string {
 			if strings.HasSuffix(word, e) && utf8.RuneCountInString(word)-utf8.RuneCountInString(e) >= 2 {
 				bases = append(bases, word[:len(word)-len(e)])
 				break
+			}
+		}
+	}
+	if len(k.rewriteBases) > 0 { // a second reading of each base (reference.py#keys, ml-tta-add)
+		for _, b := range bases[:len(bases):len(bases)] {
+			r := b
+			for _, p := range k.rewriteBases {
+				r = strings.ReplaceAll(r, p[0], p[1])
+			}
+			if r != b {
+				bases = append(bases, r)
 			}
 		}
 	}

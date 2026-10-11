@@ -14,8 +14,9 @@ type Rules = Omit<typeof rulesJson, "initials" | "titles" | "initial_branches" |
         to: number;
         also: string;
     }[];
-    brahmic: Omit<typeof rulesJson.brahmic, "rewrite"> & {
+    brahmic: Omit<typeof rulesJson.brahmic, "rewrite" | "rewrite_bases"> & {
         rewrite?: string[][];
+        rewrite_bases?: string[][];
     };
 };
 export declare function compile(rules: Rules): (word: string) => string[];

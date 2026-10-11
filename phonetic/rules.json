@@ -1,5 +1,5 @@
 {
- "version": "2026-10-11.6",
+ "version": "2026-10-11.7",
  "folds": [
   "as-case-narrow",
   "as-w-glide-ni",
@@ -23,7 +23,7 @@
   "latin-zh-h",
   "latin-zh-l",
   "ml-case",
-  "ml-tta",
+  "ml-tta-add",
   "nasal-all",
   "ng-k",
   "or-case",
@@ -136,7 +136,8 @@
    34
   ],
   "flap_class": "ṛ",
-  "rewrite": [
+  "rewrite": [],
+  "rewrite_bases": [
    [
     "റ്റ",
     "ത്ത"
@@ -774,7 +775,7 @@
    "iset"
   ]
  },
- "max_keys": 16,
+ "max_keys": 32,
  "suffixes": [
   {
    "from": 2432,

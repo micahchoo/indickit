@@ -11,6 +11,33 @@ Chiki), Sindhi, Tamil, Telugu, Urdu, and Latin spellings of all of them.
 
 ## How good it is
 
+### The rules that ship (2026-10-11.7)
+
+Measured once on OpenStreetMap place names that no rule was chosen on (one
+fiftieth of the places, held out to the end): 1,704 villages, towns and
+neighbourhoods, each named in English and in one or more Indian scripts.
+Each number is the share of a place's name pairs whose keys meet.
+
+| | phonetic | romanize + Soundex |
+|---|---|---|
+| All pairs | **89%** | 71% |
+| Hindi | 85% | 65% |
+| Kannada | 95% | 90% |
+| Malayalam | 91% | 57% |
+| Telugu | 92% | 87% |
+| Tamil | 94% | 39% |
+| Marathi | 88% | 74% |
+
+Languages with fewer than 100 pairs in this sample are not listed.
+
+These are places, not people. Every people list held out for this key has
+been read, so the people numbers below were read with older rules. They
+still hold as lower bounds: every word keeps every key it had in indickit
+v0.10.0 (rules 2026-10-07), checked on all 198,782 test words but two long
+Urdu words, so every pair those rules matched is still matched.
+
+### People, rules 2026-10-05
+
 Measured on the names of 9,430 people never used to build the rules
 (Wikidata labels of Indian citizens; one person in ten, held out to the
 end). These labels have no titles (Shri, Smt., Dr) and few initials, and
@@ -70,8 +97,23 @@ and a scorer learned from data gives each one a score from 0 to 100. Use it
 for a long list, for names written with titles, initials or joined words,
 and for a name in running text.
 
-Measured on data that no rule, table or threshold was set on (search
-2026-10-09, rules 2026-10-07). Each list number is the share of English
+Search 2026-10-11.7, on the same held-out OpenStreetMap places: each English
+place name looked up among the native names of its language, at the
+villages threshold.
+
+| Language | phonetic-search | ICU + fuzzy match |
+|---|---|---|
+| Hindi (602 places) | 88% | 65% |
+| Kannada (550) | 97% | 96% |
+| Malayalam (203) | 91% | 56% |
+| Tamil (123) | 94% | 63% |
+| Telugu (294) | 93% | 91% |
+| Mean | **93%** | 74% |
+
+Both return about 3 wrong places per search per 10,000 names.
+
+The lists and text below were measured with search 2026-10-09 and rules
+2026-10-07, on data that no rule, table or threshold was set on. Each list number is the share of English
 names that find the right entry among the native-script names, at the
 threshold for that use.
 
@@ -146,10 +188,10 @@ In the second row, only indickit's input changes. The fuzzy match reads
 the names as written, with a looser threshold that gives the same number
 of wrong names.
 
-- **Remove titles and initials before you key a name**, or use
-  `phonetic-search` (above), which finds 86% of the same list as written.
-  The key does not remove them: Shri against nothing, or "M" against एम, is
-  a miss.
+- **Titles and initials.** The table was measured before rules 2026-10-11.
+  The key now drops a name's leading titles, also after a comma ("Bajwa,
+  Sardar Partap Singh"), and reads one-letter initials (M = एम). Other
+  honorifics and a title inside a part still count as words.
 - **Fuzzy matching does as well on these lists.** ICU transliteration then
   the same fuzzy match finds 78% of villages. What indickit adds is an
   index: one lookup per name, from any script to any script. A fuzzy match

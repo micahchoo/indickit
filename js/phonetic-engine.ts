@@ -15,7 +15,7 @@ type Rules = Omit<typeof rulesJson, "initials" | "titles" | "initial_branches" |
   extra: Record<string, string>;
   initials?: Record<string, string[]>;
   initial_branches?: { from: number; to: number; also: string }[];
-  brahmic: Omit<typeof rulesJson.brahmic, "rewrite"> & { rewrite?: string[][] };
+  brahmic: Omit<typeof rulesJson.brahmic, "rewrite" | "rewrite_bases"> & { rewrite?: string[][]; rewrite_bases?: string[][] };
 };
 
 // A branch gives a word a second key with one class read as another (also; ""
@@ -51,6 +51,8 @@ export function compile(rules: Rules) {
 
   // ml-tta: Brahmic spellings rewritten, in order, before reading
   const rewrite: [string, string][] = (rules.brahmic.rewrite ?? []) as [string, string][];
+  // ml-tta-add: the same rewrite as one more base after the suffix stems
+  const rewriteBases: [string, string][] = (rules.brahmic.rewrite_bases ?? []) as [string, string][];
   // a word in range whose first class is a vowel also keys with it read as also
   const initialBranches: { from: number; to: number; also: string }[] = rules.initial_branches ?? [];
 
@@ -241,6 +243,13 @@ export function compile(rules: Rules) {
       if (first < sf.from || first > sf.to) continue;
       for (const e of sf.endings) {
         if (word.endsWith(e) && word.length - e.length >= 2) { bases.push(word.slice(0, -e.length)); break; }
+      }
+    }
+    if (rewriteBases.length) {
+      for (const b of bases.slice()) {
+        let r = b;
+        for (const [x, y] of rewriteBases) r = r.replaceAll(x, y);
+        if (r !== b) bases.push(r);
       }
     }
     const out = new Set<string>();
