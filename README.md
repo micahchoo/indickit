@@ -480,10 +480,9 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
   Hindi, Bengali and Telugu, both fields together found 3.0 points more
   than trigrams alone and ranked better. See
   [docs/stem.md](docs/stem.md#in-a-search-engine).
-- **One script per language.** `stem` covers all 22 languages, but Sindhi
-  only in Devanagari and Manipuri only in Meetei Mayek; a word in their
-  other script comes back unchanged. Eight languages rest on one test
-  source (BPCC); Santali gains little (3.7 points).
+- **Thin evidence for the newest tables.** Eight languages rest on one
+  test source (BPCC); Sindhi in Perso-Arabic and Manipuri in Bengali
+  script on 1,012 FLORES+ sentences. Santali gains little (3.7 points).
 - **`romanize` is behind IndicXlit on place names and on rare single
   words**, by 5.5 points each: on OpenStreetMap place names (held out) the
   places mode is right 46.9% of the time, IndicXlit 52.4%. Santali has names only; Bodo and Dogri have

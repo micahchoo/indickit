@@ -97,6 +97,11 @@ Rules: phonetic 2026-10-11.3, normalize 2026-10-11, segment 2026-10-11, stem 202
   1.3 KB gzipped: `phonetic` 6.9 → 8.2 KB, `phonetic-search` 17.0 → 18.4 KB.
 
 ## 0.10.0 (2026-10-09)
+- `stem`: Sindhi in Perso-Arabic and Manipuri in Bengali script get their
+  own endings in the same tables (4 and 13), chosen on FLORES+ and checked
+  once on its unseen half: 4.1 and 5.6 points more of the right sentences
+  than exact search. Words in those scripts were returned unchanged
+  before; no Devanagari or Meetei Mayek output changes.
 - New: `indickit/search-key` (Go `searchkey.Key`), one search key per word:
   normalize, stem, then fold, the order measured best. Fold after stem
   finds 2.4 points more of the right passages in Hindi (MIRACL) and changes

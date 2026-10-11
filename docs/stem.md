@@ -117,9 +117,13 @@ once on a part no rule had seen (recall / precision; 300 queries each):
 | Dogri | 9,036 | 45.0% / 64.9% | 50.8% / 62.6% | +5.8 (+4.7, +7.0) | 9 |
 | Santali | 6,438 | 40.9% / 50.6% | 44.7% / 49.1% | +3.7 (+2.9, +4.7) | 12 |
 
-Each table covers the script BPCC writes: Sindhi in Devanagari, Manipuri
-in Meetei Mayek, Kashmiri in Perso-Arabic. A Sindhi word in Perso-Arabic
-or a Manipuri word in Bengali script comes back unchanged. Santali gains
+BPCC writes Sindhi in Devanagari, Manipuri in Meetei Mayek and Kashmiri in
+Perso-Arabic. Sindhi in Perso-Arabic and Manipuri in Bengali script have
+their own endings in the same tables, chosen and checked on FLORES+ (one
+small source, 1,012 sentences, read once): Sindhi +4.1 points of recall at
+2.3 points of precision, Manipuri +5.6 at 4.9. On so small a corpus the
+shipped tables lose a median 6.5 points of precision, so these costs are
+in line with theirs. Santali gains
 little (+3.7), at almost no cost in precision; it is the only stemmer for
 Santali there is. These numbers rest on one source; the others in the
 table above rest on FLORES+.
@@ -301,6 +305,6 @@ Known weak spots:
   రాష్ట్రం / రాష్ట్రాల, and the Malayalam chillu (സർക്കാർ / സർക്കാരിന്റെ).
 - **Out of context**: a word with two readings gets one stem. ஆண்டு is also
   "having ruled".
-- **One script per language**: Sindhi in Devanagari and Manipuri in
-  Meetei Mayek only; their other scripts come back unchanged.
+- **Thin second scripts**: Sindhi in Perso-Arabic has 4 endings, chosen
+  on 997 sentences; it finds less than the Devanagari table.
 
