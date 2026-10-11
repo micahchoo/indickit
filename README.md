@@ -490,7 +490,10 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
   returns many wrong matches: use `phonetic-search`. See
   [docs/phonetic.md](docs/phonetic.md).
 - **Tamil is the weakest language** for `phonetic` (76%), and `stem` is
-  behind Snowball's recall in Tamil.
+  behind Snowball's recall in Tamil: in Python or Java, Snowball's Tamil
+  stemmer finds 2.8 points more in passage search. A table that matched
+  its recall merged short Tamil words (இடம் "place" with இடையே "between")
+  and broke the wrong-results budget.
 - **`stem` does not help passage search in Hindi or Punjabi.** Short
   question words merge with other words (ਕਿਸ "which" with ਕਿਸਾਨ "farmer"),
   and names lose their ends (सीता → सी). In Hindi, Lucene's analyzer finds
