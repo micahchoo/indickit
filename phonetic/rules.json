@@ -1,5 +1,5 @@
 {
- "version": "2026-10-11.2",
+ "version": "2026-10-11.3",
  "folds": [
   "as-case-narrow",
   "as-w-glide-ni",
@@ -17,7 +17,8 @@
   "latin-initials",
   "latin-ngh",
   "latin-w-u",
-  "latin-zh",
+  "latin-zh-h",
+  "latin-zh-l",
   "ml-case",
   "ml-tta",
   "nasal-all",
@@ -35,6 +36,10 @@
   "ta-name-end",
   "ta-tc-k",
   "te-case",
+  "ur-a-e",
+  "ur-a-i",
+  "ur-a-u",
+  "ur-h-asp",
   "ur-w-u",
   "v-b"
  ],
@@ -364,10 +369,6 @@
  "latin": {
   "groups": [
    [
-    "zh",
-    "l"
-   ],
-   [
     "ngh",
     "nĝ"
    ],
@@ -550,6 +551,20 @@
    "also": "u"
   },
   {
+   "from": 0,
+   "to": 127,
+   "class": "h",
+   "also": "",
+   "after": "c"
+  },
+  {
+   "from": 0,
+   "to": 127,
+   "class": "c",
+   "also": "l",
+   "before": "h"
+  },
+  {
    "from": 7248,
    "to": 7295,
    "class": "o",
@@ -575,6 +590,34 @@
    "class": "ṭ",
    "also": "k",
    "before": "c"
+  },
+  {
+   "from": 1536,
+   "to": 1791,
+   "class": "a",
+   "also": "e",
+   "after": "^"
+  },
+  {
+   "from": 1536,
+   "to": 1791,
+   "class": "a",
+   "also": "i",
+   "after": "^"
+  },
+  {
+   "from": 1536,
+   "to": 1791,
+   "class": "a",
+   "also": "u",
+   "after": "^"
+  },
+  {
+   "from": 1536,
+   "to": 1791,
+   "class": "h",
+   "also": "",
+   "after": "kcṭtpnmlrsvṁ"
   },
   {
    "from": 1536,

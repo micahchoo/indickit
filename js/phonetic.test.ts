@@ -64,7 +64,8 @@ test("match", () => {
     ["मोहनलाल", "മോഹൻലാൽ", true],
     ["सुरेश", "சுரேஷ்", true],
     ["Parvez Khan", "پرویز خان", true],
-    ["Imran", "عمران", false], // known miss: ع is read as a, "Imran" starts with i
+    ["Imran", "عمران", true], // rules 2026-10-11.3: an initial alif or ع is also i (a known miss before)
+    ["Aligarh", "अलीगढ", false], // known miss: Latin rh is r and h; ढ is ṭh
     ["Rāma", "राम", true], // accents are removed
     ["राम", "काम", false], // Rām is not kām
     ["Ram Singh", "राम", false], // word counts differ
@@ -86,7 +87,7 @@ test("nameKeys meet across scripts; the rules are versioned", () => {
   expect(joinedKeys("Ram Nath")).toEqual([]); // rnnt: 4 classes, below the floor
   const j = new Set(joinedKeys("Subramanian Swaminathan"));
   expect(j.size > 0 && joinedKeys("சுப்ரமணியன்சுவாமிநாதன்").some((k) => j.has(k))).toBe(true);
-  expect(RULES_VERSION).toBe("2026-10-11.2");
+  expect(RULES_VERSION).toBe("2026-10-11.3");
   // rules 2026-10-11: titles dropped, initials read, the demo's misses
   for (const [a, b] of [["Smt. J. Shantha", "श्रीमती जे. शान्ता"], ["Dr. C. P. Joshi", "डॉ. सी.पी. जोशी"],
     ["Singh", "সিং"], ["Lakshmi", "லட்சுமி"], ["Shri", "श्री"],
@@ -94,5 +95,6 @@ test("nameKeys meet across scripts; the rules are versioned", () => {
     ["Bajwa, Sardar Partap Singh", "बाजवा, सरदार प्रताप सिंह"], ["Kanimozhi", "கனிமொழி"], ["Antony", "ആന്റണി"],
     // rules 2026-10-11.2: व्ह is v; Sindhi Devanagari implosives
     ["Chavan", "चव्हाण"], ["Tarabai", "ताराॿाई"], ["Advani", "आॾवाणी"],
-    ["Arjun", "ᱚᱨᱡᱩᱱ"], ["Gautami", "ᱜᱚᱣᱛᱚᱢᱤ"]]) expect(match(a, b)).toBe(true); // Santali: initial ᱚ, the ᱣ glide
+    ["Arjun", "ᱚᱨᱡᱩᱱ"], ["Gautami", "ᱜᱚᱣᱛᱚᱢᱤ"], // Santali: initial ᱚ, the ᱣ glide
+    ["Indra", "اندر"], ["Mazhar", "مظہر"], ["Jhangiani", "جہانگیانی"]]) expect(match(a, b)).toBe(true); // 2026-10-11.3
 });

@@ -5,8 +5,8 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"os"
-	"sort"
 	"slices"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -103,7 +103,8 @@ func TestMatch(t *testing.T) {
 		{"मोहनलाल", "മോഹൻലാൽ", true},
 		{"सुरेश", "சுரேஷ்", true},
 		{"Parvez Khan", "پرویز خان", true},
-		{"Imran", "عمران", false},      // known miss: ع is read as a, "Imran" starts with i
+		{"Imran", "عمران", true},       // rules 2026-10-11.3: an initial alif or ع is also i (a known miss before)
+		{"Aligarh", "अलीगढ", false},    // known miss: Latin rh is r and h; ढ is ṭh
 		{"Rāma", "राम", true},          // accents are removed
 		{"राम", "काम", false},          // Rām is not kām
 		{"Ram Singh", "राम", false},    // word counts differ
@@ -138,7 +139,7 @@ func TestNameKeys(t *testing.T) {
 	if len(a) == 0 || !shareOne(a, b) { // written apart in one script, joined in another
 		t.Errorf("JoinedKeys do not meet: %v and %v", a, b)
 	}
-	if RulesVersion != "2026-10-11.2" {
+	if RulesVersion != "2026-10-11.3" {
 		t.Errorf("RulesVersion = %q", RulesVersion)
 	}
 	// rules 2026-10-11: titles dropped, initials read, the demo's misses
@@ -150,6 +151,7 @@ func TestNameKeys(t *testing.T) {
 		// rules 2026-10-11.2: व्ह is v; Sindhi Devanagari implosives
 		{"Chavan", "चव्हाण"}, {"Tarabai", "ताराॿाई"}, {"Advani", "आॾवाणी"},
 		{"Arjun", "ᱚᱨᱡᱩᱱ"}, {"Gautami", "ᱜᱚᱣᱛᱚᱢᱤ"}, // Santali: initial ᱚ, the ᱣ glide
+		{"Indra", "اندر"}, {"Mazhar", "مظہر"}, {"Jhangiani", "جہانگیانی"}, // 2026-10-11.3
 	} {
 		if !Match(p[0], p[1]) {
 			t.Errorf("Match(%q, %q) = false", p[0], p[1])

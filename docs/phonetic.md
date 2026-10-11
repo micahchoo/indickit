@@ -54,8 +54,12 @@ Known weak spots:
 - **Bodo** romanization writes a vowel as w (खौ is "khwo"). Since rules
   2026-10-06 a w before a consonant is also read as a vowel: Bodo's typed
   spellings match 69.5% of the time (63% before), level with Soundex's 70%.
-- **A first vowel can differ.** "Imran" and عمران do not match: ع is read
-  as a.
+- **A first vowel can differ.** In Latin and Indian scripts the first vowel
+  counts: "Ebrahim" and इब्रहिम् do not match. In Urdu, Kashmiri and Sindhi
+  script an initial alif or ع is also read as i, e or u (rules 2026-10-11.3),
+  so "Imran" and عمران match.
+- **-garh written ढ.** "Aligarh" and अलीगढ do not match: Latin rh is read as
+  r and h.
 - **Dogri and Bodo** were measured on ordinary words only; there was no
   set of names.
 
