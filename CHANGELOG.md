@@ -105,6 +105,15 @@ Rules: phonetic 2026-10-11.5, normalize 2026-10-11, segment 2026-10-11, stem 202
   two fine rules files as patches over `rules.json` (every score unchanged).
 
 ## 0.10.0 (2026-10-09)
+- `stem`: Sindhi in Perso-Arabic and Manipuri in Bengali script get their
+  own endings in the same tables, chosen on FLORES+ and checked once on its
+  unseen half (Manipuri: 5.6 points more of the right sentences than exact
+  search). Sindhi in Perso-Arabic then gained more endings, checked once on
+  the unseen test part of the Sindhi UD treebank: the share of inflected
+  forms that reach their word's stem rose from 20.2% to 33.0%, level with
+  Snowball's Arabic stemmer, with fewer wrong merges. Words in those
+  scripts were returned unchanged before; no Devanagari or Meetei Mayek
+  output changes.
 - New: `indickit/search-key` (Go `searchkey.Key`), one search key per word:
   normalize, stem, then fold, the order measured best. Fold after stem
   finds 2.4 points more of the right passages in Hindi (MIRACL) and changes
