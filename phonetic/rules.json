@@ -1,11 +1,13 @@
 {
- "version": "2026-10-11.3",
+ "version": "2026-10-11.4",
  "folds": [
   "as-case-narrow",
   "as-w-glide-ni",
   "bn-case",
   "bn-ng",
   "brahmic-av-u",
+  "brahmic-v-glide",
+  "dd-r",
   "deva-case",
   "deva-ng",
   "deva-ni",
@@ -34,6 +36,9 @@
   "ta-initial-h",
   "ta-k-h",
   "ta-name-end",
+  "ta-pro-a",
+  "ta-pro-i",
+  "ta-pro-u",
   "ta-tc-k",
   "te-case",
   "ur-a-e",
@@ -76,8 +81,8 @@
    "30": "ñ",
    "31": "ṭ",
    "32": "ṭ",
-   "33": "ṭ",
-   "34": "ṭ",
+   "33": "ḍ",
+   "34": "ḍ",
    "35": "ṇ",
    "36": "t",
    "37": "t",
@@ -480,6 +485,7 @@
   "w": "p",
   "ñ": "n",
   "ĝ": "k",
+  "ḍ": "t",
   "ṁ": "n",
   "ṅ": "n",
   "ṇ": "n",
@@ -518,6 +524,21 @@
    "also": "u",
    "after": "aṁ",
    "not_before": "aieo"
+  },
+  {
+   "from": 2304,
+   "to": 3455,
+   "class": "v",
+   "also": "",
+   "after": "kcṭḍtpnmlrsyhṅñṇ",
+   "not_before": "aieo"
+  },
+  {
+   "from": 2304,
+   "to": 3455,
+   "class": "ḍ",
+   "also": "r",
+   "after": "aiueokcṭḍtpnmlrsvyhṅñṇṁ"
   },
   {
    "from": 2304,
@@ -583,6 +604,30 @@
    "to": 3071,
    "class": "k",
    "also": "h"
+  },
+  {
+   "from": 2944,
+   "to": 3071,
+   "class": "a",
+   "also": "",
+   "after": "^",
+   "before": "rl"
+  },
+  {
+   "from": 2944,
+   "to": 3071,
+   "class": "i",
+   "also": "",
+   "after": "^",
+   "before": "rl"
+  },
+  {
+   "from": 2944,
+   "to": 3071,
+   "class": "u",
+   "also": "",
+   "after": "^",
+   "before": "rl"
   },
   {
    "from": 2944,

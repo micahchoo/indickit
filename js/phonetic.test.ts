@@ -87,7 +87,7 @@ test("nameKeys meet across scripts; the rules are versioned", () => {
   expect(joinedKeys("Ram Nath")).toEqual([]); // rnnt: 4 classes, below the floor
   const j = new Set(joinedKeys("Subramanian Swaminathan"));
   expect(j.size > 0 && joinedKeys("சுப்ரமணியன்சுவாமிநாதன்").some((k) => j.has(k))).toBe(true);
-  expect(RULES_VERSION).toBe("2026-10-11.3");
+  expect(RULES_VERSION).toBe("2026-10-11.4");
   // rules 2026-10-11: titles dropped, initials read, the demo's misses
   for (const [a, b] of [["Smt. J. Shantha", "श्रीमती जे. शान्ता"], ["Dr. C. P. Joshi", "डॉ. सी.पी. जोशी"],
     ["Singh", "সিং"], ["Lakshmi", "லட்சுமி"], ["Shri", "श्री"],
@@ -96,5 +96,6 @@ test("nameKeys meet across scripts; the rules are versioned", () => {
     // rules 2026-10-11.2: व्ह is v; Sindhi Devanagari implosives
     ["Chavan", "चव्हाण"], ["Tarabai", "ताराॿाई"], ["Advani", "आॾवाणी"],
     ["Arjun", "ᱚᱨᱡᱩᱱ"], ["Gautami", "ᱜᱚᱣᱛᱚᱢᱤ"], // Santali: initial ᱚ, the ᱣ glide
-    ["Indra", "اندر"], ["Mazhar", "مظہر"], ["Jhangiani", "جہانگیانی"]]) expect(match(a, b)).toBe(true); // 2026-10-11.3
+    ["Indra", "اندر"], ["Mazhar", "مظہر"], ["Jhangiani", "جہانگیانی"], // 2026-10-11.3
+    ["Rajpal", "இராஜ்பால்"], ["Kaur", "கவுர்"], ["Rabri", "राबडी"]]) expect(match(a, b)).toBe(true); // 2026-10-11.4
 });
