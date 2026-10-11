@@ -5,7 +5,7 @@
 // (Choudhury, Chowdhury), and the first is the most likely. Three modes:
 // Words, for running text (the default); Names, for fields known to hold
 // person names, where a lookup of known names comes first; and Places, for
-// place names (its own tables in eight languages, the Words tables in the
+// place names (its own tables in nine languages, the Words tables in the
 // others).
 //
 // The tables are learned from data (see the README for what, and how good
@@ -43,9 +43,9 @@ type Mode string
 const (
 	Words Mode = "words"
 	Names Mode = "names"
-	// Places has its own tables for Bengali, Hindi, Malayalam, Odia,
-	// Santali, Tamil, Telugu and Urdu, learned from Wikidata place names;
-	// every other language uses its Words tables.
+	// Places has its own tables for Bengali, Hindi, Malayalam, Marathi,
+	// Odia, Santali, Tamil, Telugu and Urdu, learned from Wikidata place
+	// names and village names; every other language uses its Words tables.
 	Places Mode = "places"
 )
 

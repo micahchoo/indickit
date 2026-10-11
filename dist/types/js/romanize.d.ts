@@ -6,7 +6,7 @@
  * Chowdhury), and the first is the most likely. Three modes: "words" for
  * running text (the default); "names" for fields known to hold person
  * names, where a lookup of known names comes first; and "places" for place
- * names (its own tables in eight languages, the "words" tables in the others).
+ * names (its own tables in nine languages, the "words" tables in the others).
  *
  * The tables are learned from data and loaded per language, on demand:
  *
@@ -20,7 +20,7 @@
  */
 /**
  * The tables: "words" for running text, "names" for person names, "places" for
- * place names (own tables for bn hi ml or sat ta te ur; the "words" tables elsewhere).
+ * place names (own tables for bn hi ml mr or sat ta te ur; the "words" tables elsewhere).
  */
 export type Mode = "words" | "names" | "places";
 /** Changes whenever any output changes: store it beside romanized text. */

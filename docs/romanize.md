@@ -142,8 +142,8 @@ says which direction to romanize in.
 ## Place names
 
 The `"places"` mode (Go `romanize.Places`) is for a field that holds a place
-name. Eight languages have their own places tables: Bengali, Hindi,
-Malayalam, Odia, Santali, Tamil, Telugu and Urdu. The others use their words
+name. Nine languages have their own places tables: Bengali, Hindi,
+Malayalam, Marathi, Odia, Santali, Tamil, Telugu and Urdu. The others use their words
 tables, which did better on their place names. Use it for addresses, maps and
 gazetteers; use `"words"` for running text.
 
@@ -155,17 +155,21 @@ ta.word("காஞ்சிபுரம்", 1);  // ["kanchipuram"]; the words 
 **How it is made.** 114,380 place-name pairs from Wikidata (a native label and
 the English label of the same place) are trained beside the words data, under
 their own tag; each language uses the places tables only where they were
-better on the development half of OpenStreetMap's place names.
+better on the development half of OpenStreetMap's place names. Hindi, Marathi
+and Odia also learn from village names of the Local Government Directory
+(Government Open Data License, India).
 
-**How good it is.** On OpenStreetMap place names in India, held out and read
-once, leaving out the names that are also in the Wikidata training pairs
-(8,238 words), the first spelling is right:
+**How good it is.** On two held-out sets, each read once, leaving out the
+names that are also in the training pairs, the first spelling is right:
 
-| Mode | All | Tamil | Malayalam | Hindi | Telugu |
-|---|---|---|---|---|---|
-| `"places"` | **46.9%** | 29.5% | 38.8% | 43.4% | 48.1% |
-| `"words"` | 43.3% | 16.7% | 30.7% | 39.3% | 44.5% |
-| IndicXlit | 52.4% | 34.2% | 40.6% | 45.4% | 53.0% |
+| Held out | `"places"` | `"words"` | IndicXlit |
+|---|---|---|---|
+| Village names, Local Government Directory (8,207 words) | **57.6%** | 48.0% | 52.8% |
+| OpenStreetMap place names, a 2% slice (1,588 words) | **44.4%** | 40.6% | 49.1% |
+
+On villages, Hindi is right 57.5% of the time (IndicXlit 52.3%) and Marathi
+68.0% (62.6%). On OpenStreetMap IndicXlit leads, most in Kannada, which has no
+places tables: no Kannada place-name list large enough to learn from was found.
 
 A places page is a little larger than a words page in a Brahmic language:
 2.2 MB for Hindi against 1.9 MB (brotli); in Urdu both are 1.0 MB. A language

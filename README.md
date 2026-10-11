@@ -70,7 +70,7 @@ others hold tables for some languages only.
 
 "words" and "names" are the two modes of `romanize` and `deromanize`;
 `romanize` has a third, "places", in all 22 languages (its own tables in
-eight, the words tables in the others). In `deromanize`, the names mode of
+nine, the words tables in the others). In `deromanize`, the names mode of
 Bodo and Dogri uses their words tables.
 Santali has no words tables: no dataset of Santali words in Latin letters
 was found. `phonetic-search` in Santali ranks by the keys alone. Measured
@@ -509,9 +509,10 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
 - **Thin evidence for the newest tables.** Eight languages rest on one
   test source (BPCC); Manipuri in Bengali script on 1,012 FLORES+
   sentences. Santali gains little (3.7 points).
-- **`romanize` is behind IndicXlit on place names and on rare single
-  words**, by 5.5 points each: on OpenStreetMap place names (held out) the
-  places mode is right 46.9% of the time, IndicXlit 52.4%. Santali has names only; Bodo and Dogri have
+- **`romanize` is behind IndicXlit on OpenStreetMap place names and on rare
+  single words**: on a held-out slice of OpenStreetMap the places mode is
+  right 44.4% of the time, IndicXlit 49.1% (it leads on village names, 57.6%
+  against 52.8%; Kannada has no places tables). Santali has names only; Bodo and Dogri have
   text only. Bodo writes ख थ फ as kh th ph, as typists do, not as
   Aksharantar's k t f. Manipuri in Bengali script loses syllables in the words mode;
   its tables were trained on Meetei Mayek. See [docs/romanize.md](docs/romanize.md).

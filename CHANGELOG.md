@@ -10,7 +10,7 @@ input the same output.
 
 ## Unreleased
 
-Rules: phonetic 2026-10-11.5, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-11.1, deromanize 2026-10-09.2, phonetic-search 2026-10-11.5
+Rules: phonetic 2026-10-11.5, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-11.2, deromanize 2026-10-09.2, phonetic-search 2026-10-11.5
 
 - Changed output: normalize rules 2026-10-07 → 2026-10-11, Tamil only. A
   ZWNJ or ZWJ between consonant + pulli and a consonant is deleted, unless
@@ -33,12 +33,13 @@ Rules: phonetic 2026-10-11.5, normalize 2026-10-11, segment 2026-10-11, stem 202
   roman: 72.1%); 2.4% of Hindi words stay in Latin. Every other output is
   unchanged, so the deromanize rules version is unchanged.
 - Added: romanize mode `"places"` (Go `romanize.Places`), rules
-  2026-10-11 → 2026-10-11.1, for place names. Own tables for bn hi ml or sat
-  ta te ur, learned from Wikidata place names; the words tables in the other
-  languages. On OpenStreetMap place names (read once, the training's own
-  names left out) the first spelling is right 46.9% of the time, against
-  43.3% for the words mode (IndicXlit 52.4%). The words and names modes are
-  unchanged since 2026-10-11.
+  2026-10-11 → 2026-10-11.2, for place names. Own tables for bn hi ml mr or
+  sat ta te ur, learned from Wikidata place names and, for hi mr or, village
+  names of the Local Government Directory; the words tables in the other
+  languages. Held out, read once, the training's own names left out: village
+  names 57.6% first spelling right (words mode 48.0%, IndicXlit 52.8%);
+  OpenStreetMap place names 44.4% (40.6%, IndicXlit 49.1%). The words and
+  names modes are unchanged since 2026-10-11.
 - Changed output: romanize rules 2026-10-09 → 2026-10-11, words mode.
   Bodo writes ख थ फ as kh th ph, as Bodo speakers type them (थाखाय →
   thakhai, was takai), not as Aksharantar's k t f. On typed Bodo sentences
