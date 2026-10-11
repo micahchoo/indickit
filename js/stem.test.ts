@@ -36,6 +36,6 @@ test("outside the tables, the word comes back", () => {
 });
 
 test("versions", () => {
-  expect(LANGUAGES.length).toBe(13);
+  expect(LANGUAGES.length).toBe(14);
   expect(RULES_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 });

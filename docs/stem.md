@@ -51,6 +51,7 @@ sentences found that are right; mean of 300 queries per language):
 | Nepali | 38.3% / 64.7% | 49.9% / 57.9% | Snowball nepali: 51.4% / 59.1% |
 | Sanskrit | 21.5% / 48.4% | 29.1% / 40.9% | Indic NLP (Morfessor): 37.6% / 26.0% |
 | Assamese | 32.3% / 57.2% | 43.1% / 48.6% | none |
+| Odia | 41.8% / 62.1% | 48.7% / 58.7% | none |
 
 (recall / precision.) Every stemmer finds more, and finds more that is
 wrong; `stem` finds 6–15 points more than exact search in every language.
@@ -64,6 +65,14 @@ in the research log):
 - **A trade:** in Bengali, Punjabi, Tamil and Sanskrit, Morfessor or
   Snowball finds as much or more, and `stem` is more precise.
 - **Behind:** Nepali, by 0.1–3 points of recall.
+- **No other stemmer:** Assamese and Odia.
+
+Odia was added in rules 2026-10-11. Its endings were chosen with a
+different cost: precision on the same search, at most 4.9 points below
+exact search (the median the other tables lose); Odia's Wiktionary is too
+thin to count wrong hits. On FLORES+, read once for it, `stem` finds 6.9
+points more than exact search (95%: +5.7 to +8.3) and loses 3.4 of
+precision.
 
 The other stemmers are Python or Java. In JavaScript, only Snowball's Tamil
 exists.
@@ -194,7 +203,7 @@ Known weak spots:
   రాష్ట్రం / రాష్ట్రాల, and the Malayalam chillu (സർക്കാർ / സർക്കാരിന്റെ).
 - **Out of context**: a word with two readings gets one stem. ஆண்டு is also
   "having ruled".
-- **No table**: Kashmiri, Konkani, Manipuri, Odia, Santali and Sindhi
+- **No table**: Kashmiri, Konkani, Manipuri, Santali and Sindhi
   have too few test words to measure one; Bodo, Dogri and Maithili have
   none.
 

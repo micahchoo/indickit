@@ -63,7 +63,7 @@ func TestCases(t *testing.T) {
 	if got := Stem("क", "hi"); got != "क" {
 		t.Errorf("too short to cut: %q", got)
 	}
-	if len(Languages()) != 13 || RulesVersion == "" {
+	if len(Languages()) != 14 || RulesVersion == "" {
 		t.Errorf("languages %v, version %q", Languages(), RulesVersion)
 	}
 }

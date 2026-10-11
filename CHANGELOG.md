@@ -39,6 +39,10 @@ Rules: phonetic 2026-10-11, normalize 2026-10-07, segment 2026-10-06, stem 2026-
   `phonetic` 6.9 → 7.8 KB, `phonetic-search` 17.0 → 18.0 KB.
 
 ## 0.10.0 (2026-10-09)
+- New in `stem`: Odia (`or`), in the same rules 2026-10-11. 11 endings
+  chosen on PIB search; on FLORES+, read once, 6.9 points more of the right
+  sentences than exact search, 3.4 points less precise. Odia's 24,578
+  conformance rows are new.
 
 Rules: phonetic 2026-10-07, normalize 2026-10-07, segment 2026-10-06, stem 2026-10-09, romanize 2026-10-09, deromanize 2026-10-09.2, phonetic-search 2026-10-09
 
