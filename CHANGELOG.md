@@ -10,7 +10,7 @@ input the same output.
 
 ## Unreleased
 
-Rules: phonetic 2026-10-11.4, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-11.1, deromanize 2026-10-09.2, phonetic-search 2026-10-11.4
+Rules: phonetic 2026-10-11.5, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-11.1, deromanize 2026-10-09.2, phonetic-search 2026-10-11.5
 
 - Changed output: normalize rules 2026-10-07 → 2026-10-11, Tamil only. A
   ZWNJ or ZWJ between consonant + pulli and a consonant is deleted, unless
@@ -55,7 +55,7 @@ Rules: phonetic 2026-10-11.4, normalize 2026-10-11, segment 2026-10-11, stem 202
   conformance rows change, all Sanskrit. On lemmas of the Digital Corpus of
   Sanskrit, read once, recall rises from 34.6% to 40.5% at 2.7% wrong hits.
 - Docs: `stem` damages some names (README Limits, `docs/stem.md#names`).
-- Changed output: phonetic 2026-10-07 → 2026-10-11.4. Recompute stored keys.
+- Changed output: phonetic 2026-10-07 → 2026-10-11.5. Recompute stored keys.
   `Keys` gives more keys to some words; no key a word had is lost.
   - Bengali-script ং and Devanagari ं also read as ŋ: সিং = Singh (Bengali
     and Assamese), and Bodo spelling (दं = dong; Bodo running text 74% →
@@ -74,8 +74,9 @@ Rules: phonetic 2026-10-11.4, normalize 2026-10-11, segment 2026-10-11, stem 202
     with it: Arjun = ᱚᱨᱡᱩᱱ), and ᱣ ᱶ after a vowel is also a glide;
     Santali 74.1% → 84.7% on Wikidata (DEV).
   - Sindhi in Devanagari: the implosives ॻ ॼ ॾ ॿ are read (they had no
-    key); व्ह is also v (चव्हाण = Chavan); Marathi / Konkani case endings,
-    the Sanskrit -स्य and the Sindhi / Bodo -नि are also read off. On BPCC
+    key); व्ह is also v (चव्हाण = Chavan); the long Marathi / Konkani case
+    endings (च्या ांच्या मध्ये ांना), the Sanskrit -स्य and the Sindhi /
+    Bodo -नि are also read off. On BPCC
     name pairs, read once, +0.49 points (Bodo +3.5).
   - Urdu, Kashmiri and Sindhi script: an initial alif or ع is also i, e or u
     (اندر = Indra, عمران = Imran, which did not match before), and ہ ح
@@ -83,8 +84,9 @@ Rules: phonetic 2026-10-11.4, normalize 2026-10-11, segment 2026-10-11, stem 202
     Kashmiri +4.3 points on Wikidata (DEV); on BPCC name pairs, read once,
     Urdu +3.2. Latin zh is ழ's l or z + h, so both Kanimozhi and Mazhar
     (مظہر) match.
-  - Tamil's vowel before an initial r or l is also dropped (இராஜ்பால் =
-    Rajpal); व after a consonant is also the au glide (கவுர் = Kaur); ड ढ
+  - Tamil's இ or உ before an initial r or l is also dropped (இராஜ்பால் =
+    Rajpal); व after a consonant and before u is also the au glide (கவுர் =
+    Kaur); ड ढ
     after the first letter are also r, the flap written without its nukta
     (राबडी = Rabri). Tamil +3.8 points on Wikidata (DEV).
 - Changed output: `NameKeys`, `JoinedKeys` and `Match` (`nameKeys`,
@@ -93,8 +95,8 @@ Rules: phonetic 2026-10-11.4, normalize 2026-10-11, segment 2026-10-11, stem 202
   "Bajwa, Sardar Partap Singh" reads as Bajwa Partap Singh. A name of titles
   only keeps its last word. `Words` still splits only. A second roster as
   written, the Rajya Sabha: the key finds 54.8% → 87.7%.
-- Changed output: phonetic search 2026-10-09 → 2026-10-11.4. It keys with
-  phonetic rules 2026-10-11.4, drops titles as `NameKeys` does, and its
+- Changed output: phonetic search 2026-10-09 → 2026-10-11.5. It keys with
+  phonetic rules 2026-10-11.5, drops titles as `NameKeys` does, and its
   thresholds were chosen again on the same data: names 74 → 75, villages
   72 → 73, text 80 → 81 and 70 → 71 (`Thresholds` / `THRESHOLDS`).
 - Size: the title list, the letter names and the new rules add about

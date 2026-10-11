@@ -1,14 +1,14 @@
 {
- "version": "2026-10-11.4",
+ "version": "2026-10-11.5",
  "folds": [
   "as-case-narrow",
   "as-w-glide-ni",
   "bn-case",
   "bn-ng",
   "brahmic-av-u",
-  "brahmic-v-glide",
+  "brahmic-v-glide-u",
   "dd-r",
-  "deva-case",
+  "deva-case-long",
   "deva-ng",
   "deva-ni",
   "deva-vh",
@@ -36,7 +36,6 @@
   "ta-initial-h",
   "ta-k-h",
   "ta-name-end",
-  "ta-pro-a",
   "ta-pro-i",
   "ta-pro-u",
   "ta-tc-k",
@@ -531,7 +530,7 @@
    "class": "v",
    "also": "",
    "after": "kcṭḍtpnmlrsyhṅñṇ",
-   "not_before": "aieo"
+   "before": "u"
   },
   {
    "from": 2304,
@@ -604,14 +603,6 @@
    "to": 3071,
    "class": "k",
    "also": "h"
-  },
-  {
-   "from": 2944,
-   "to": 3071,
-   "class": "a",
-   "also": "",
-   "after": "^",
-   "before": "rl"
   },
   {
    "from": 2944,
@@ -813,14 +804,7 @@
     "ांच्या",
     "मध्ये",
     "च्या",
-    "ांना",
-    "ची",
-    "चा",
-    "चे",
-    "ला",
-    "ने",
-    "ना",
-    "नी"
+    "ांना"
    ]
   },
   {

@@ -139,7 +139,7 @@ func TestNameKeys(t *testing.T) {
 	if len(a) == 0 || !shareOne(a, b) { // written apart in one script, joined in another
 		t.Errorf("JoinedKeys do not meet: %v and %v", a, b)
 	}
-	if RulesVersion != "2026-10-11.4" {
+	if RulesVersion != "2026-10-11.5" {
 		t.Errorf("RulesVersion = %q", RulesVersion)
 	}
 	// rules 2026-10-11: titles dropped, initials read, the demo's misses

@@ -87,7 +87,7 @@ test("nameKeys meet across scripts; the rules are versioned", () => {
   expect(joinedKeys("Ram Nath")).toEqual([]); // rnnt: 4 classes, below the floor
   const j = new Set(joinedKeys("Subramanian Swaminathan"));
   expect(j.size > 0 && joinedKeys("சுப்ரமணியன்சுவாமிநாதன்").some((k) => j.has(k))).toBe(true);
-  expect(RULES_VERSION).toBe("2026-10-11.4");
+  expect(RULES_VERSION).toBe("2026-10-11.5");
   // rules 2026-10-11: titles dropped, initials read, the demo's misses
   for (const [a, b] of [["Smt. J. Shantha", "श्रीमती जे. शान्ता"], ["Dr. C. P. Joshi", "डॉ. सी.पी. जोशी"],
     ["Singh", "সিং"], ["Lakshmi", "லட்சுமி"], ["Shri", "श्री"],
