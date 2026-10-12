@@ -458,7 +458,7 @@ other tools tried and each weak spot are in `docs/`.
 
 | Utility | Result | Best other tool | Browser file | Details |
 |---|---|---|---|---|
-| `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 16 KB | [docs/normalize.md](docs/normalize.md) |
+| `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 22 KB | [docs/normalize.md](docs/normalize.md) |
 | `stem` | finds 3.7–15 points more of the right sentences than exact search, in 22 languages | ahead in 5 languages, level in 2, a trade in 4, behind in Nepali; no other stemmer for the other 10 | 4 KB | [docs/stem.md](docs/stem.md) |
 | `phonetic` | finds 89% of place-name pairs across scripts (OpenStreetMap, held out, rules 2026-10-11.7); 84% of people on clean names in 21 languages (rules 2026-10-05, a lower bound for the rules that ship); 88% of a second roster as written (titles, initials; rules 2026-10-11); with `phonetic-search`, 93% of places (search 2026-10-11.7) and 86% of a roster as written (search 2026-10-09) | romanize + Soundex: 71% of place pairs, 23% of people in Tamil; cannot read Urdu; ICU + fuzzy match: 74% of places | 8 KB | [docs/phonetic.md](docs/phonetic.md) |
 | `segment` | cuts 0.05% of Kannada words wrongly | `Intl.Segmenter`: 50.3% | 8 KB | [docs/segment.md](docs/segment.md) |

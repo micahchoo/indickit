@@ -69,6 +69,17 @@ type rawRules struct {
 		From      string    `json:"from"`
 		To        string    `json:"to"`
 		NotBefore [][2]rune `json:"not_before"`
+		// nor where the ZWJ joins ত্ to the next cluster: a reph, or a cluster
+		// with a left-side vowel sign
+		Cluster struct {
+			Consonants [][2]rune `json:"consonants"`
+			Nukta      string    `json:"nukta"`
+			Virama     string    `json:"virama"`
+			LeftSigns  string    `json:"left_signs"`
+			Reph       string    `json:"reph"`
+			// nor where ত itself carries a reph
+			NotAfterReph bool `json:"not_after_reph"`
+		} `json:"cluster"`
 	} `json:"khanda_ta"`
 	Invisible map[string]string    `json:"invisible"`
 	Width     [2]int               `json:"width"`
@@ -131,7 +142,7 @@ type engine struct {
 	pairs            map[rune]pairRule // by virama
 	chillu           map[rune]rune
 	chVirama, chJoin rune
-	chNotBefore      rune
+	chNotBefore      []rune // no chillu before these: RRA, and every vowel sign
 	raVirama         rune
 	raAssamese       rune
 	raBengali        rune
@@ -139,6 +150,10 @@ type engine struct {
 	khandaFrom       []rune
 	khandaTo         rune
 	khandaNotBefore  [][2]rune
+	khCons           [][2]rune // the cluster that khanda ta must not join
+	khNukta, khVir   rune
+	khLeft, khReph   []rune
+	khNotAfterReph   bool
 	fold             []foldStep
 }
 
@@ -185,10 +200,13 @@ func load(data []byte) (*engine, error) {
 		version: r.Version, maxPasses: r.MaxPasses,
 		invisible: map[rune]byte{}, left: r.Width[0], right: r.Width[1],
 		classes: map[rune]byte{}, chillu: map[rune]rune{},
-		chVirama: first(r.Chillu.Virama), chJoin: first(r.Chillu.Joiner), chNotBefore: first(r.Chillu.NotBefore),
+		chVirama: first(r.Chillu.Virama), chJoin: first(r.Chillu.Joiner), chNotBefore: []rune(r.Chillu.NotBefore),
 		raVirama: first(r.Ra.Virama), raAssamese: first(r.Ra.Assamese), raBengali: first(r.Ra.Bengali),
 		assameseLangs: r.Ra.AssameseLangs,
 		khandaFrom:    []rune(r.KhandaTa.From), khandaTo: first(r.KhandaTa.To), khandaNotBefore: r.KhandaTa.NotBefore,
+		khCons: r.KhandaTa.Cluster.Consonants, khNukta: first(r.KhandaTa.Cluster.Nukta),
+		khVir: first(r.KhandaTa.Cluster.Virama), khLeft: []rune(r.KhandaTa.Cluster.LeftSigns),
+		khReph: []rune(r.KhandaTa.Cluster.Reph), khNotAfterReph: r.KhandaTa.Cluster.NotAfterReph,
 	}
 	for c, sym := range r.Invisible {
 		e.invisible[first(c)] = sym[0]
@@ -280,6 +298,37 @@ func (e *engine) sym(c rune) byte {
 	return 0
 }
 
+// khandaJoined says whether the ZWJ of khanda ta joins ত্ to the cluster at
+// j: a reph, or a cluster with a left-side vowel sign, which HarfBuzz then
+// draws before ত. at gives -1 past the end.
+func (e *engine) khandaJoined(at func(int) rune, j int) bool {
+	cons := func(c rune) bool {
+		for _, r := range e.khCons {
+			if c >= r[0] && c <= r[1] {
+				return true
+			}
+		}
+		return false
+	}
+	if slices.Contains(e.khReph, at(j)) && at(j+1) == e.khVir {
+		return true
+	}
+	if !cons(at(j)) {
+		return false
+	}
+	k := j + 1
+	if at(k) == e.khNukta {
+		k++
+	}
+	for at(k) == e.khVir && cons(at(k+1)) {
+		k += 2
+		if at(k) == e.khNukta {
+			k++
+		}
+	}
+	return slices.Contains(e.khLeft, at(k))
+}
+
 // deletes says whether invisible character c, between before and after, is
 // invisible in its context: by the pair in a conjunct context of a pairs
 // script, else by the tree. A context the tree does not hold keeps it.
@@ -352,7 +401,7 @@ func (e *engine) onePass(text, lang string) string {
 	out := make([]rune, 0, len(s))
 	for i := 0; i < len(s); i++ {
 		if to, ok := e.chillu[s[i]]; ok && (i == 0 || s[i-1] != e.chVirama) && at(i+1) == e.chVirama &&
-			at(i+2) == e.chJoin && at(i+3) != e.chNotBefore {
+			at(i+2) == e.chJoin && !slices.Contains(e.chNotBefore, at(i+3)) {
 			out = append(out, to)
 			i += 2
 		} else {
@@ -385,6 +434,10 @@ func (e *engine) onePass(text, lang string) string {
 					}
 				}
 			}
+		}
+		if match && (e.khandaJoined(at, i+k) ||
+			e.khNotAfterReph && i >= 2 && slices.Contains(e.khReph, s[i-2]) && s[i-1] == e.khVir) {
+			match = false
 		}
 		if match {
 			out = append(out, e.khandaTo)

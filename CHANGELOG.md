@@ -10,8 +10,29 @@ input the same output.
 
 ## Unreleased
 
-Rules: phonetic 2026-10-11.7, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-11.2, deromanize 2026-10-09.2, phonetic-search 2026-10-11.7
+Rules: phonetic 2026-10-11.7, normalize 2026-10-12, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-11.2, deromanize 2026-10-09.2, phonetic-search 2026-10-11.7
 
+- Changed output: normalize rules 2026-10-11 → 2026-10-12. Recompute stored
+  normalized text. "Looks the same" is now decided by every font we hold that
+  draws what `normalize` writes, 2 to 15 families a script compared by glyph
+  outline, not by Noto and Anek alone, and the joiner table and tree were
+  rebuilt with them. On the 12.9M words of the measurement sets, drawn in
+  those fonts, the words whose look changes fall from 54 to 17 (all malformed
+  input or a font's quirk); the held-out number (88.1%) is unchanged, and the
+  groups made equal move by under two points in Malayalam and Bengali (down)
+  and three in Perso-Arabic (up). Three faults fixed: khanda ta (ত্ + ZWJ → ৎ)
+  is not written where the ZWJ joins ত্ to a cluster with a left-side vowel
+  sign or a reph, or under a reph (উত্‍ক্ষেপন keeps its ZWJ); an old Malayalam
+  chillu before a vowel sign stays as typed; a ZWJ between a Malayalam
+  consonant and its vowel sign (ന + ZWJ + ു) is kept, which fonts with
+  traditional ligatures draw. Two more, found on web text no rule was chosen
+  on (IndicCorp v2, read once): the chillu k (ൿ) is no longer written (not in
+  Unicode's DoNotEmit list; Noto draws it apart), and no chillu is written
+  before a second virama; Malayalam words whose look changes there fall from
+  16,327 to 47 of 83M, with 91.8% of joiner groups made equal (Odia 80.5%).
+  Odia still loses a ZWNJ in some acronyms and a ZWJ after ଡ଼ + virama (310
+  of 922,000 words): docs/normalize.md. The browser file grows from 16 KB to
+  22 KB gzipped: the tree holds more contexts.
 - Faster, same output: `deromanize` 2.0x in Go and 1.35x in TypeScript (a
   Hindi word in Go: 11.0 -> 4.4 ms); `romanize` 1.5-2.0x in Go and 1.1x in
   TypeScript (a Hindi sentence in Go: 31 -> 15 ms). The n-gram tables are

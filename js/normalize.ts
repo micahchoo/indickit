@@ -123,9 +123,24 @@ function compile(r: Rules) {
 
   const chillu = new Map<number, number>();
   for (const [from, to] of Object.entries(r.chillu.map)) chillu.set(cp(from), cp(to));
-  const ch = { virama: cp(r.chillu.virama), joiner: cp(r.chillu.joiner), notBefore: cp(r.chillu.not_before) };
+  const ch = { virama: cp(r.chillu.virama), joiner: cp(r.chillu.joiner), notBefore: new Set(Array.from(r.chillu.not_before, cp)) };
   const ra = { virama: cp(r.ra.virama), assamese: cp(r.ra.assamese), bengali: cp(r.ra.bengali) };
   const khanda = { from: Array.from(r.khanda_ta.from, cp), to: cp(r.khanda_ta.to), notBefore: r.khanda_ta.not_before };
+  const cluster = r.khanda_ta.cluster;
+  const khCons = (c: number | undefined) =>
+    c !== undefined && (cluster.consonants as number[][]).some(([lo, hi]) => c >= lo && c <= hi);
+  const khLeft = new Set(Array.from(cluster.left_signs, cp));
+  const khReph = new Set(Array.from(cluster.reph, cp));
+  const [khNukta, khVirama] = [cp(cluster.nukta), cp(cluster.virama)];
+  // Does the ZWJ of khanda ta join ত্ to the cluster at j: a reph, or a
+  // cluster with a left-side vowel sign, which HarfBuzz then draws before ত?
+  function khandaJoined(s: number[], j: number): boolean {
+    if (khReph.has(s[j]) && s[j + 1] === khVirama) return true;
+    if (!khCons(s[j])) return false;
+    let k = j + 1 + (s[j + 1] === khNukta ? 1 : 0);
+    while (s[k] === khVirama && khCons(s[k + 1])) k += 2 + (s[k + 2] === khNukta ? 1 : 0);
+    return s[k] !== undefined && khLeft.has(s[k]);
+  }
 
   function onePass(text: string, lang: string | undefined): string {
     let s = Array.from(nfc(text), cp);
@@ -134,7 +149,7 @@ function compile(r: Rules) {
     for (let i = 0; i < s.length; i++) {
       const to = chillu.get(s[i]);
       if (to !== undefined && (i === 0 || s[i - 1] !== ch.virama) && s[i + 1] === ch.virama
-          && s[i + 2] === ch.joiner && s[i + 3] !== ch.notBefore) {
+          && s[i + 2] === ch.joiner && !ch.notBefore.has(s[i + 3])) {
         out.push(to);
         i += 2;
       } else out.push(s[i]);
@@ -156,7 +171,9 @@ function compile(r: Rules) {
     for (let i = 0; i < s.length; i++) {
       const next = s[i + k];
       if (khanda.from.every((c, j) => s[i + j] === c)
-          && !(next !== undefined && khanda.notBefore.some(([lo, hi]) => next >= lo && next <= hi))) {
+          && !(next !== undefined && khanda.notBefore.some(([lo, hi]) => next >= lo && next <= hi))
+          && !khandaJoined(s, i + k)
+          && !(cluster.not_after_reph && i >= 2 && khReph.has(s[i - 2]) && s[i - 1] === khVirama)) {
         out.push(khanda.to);
         i += k - 1;
       } else out.push(s[i]);

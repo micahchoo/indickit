@@ -44,6 +44,28 @@ it (IndicCorp), look-alike groups that hold a joiner made equal: 89.6% →
 98.8%, and no word changed its look in Noto, Anek or 5 other Tamil fonts.
 The numbers above are for rules 2026-10-07.
 
+Rules 2026-10-12 let every font we hold decide what looks the same, not
+Noto and Anek alone: 2 to 15 families a script (Tiro, SMC's Rachana and
+Manjari, Baloo, Hind and the others in `data/fonts`), each compared by glyph
+outline. The joiner table and its tree were rebuilt with them. On the 12.9M
+words of every measurement set, drawn in those fonts, the words whose look
+changes fall from 54 to 17, all malformed input or a font's own quirk; the
+held-out number above (88.1%) does not move, and the groups made equal move
+by under two points in Malayalam and Bengali (down) and three in Perso-Arabic
+(up). Three faults went with it: khanda ta is no longer written where the
+ZWJ joins ত্ to a cluster with a left-side vowel sign or a reph, or under a
+reph; an old Malayalam chillu before a vowel sign stays as typed; and a ZWJ
+between a Malayalam consonant and its vowel sign is kept. The tree sees more
+contexts, so the browser file grows from 16 KB to 22 KB. On web text no rule
+was chosen on (IndicCorp v2, half of each file, read once), the joiner
+groups made equal are 91.8% of 1.45M in Malayalam (the most possible: 97.1%)
+and 80.5% of 28,155 in Odia (92.1%). That read found two more faults, now
+fixed: the chillu k (ൿ), which Unicode's DoNotEmit list does not name and
+Noto draws apart from ക് + ZWJ, is no longer written; and no chillu is
+written before a second virama (ന് + ZWJ + ്, a web spelling of nta). After
+them 47 of 83M Malayalam words change their look (a ZWNJ after the dot reph
+ൎ); before them, 16,327.
+
 `fold` was measured against the two tools a user can pick today, each with
 its best options: Indic NLP Library, and Lucene, which Elasticsearch,
 OpenSearch and Solr run. On data no rule was chosen on (rules 2026-10-07):
@@ -62,7 +84,7 @@ rivals find more where they merge different sounds: Lucene's Hindi and
 Bengali filters make long vowels short, so की "of" and कि "that" become one
 word; Indic NLP drops a final long ā in Telugu and Kannada.
 
-The browser file is 16 KB gzipped.
+The browser file is 22 KB gzipped.
 
 Known weak spots:
 
@@ -70,19 +92,25 @@ Known weak spots:
   against 82.8%). Asked of 15 Malayalam fonts, the most possible is 71.0%:
   fonts with traditional conjuncts draw what a ZWNJ blocks, so most of
   those joiners are not invisible.
-- **A ZWJ between a Malayalam consonant and its vowel sign** (ന + ZWJ + ു) is
-  deleted, but fonts with traditional ligatures (Rachana, Manjari, Meera and
-  7 more) draw the sign joined without it: 4 words in 1.1M changed their
-  look in those fonts.
+- **A ZWJ between a Malayalam consonant and its vowel sign** (ന + ZWJ + ു):
+  fonts with traditional ligatures (Rachana, Manjari, Meera and 7 more) draw
+  the sign joined without it, so rules 2026-10-12 keep it (rules 2026-10-11
+  deleted it: 4 words in 1.1M changed their look in those fonts).
 - **Bengali khanda ta** (ত + virama + ZWJ → ৎ) also changes the look where
   the next consonant carries a vowel sign drawn on its left (ি ে ৈ ো ৌ), or
-  where a reph is near (ত্‍কি, ভৰ্ত্‍সনা): 6 words in 12.9M. Fixed in the next
-  rules version.
+  where a reph is near (ত্‍কি, ভৰ্ত্‍সনা): 6 words in 12.9M. Fixed in rules
+  2026-10-12.
 - **An old Malayalam chillu before a vowel sign** (ന് + ZWJ + െ) becomes the
   atomic chillu, which draws the sign apart: rare, a typing order. Fixed in
-  the next rules version.
+  rules 2026-10-12.
 - **Suruma**, a Malayalam font older than Unicode 5.1, has no atomic chillus
   (ൻ ർ ൽ ൾ ൺ): text after `normalize` shows boxes in it.
+- **Odia acronyms and ଡ଼:** a ZWNJ between RA + virama and a vowel letter
+  (ଆର୍ + ZWNJ + ଇ, as in the acronym MGNREGS typed with joiners), and a ZWJ after ଡ଼ + virama, are
+  deleted where every Odia font shows them: 310 of 922,000 Odia words with a
+  joiner in web text. Fixed in the next rules version.
+- **Martel and Laila** (Devanagari) move the mark after a deleted joiner by
+  1% and 0.2% of an em, a shift no reader sees; they did not decide the rules.
 - **The nukta merge can join two words:** राज "rule" and राज़ "secret". Many
   writers leave the nukta out, so text often writes them alike already.
 - **Only HarfBuzz was tested.** Windows and Apple draw text with their own
