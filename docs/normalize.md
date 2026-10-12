@@ -74,6 +74,13 @@ Known weak spots:
   deleted, but fonts with traditional ligatures (Rachana, Manjari, Meera and
   7 more) draw the sign joined without it: 4 words in 1.1M changed their
   look in those fonts.
+- **Bengali khanda ta** (ত + virama + ZWJ → ৎ) also changes the look where
+  the next consonant carries a vowel sign drawn on its left (ি ে ৈ ো ৌ), or
+  where a reph is near (ত্‍কি, ভৰ্ত্‍সনা): 6 words in 12.9M. Fixed in the next
+  rules version.
+- **An old Malayalam chillu before a vowel sign** (ന് + ZWJ + െ) becomes the
+  atomic chillu, which draws the sign apart: rare, a typing order. Fixed in
+  the next rules version.
 - **Suruma**, a Malayalam font older than Unicode 5.1, has no atomic chillus
   (ൻ ർ ൽ ൾ ൺ): text after `normalize` shows boxes in it.
 - **The nukta merge can join two words:** राज "rule" and राज़ "secret". Many
