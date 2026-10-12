@@ -99,14 +99,14 @@ TypeScript, set `moduleResolution` to `nodenext` or `bundler`; the old
 In a browser, with no build step:
 
 ```js
-import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.10.0/dist/normalize.js";
-import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.10.0/dist/stem.js";
-import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.10.0/dist/phonetic.js";
-import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.10.0/dist/segment.js";
-import { load } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.10.0/dist/romanize.js";
-import { loadSearch } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.10.0/dist/phonetic-search.js";
-import { load as loadDeromanize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.10.0/dist/deromanize.js";
-import { isWellFormed } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.10.0/dist/wellformed.js";
+import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.11.0/dist/normalize.js";
+import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.11.0/dist/stem.js";
+import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.11.0/dist/phonetic.js";
+import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.11.0/dist/segment.js";
+import { load } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.11.0/dist/romanize.js";
+import { loadSearch } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.11.0/dist/phonetic-search.js";
+import { load as loadDeromanize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.11.0/dist/deromanize.js";
+import { isWellFormed } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.11.0/dist/wellformed.js";
 ```
 
 Each utility is its own file, so a page loads only the rules it uses.
