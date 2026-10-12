@@ -134,10 +134,36 @@ function fine2Keys(w: string): string[][] {
   return out;
 }
 
-function vowelRatio(a: string, b: string): number {
-  let best = 0;
-  for (const x of fine2Keys(a)) for (const y of fine2Keys(b)) best = Math.max(best, ratio(x, y));
-  return best;
+// A word's keys for one search or score call: each is a pure function of the word, and
+// a call reads them once per pair (perf phase 8: 60% of a search).
+class Memo {
+  private readonly std = new Map<string, string[]>();
+  private readonly fine = new Map<string, string[]>();
+  private readonly fine2 = new Map<string, string[][]>();
+  keys(w: string): string[] {
+    let v = this.std.get(w);
+    if (v === undefined) { v = keysOf(w); this.std.set(w, v); }
+    return v;
+  }
+  fineKey(w: string): string[] {
+    let v = this.fine.get(w);
+    if (v === undefined) { v = fineKey(w); this.fine.set(w, v); }
+    return v;
+  }
+  private fine2Keys(w: string): string[][] {
+    let v = this.fine2.get(w);
+    if (v === undefined) { v = fine2Keys(w); this.fine2.set(w, v); }
+    return v;
+  }
+  vowelRatio(a: string, b: string): number {
+    let best = 0;
+    for (const x of this.fine2Keys(a)) for (const y of this.fine2Keys(b)) best = Math.max(best, ratio(x, y));
+    return best;
+  }
+  joinedOf(ws: string[], min: number): string[] {
+    const j = ws.join("");
+    return j ? this.keys(j).filter((k) => [...k].length >= min) : [];
+  }
 }
 
 const BLOCKS: [number, number, string][] = [[0x0600, 0x06ff, "arab"], [0x0750, 0x077f, "arab"], [0x0900, 0x097f, "deva"],
@@ -285,14 +311,14 @@ class Scorer {
     return out;
   }
 
-  wordSim(a: string, b: string, cal: Map<string, number> | undefined, p: ProfileRules): number {
-    const kb = new Set(keysOf(b));
-    const meet = keysOf(a).some((k) => kb.has(k)) ? 1 : 0;
+  wordSim(a: string, b: string, cal: Map<string, number> | undefined, p: ProfileRules, m: Memo): number {
+    const kb = new Set(m.keys(b));
+    const meet = m.keys(a).some((k) => kb.has(k)) ? 1 : 0;
     let c2: number, v: number;
     if (isAscii(a) && isAscii(b)) { v = ratio(latSyms(a), latSyms(b)); c2 = 2 * v; }
-    else if (cal?.has(b)) { c2 = 100 * cal.get(b)!; v = vowelRatio(a, b); }
-    else if (this.cost(a, b) !== undefined) { c2 = 20000; v = vowelRatio(a, b); }
-    else { v = ratio(fineKey(a), fineKey(b)); c2 = 2 * v; }
+    else if (cal?.has(b)) { c2 = 100 * cal.get(b)!; v = m.vowelRatio(a, b); }
+    else if (this.cost(a, b) !== undefined) { c2 = 20000; v = m.vowelRatio(a, b); }
+    else { v = ratio(m.fineKey(a), m.fineKey(b)); c2 = 2 * v; }
     const num = 2 * p.key * 10000 * meet + p.cost * c2 + 2 * p.vowel * v;
     return p.round ? rounded(num, 200 * p.div) : floor(num / (200 * p.div));
   }
@@ -306,8 +332,8 @@ function joinedOf(ws: string[], min: number): string[] {
   return j ? keysOf(j).filter((k) => [...k].length >= min) : [];
 }
 
-function strictKeys(ws: string[]): string[] {
-  return keyProduct(ws.map(keysOf).filter((ks) => ks.length), "\x1f"); // the product, the last word fastest, cut at MAX_NAME_KEYS
+function strictKeys(ws: string[], keys: (w: string) => string[] = keysOf): string[] {
+  return keyProduct(ws.map(keys).filter((ks) => ks.length), "\x1f"); // the product, the last word fastest, cut at MAX_NAME_KEYS
 }
 
 /** Names of one language, keyed once for searching. */
@@ -325,16 +351,18 @@ export class Index {
     this.p = p;
     this.n = names.length;
     this.words = names.map(searchWords);
-    for (const ws of this.words) for (const k of new Set(ws.flatMap(keysOf))) this.df.set(k, (this.df.get(k) ?? 0) + 1);
+    const m = new Memo(); // a word's keys, once for the whole build (perf phase 8: four times a word before)
+    const keys = (w: string) => m.keys(w);
+    for (const ws of this.words) for (const k of new Set(ws.flatMap(keys))) this.df.set(k, (this.df.get(k) ?? 0) + 1);
     const add = (m: Map<string, number[]>, k: string, i: number) => {
       const l = m.get(k);
       if (!l) m.set(k, [i]); else if (l[l.length - 1] !== i) l.push(i);
     };
     this.words.forEach((ws, i) => {
-      for (const k of strictKeys(ws)) add(this.maps.strict, k, i);
-      for (const k of joinedOf(ws, JOINED_MIN)) add(this.maps.joined, k, i);
-      for (const k of joinedOf(ws, R.loose_joined_min_classes)) add(this.maps.loose, k, i);
-      for (const w of ws) for (const k of keysOf(w)) {
+      for (const k of strictKeys(ws, keys)) add(this.maps.strict, k, i);
+      for (const k of m.joinedOf(ws, JOINED_MIN)) add(this.maps.joined, k, i);
+      for (const k of m.joinedOf(ws, R.loose_joined_min_classes)) add(this.maps.loose, k, i);
+      for (const w of ws) for (const k of m.keys(w)) {
         if (this.common(k)) continue;
         add(this.maps.near, k, i);
         for (const d of deletions(k)) add(this.maps.near, d, i);
@@ -347,9 +375,9 @@ export class Index {
     return s !== null && this.n >= this.p.stop_min_names && (this.df.get(k) ?? 0) * 1000 > this.n * s;
   }
 
-  private weight(w: string): number {
+  private weight(w: string, m: Memo): number {
     let best = 0;
-    for (const k of keysOf(w)) best = Math.max(best, log2x10(this.n, Math.max(this.df.get(k) ?? 0, 1)));
+    for (const k of m.keys(w)) best = Math.max(best, log2x10(this.n, Math.max(this.df.get(k) ?? 0, 1)));
     return best;
   }
 
@@ -365,25 +393,26 @@ export class Index {
     return out;
   }
 
-  private nameScore(qws: string[], dws: string[], cal: Map<string, Map<string, number>>): number {
+  // sim(q, d): wordSim of a query word and a name word (both sides read the same pairs)
+  private nameScore(qws: string[], dws: string[], sim: (q: string, d: string) => number, m: Memo): number {
     let num = 0, den = 0;
     for (const [a, b, q] of [[qws, dws, true], [dws, qws, false]] as [string[], string[], boolean][]) {
       for (const w of a) {
-        const x = this.weight(w);
+        const x = this.weight(w, m);
         den += x;
         let best = 0;
-        for (const o of b) best = Math.max(best, q ? this.scorer.wordSim(w, o, cal.get(w), this.p) : this.scorer.wordSim(o, w, cal.get(o), this.p));
+        for (const o of b) best = Math.max(best, q ? sim(w, o) : sim(o, w));
         num += x * best;
       }
     }
     let soft = den ? floor((num + floor(den / 2)) / den) : 0;
     if (qws.length !== dws.length && qws.length && dws.length) {
       const jq = qws.join(""), jd = dws.join("");
-      const lq = new Set(joinedOf([jq], R.loose_joined_min_classes));
-      const meet = joinedOf([jd], R.loose_joined_min_classes).some((k) => lq.has(k)) ? 1 : 0;
+      const lq = new Set(m.joinedOf([jq], R.loose_joined_min_classes));
+      const meet = m.joinedOf([jd], R.loose_joined_min_classes).some((k) => lq.has(k)) ? 1 : 0;
       let c: number, v: number;
-      if (this.scorer.cost(jq, jd) !== undefined) { c = 10000; v = vowelRatio(jq, jd); }
-      else { c = v = ratio(fineKey(jq), fineKey(jd)); }
+      if (this.scorer.cost(jq, jd) !== undefined) { c = 10000; v = m.vowelRatio(jq, jd); }
+      else { c = v = ratio(m.fineKey(jq), m.fineKey(jd)); }
       const p = this.p, n = p.key * 10000 * meet + p.cost * c + p.vowel * v;
       soft = Math.max(soft, p.round ? rounded(n, 100 * p.div) : floor(n / (100 * p.div)));
     }
@@ -395,7 +424,18 @@ export class Index {
     const qws = searchWords(query);
     const cw = [...new Set(which.flatMap((i) => this.words[i]))];
     const cal = new Map(qws.map((a) => [a, this.scorer.calibrations(a, cw)]));
-    return which.map((i) => ({ name: i, score: this.nameScore(qws, this.words[i], cal) }));
+    // wordSim depends on the pair only (cal on the query word): each pair is scored once
+    // per call, though both sides of every name and every name with that word read it
+    const m = new Memo();
+    const sims = new Map<string, Map<string, number>>();
+    const sim = (q: string, d: string): number => {
+      let byD = sims.get(q);
+      if (!byD) sims.set(q, (byD = new Map()));
+      let s = byD.get(d);
+      if (s === undefined) { s = this.scorer.wordSim(q, d, cal.get(q), this.p, m); byD.set(d, s); }
+      return s;
+    };
+    return which.map((i) => ({ name: i, score: this.nameScore(qws, this.words[i], sim, m) }));
   }
 
   /** The names scoring at least threshold, best first (ties in index order). */

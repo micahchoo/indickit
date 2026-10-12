@@ -8,6 +8,25 @@ version, and compare `RULES_VERSION` (or `SEARCH_VERSION`) to know which
 rows. A version whose rules line equals the one before it gives every
 input the same output.
 
+## Unreleased
+
+Rules: phonetic 2026-10-11.7, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-11.2, deromanize 2026-10-09.2, phonetic-search 2026-10-11.7
+
+- Faster, same output: `deromanize` 2.0x in Go and 1.35x in TypeScript (a
+  Hindi word in Go: 11.0 -> 4.4 ms); `romanize` 1.5-2.0x in Go and 1.1x in
+  TypeScript (a Hindi sentence in Go: 31 -> 15 ms). The n-gram tables are
+  sorted arrays, not one map entry per pair, and the last letter builds only
+  the spellings that can be returned, best first.
+- Faster, same output: `Search` 2.0x in Go and 2.4x in TypeScript, `NewIndex`
+  1.6x and 1.8x. A word's keys are computed once per call, and a pair of
+  words is scored once.
+- Less memory, faster loads: a loaded Hindi deromanizer keeps 18 MB of heap
+  in Go (was 35 MB) and loads in 36 ms (was 111 ms); a romanizer keeps 15 MB
+  (was 29 MB) and loads in 40 ms (was 96 ms). The Go word lists are kept as
+  bytes. (0.11.0 already made TypeScript's tables flat: a Hindi deromanizer
+  130 -> 35 MB, a romanizer 194 -> 42 MB.) A test in each port fails if a
+  loaded language grows back past its bound.
+
 ## 0.11.0 (2026-10-12)
 
 Rules: phonetic 2026-10-11.7, normalize 2026-10-11, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-11.2, deromanize 2026-10-09.2, phonetic-search 2026-10-11.7

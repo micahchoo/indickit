@@ -282,16 +282,6 @@ func fine2Keys(w string) [][]rune {
 	return out
 }
 
-func vowelRatio(a, b string) int64 {
-	var best int64
-	for _, x := range fine2Keys(a) {
-		for _, y := range fine2Keys(b) {
-			best = max(best, ratio(x, y))
-		}
-	}
-	return best
-}
-
 var blocks = []struct {
 	lo, hi rune
 	name   string
@@ -522,9 +512,74 @@ func (p profile) finish(num, den int64) int64 {
 	return num / den
 }
 
-func wordSim(a, b, lang string, cal map[string]int64, p profile) int64 {
+// memo holds a word's keys for one Search or Score call: each is a pure function of
+// the word, and a call reads them once per pair (perf phase 8: 60% of Search).
+type memo struct {
+	std   map[string][]string
+	fine  map[string][]rune
+	fine2 map[string][][]rune
+}
+
+func newMemo() *memo {
+	return &memo{std: map[string][]string{}, fine: map[string][]rune{}, fine2: map[string][][]rune{}}
+}
+
+func (m *memo) stdKeys(w string) []string {
+	v, ok := m.std[w]
+	if !ok {
+		v = std.keys(w)
+		m.std[w] = v
+	}
+	return v
+}
+
+func (m *memo) fineKey(w string) []rune {
+	v, ok := m.fine[w]
+	if !ok {
+		v = fineKey(w)
+		m.fine[w] = v
+	}
+	return v
+}
+
+func (m *memo) vowelRatio(a, b string) int64 {
+	ka, ok := m.fine2[a]
+	if !ok {
+		ka = fine2Keys(a)
+		m.fine2[a] = ka
+	}
+	kb, ok := m.fine2[b]
+	if !ok {
+		kb = fine2Keys(b)
+		m.fine2[b] = kb
+	}
+	var best int64
+	for _, x := range ka {
+		for _, y := range kb {
+			best = max(best, ratio(x, y))
+		}
+	}
+	return best
+}
+
+// joinedOf: as the function joinedOf, through the memo.
+func (m *memo) joinedOf(ws []string, minClasses int) []string {
+	j := strings.Join(ws, "")
+	if j == "" {
+		return nil
+	}
+	var out []string
+	for _, k := range m.stdKeys(j) {
+		if utf8.RuneCountInString(k) >= minClasses {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
+func wordSim(a, b, lang string, cal map[string]int64, p profile, m *memo) int64 {
 	var meet int64
-	if shareOne(std.keys(a), std.keys(b)) {
+	if shareOne(m.stdKeys(a), m.stdKeys(b)) {
 		meet = 1
 	}
 	var c2, v int64
@@ -532,11 +587,11 @@ func wordSim(a, b, lang string, cal map[string]int64, p profile) int64 {
 		v = ratio(latSyms(a), latSyms(b))
 		c2 = 2 * v
 	} else if c, ok := cal[b]; ok {
-		c2, v = 100*c, vowelRatio(a, b)
+		c2, v = 100*c, m.vowelRatio(a, b)
 	} else if _, ok := cost(a, b, lang); ok {
-		c2, v = 20000, vowelRatio(a, b)
+		c2, v = 20000, m.vowelRatio(a, b)
 	} else {
-		v = ratio(fineKey(a), fineKey(b))
+		v = ratio(m.fineKey(a), m.fineKey(b))
 		c2 = 2 * v
 	}
 	num := 2*int64(p.Key)*10000*meet + int64(p.Cost)*c2 + 2*int64(p.Vowel)*v
@@ -580,10 +635,10 @@ func joinedOf(ws []string, minClasses int) []string {
 	return out
 }
 
-func strictKeys(ws []string) []string {
+func strictKeys(ws []string, keys func(string) []string) []string {
 	var all [][]string
 	for _, w := range ws {
-		if ks := std.keys(w); len(ks) > 0 {
+		if ks := keys(w); len(ks) > 0 {
 			all = append(all, ks)
 		}
 	}
@@ -601,11 +656,12 @@ func NewIndex(names []string, lang, profileName string) *Index {
 		df: map[string]int64{}, strict: map[string][]int{}, joined: map[string][]int{},
 		loose: map[string][]int{}, near: map[string][]int{}}
 	ix.words = make([][]string, len(names))
+	m := newMemo() // a word's keys, once for the whole build (perf phase 8: four times a word before)
 	for i, name := range names {
 		ix.words[i] = searchWords(name)
 		seen := map[string]bool{}
 		for _, w := range ix.words[i] {
-			for _, k := range std.keys(w) {
+			for _, k := range m.stdKeys(w) {
 				if !seen[k] {
 					seen[k] = true
 					ix.df[k]++
@@ -619,17 +675,17 @@ func NewIndex(names []string, lang, profileName string) *Index {
 		}
 	}
 	for i, ws := range ix.words {
-		for _, k := range strictKeys(ws) {
+		for _, k := range strictKeys(ws, m.stdKeys) {
 			add(ix.strict, k, i)
 		}
-		for _, k := range joinedOf(ws, std.joinedMin) {
+		for _, k := range m.joinedOf(ws, std.joinedMin) {
 			add(ix.joined, k, i)
 		}
-		for _, k := range joinedOf(ws, searchRules.LooseMin) {
+		for _, k := range m.joinedOf(ws, searchRules.LooseMin) {
 			add(ix.loose, k, i)
 		}
 		for _, w := range ws {
-			for _, k := range std.keys(w) {
+			for _, k := range m.stdKeys(w) {
 				if ix.common(k) {
 					continue
 				}
@@ -648,9 +704,9 @@ func (ix *Index) common(k string) bool {
 	return s != nil && ix.n >= int64(ix.profile.StopMinNames) && ix.df[k]*1000 > ix.n*int64(*s)
 }
 
-func (ix *Index) weight(w string) int64 {
+func (ix *Index) weight(w string, m *memo) int64 {
 	var best int64
-	for _, k := range std.keys(w) {
+	for _, k := range m.stdKeys(w) {
 		best = max(best, log2x10(ix.n, max(ix.df[k], 1)))
 	}
 	return best
@@ -658,7 +714,7 @@ func (ix *Index) weight(w string) int64 {
 
 func (ix *Index) candidates(qws []string) map[int]bool {
 	out := map[int]bool{}
-	for _, k := range strictKeys(qws) {
+	for _, k := range strictKeys(qws, std.keys) {
 		for _, i := range ix.strict[k] {
 			out[i] = true
 		}
@@ -690,7 +746,9 @@ func (ix *Index) candidates(qws []string) map[int]bool {
 	return out
 }
 
-func (ix *Index) nameScore(qws, dws []string, cal map[string]map[string]int64) int64 {
+// nameScore: sim(q, d) is wordSim of a query word and a name word (both sides of the
+// soft match read the same pairs).
+func (ix *Index) nameScore(qws, dws []string, sim func(q, d string) int64, m *memo) int64 {
 	var num, den int64
 	for side := 0; side < 2; side++ {
 		a, b := qws, dws
@@ -698,17 +756,15 @@ func (ix *Index) nameScore(qws, dws []string, cal map[string]map[string]int64) i
 			a, b = dws, qws
 		}
 		for _, w := range a {
-			x := ix.weight(w)
+			x := ix.weight(w, m)
 			den += x
 			var best int64
 			for _, o := range b {
-				var s int64
 				if side == 0 {
-					s = wordSim(w, o, ix.lang, cal[w], ix.profile)
+					best = max(best, sim(w, o))
 				} else {
-					s = wordSim(o, w, ix.lang, cal[o], ix.profile)
+					best = max(best, sim(o, w))
 				}
-				best = max(best, s)
 			}
 			num += x * best
 		}
@@ -720,14 +776,14 @@ func (ix *Index) nameScore(qws, dws []string, cal map[string]map[string]int64) i
 	if len(qws) != len(dws) && len(qws) > 0 && len(dws) > 0 {
 		jq, jd := strings.Join(qws, ""), strings.Join(dws, "")
 		var meet int64
-		if shareOne(joinedOf([]string{jq}, searchRules.LooseMin), joinedOf([]string{jd}, searchRules.LooseMin)) {
+		if shareOne(m.joinedOf([]string{jq}, searchRules.LooseMin), m.joinedOf([]string{jd}, searchRules.LooseMin)) {
 			meet = 1
 		}
 		var c, v int64
 		if _, ok := cost(jq, jd, ix.lang); ok {
-			c, v = 10000, vowelRatio(jq, jd)
+			c, v = 10000, m.vowelRatio(jq, jd)
 		} else {
-			c = ratio(fineKey(jq), fineKey(jd))
+			c = ratio(m.fineKey(jq), m.fineKey(jd))
 			v = c
 		}
 		p := ix.profile
@@ -753,9 +809,23 @@ func (ix *Index) scoreAll(query string, which []int) []Hit {
 	for _, a := range qws {
 		cal[a] = calibrations(a, cw, ix.lang)
 	}
+	// wordSim depends on the pair only (cal on the query word): each pair is scored once
+	// per call, though both sides of every name and every name with that word read it
+	// (perf phase 8: Search computed each pair's keys and alignment again each time).
+	m := newMemo()
+	sims := map[[2]string]int64{}
+	sim := func(q, d string) int64 {
+		k := [2]string{q, d}
+		s, ok := sims[k]
+		if !ok {
+			s = wordSim(q, d, ix.lang, cal[q], ix.profile, m)
+			sims[k] = s
+		}
+		return s
+	}
 	out := make([]Hit, len(which))
 	for k, i := range which {
-		out[k] = Hit{i, int(ix.nameScore(qws, ix.words[i], cal))}
+		out[k] = Hit{i, int(ix.nameScore(qws, ix.words[i], sim, m))}
 	}
 	return out
 }

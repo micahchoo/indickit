@@ -19,11 +19,13 @@ package romanize
 
 import (
 	"bytes"
+	"cmp"
 	_ "embed"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -277,14 +279,38 @@ func open(b []byte) (*reader, []string) {
 
 const idBits = 21 // up to 2M distinct tokens per language
 
+// level is one order of a model, flat: a context's index by its key, and its
+// continuations as one run of (token, count) pairs sorted by token (perf phase 8: one
+// map entry per pair cost a hash lookup per probability).
 type level struct {
-	stats  map[uint64][2]float64 // context → (total, types)
-	counts map[uint64]int32      // context<<idBits | token → count
+	index     map[uint64]int32 // context → its index
+	total, wb []float64        // by context: total count, and total / (total + types)
+	start     []int32          // context i's pairs are start[i] .. start[i+1]
+	tok       []int32
+	count     []int32
+	dense     []int32 // a level of one context (the unigrams): counts by token
+}
+
+// countOf is tok's count after context i.
+func (lv *level) countOf(i, tok int32) int32 {
+	if lv.dense != nil {
+		if int(tok) < len(lv.dense) {
+			return lv.dense[tok]
+		}
+		return 0
+	}
+	run := lv.tok[lv.start[i]:lv.start[i+1]]
+	j, ok := slices.BinarySearch(run, tok)
+	if !ok {
+		return 0
+	}
+	return lv.count[int(lv.start[i])+j]
 }
 
 type model struct {
 	vocab  int
 	levels []level
+	toks   []int32 // the unigram level's tokens, in file order
 }
 
 // interner gives one id per token string, shared by a language's two models.
@@ -313,25 +339,43 @@ func ctxKey(ctx []int32) uint64 { // the last tokens, most recent lowest
 
 func readModel(r *reader, strs []string, in *interner) *model {
 	m := &model{vocab: r.varint()}
+	type pair struct{ tok, count int32 }
+	var run []pair
 	for l := r.varint(); l > 0; l-- {
-		lv := level{stats: map[uint64][2]float64{}, counts: map[uint64]int32{}}
-		for c := r.varint(); c > 0; c-- {
+		n := r.varint()
+		lv := level{index: make(map[uint64]int32, n), total: make([]float64, n), wb: make([]float64, n), start: make([]int32, n+1)}
+		for c := 0; c < n; c++ {
 			ctx := make([]int32, r.varint())
 			for i := range ctx {
 				ctx[i] = in.id(strs[r.varint()])
 			}
-			key := ctxKey(ctx)
 			var total float64
-			types := 0
+			run = run[:0]
 			prev := 0
 			for t := r.varint(); t > 0; t-- {
 				prev += r.varint()
 				k := r.varint()
-				lv.counts[key<<idBits|uint64(in.id(strs[prev]))] = int32(k)
-				total += float64(k)
-				types++
+				tok := in.id(strs[prev])
+				run = append(run, pair{tok, int32(k)})
+				total += float64(k) // in file order, as before: the same float
+				if len(m.levels) == 0 {
+					m.toks = append(m.toks, tok)
+				}
 			}
-			lv.stats[key] = [2]float64{total, float64(types)}
+			slices.SortFunc(run, func(a, b pair) int { return int(a.tok - b.tok) })
+			for _, p := range run {
+				lv.tok = append(lv.tok, p.tok)
+				lv.count = append(lv.count, p.count)
+			}
+			lv.index[ctxKey(ctx)] = int32(c)
+			lv.total[c], lv.wb[c] = total, total/(total+float64(len(run)))
+			lv.start[c+1] = int32(len(lv.tok))
+		}
+		if n == 1 && len(lv.tok) > 0 {
+			lv.dense = make([]int32, lv.tok[len(lv.tok)-1]+1)
+			for j, t := range lv.tok {
+				lv.dense[t] = lv.count[j]
+			}
 		}
 		m.levels = append(m.levels, lv)
 	}
@@ -341,18 +385,16 @@ func readModel(r *reader, strs []string, in *interner) *model {
 // ctxStats are one model's statistics for one context, at each order: computed once per
 // hypothesis, then used for every token that can follow it.
 type ctxStats struct {
-	key       [3]uint64 // the context of order n, packed
-	has       [3]bool
+	at        [3]int32   // the context's index at order n; -1: none, or a context with no continuation
 	total, wb [3]float64 // total count, and the Witten-Bell weight total / (total + types)
 }
 
 func (m *model) stats(ctx []int32) ctxStats {
-	var c ctxStats
+	c := ctxStats{at: [3]int32{-1, -1, -1}}
 	for n := 0; n < len(m.levels); n++ {
-		c.key[n] = ctxKey(ctx[len(ctx)-n:])
-		st, ok := m.levels[n].stats[c.key[n]]
-		if ok && st[1] != 0 {
-			c.has[n], c.total[n], c.wb[n] = true, st[0], st[0]/(st[0]+st[1])
+		lv := &m.levels[n]
+		if i, ok := lv.index[ctxKey(ctx[len(ctx)-n:])]; ok && lv.start[i+1] != lv.start[i] {
+			c.at[n], c.total[n], c.wb[n] = i, lv.total[i], lv.wb[i]
 		}
 	}
 	return c
@@ -362,11 +404,11 @@ func (m *model) stats(ctx []int32) ctxStats {
 func (m *model) prob(c *ctxStats, tok int32) float64 {
 	p := 1.0 / float64(m.vocab+1)
 	for n := 0; n < len(m.levels); n++ {
-		if !c.has[n] {
+		if c.at[n] < 0 {
 			continue
 		}
 		lam := c.wb[n]
-		p = lam*float64(m.levels[n].counts[c.key[n]<<idBits|uint64(tok)])/c.total[n] + (1-lam)*p
+		p = lam*float64(m.levels[n].countOf(c.at[n], tok))/c.total[n] + (1-lam)*p
 	}
 	return p
 }
@@ -415,8 +457,7 @@ func newMix(own, pool []byte, tag string, beam int) *mix {
 	seen := map[int32]bool{}
 	x.options = map[string][]option{}
 	for _, m := range []*model{x.a, x.b} {
-		for key := range m.levels[0].counts {
-			t := int32(key & (1<<idBits - 1))
+		for _, t := range m.toks {
 			if t == x.eos || seen[t] {
 				continue
 			}
@@ -633,14 +674,22 @@ func (x *mix) decode(word string, n int) []string {
 			}
 		}
 	}
-	// The last position keeps every candidate, and many share a context and a parent:
-	// the end-of-word log probability is computed once per context, and a parent's
-	// spelling once per parent.
-	final := map[string]float64{}
+	// The last position keeps every candidate, but only the n best spellings are
+	// returned. Each candidate's final score needs no string: the end-of-word log
+	// probability, once per context. The spellings are then built best first, and the
+	// walk stops at the first score below the n-th: no candidate after it can enter, and a
+	// spelling's first candidate holds its best score (perf phase 8: building every
+	// spelling was most of a call's memory). Equal scores go on: a tie is ordered by its string.
+	out := make([]string, 0, max(n, 0))
+	if n <= 0 {
+		return out
+	}
+	every := beams[len(w)].every
 	eos := map[uint64]float64{}
-	spelled := map[*hyp]string{}
-	for i := range beams[len(w)].every {
-		c := &beams[len(w)].every[i]
+	fin := make([]float64, len(every))
+	order := make([]int32, len(every))
+	for i := range every {
+		c := &every[i]
 		ctx := x.start
 		if c.parent != nil {
 			ctx = c.context(h)
@@ -652,7 +701,22 @@ func (x *mix) decode(word string, n int) []string {
 			lp = x.logp(&sa, &sb, x.eos)
 			eos[key] = lp
 		}
-		s := c.score + lp
+		fin[i], order[i] = c.score+lp, int32(i)
+	}
+	slices.SortFunc(order, func(p, q int32) int { return cmp.Compare(fin[q], fin[p]) })
+	type res struct {
+		s float64
+		o string
+	}
+	var rs []res
+	seen := map[string]bool{}
+	spelled := map[*hyp]string{}
+	for _, i := range order {
+		s := fin[i]
+		if len(rs) >= n && s < rs[n-1].s {
+			break
+		}
+		c := &every[i]
 		o := c.piece
 		if c.parent != nil {
 			ps, ok := spelled[c.parent]
@@ -662,17 +726,10 @@ func (x *mix) decode(word string, n int) []string {
 			}
 			o = ps + c.piece
 		}
-		if v, ok := final[o]; !ok || s > v {
-			final[o] = s
+		if !seen[o] {
+			seen[o] = true
+			rs = append(rs, res{s, o})
 		}
-	}
-	type res struct {
-		s float64
-		o string
-	}
-	rs := make([]res, 0, len(final))
-	for o, s := range final {
-		rs = append(rs, res{s, o})
 	}
 	sort.Slice(rs, func(p, q int) bool {
 		if rs[p].s != rs[q].s {
@@ -680,7 +737,6 @@ func (x *mix) decode(word string, n int) []string {
 		}
 		return rs[p].o < rs[q].o
 	})
-	out := make([]string, 0, n)
 	for i := 0; i < len(rs) && i < n; i++ {
 		out = append(out, rs[i].o) // as the reference: an empty spelling stays in the list
 	}

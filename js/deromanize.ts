@@ -709,12 +709,17 @@ class Mix {
         }
       }
     }
-    // The last position keeps every candidate, and many share a context and a parent: the
-    // end-of-word log probability is computed once per context, a parent's spelling once.
-    const final = new Map<string, [number, boolean]>();
+    // The last position keeps every candidate, but only the best few spellings are
+    // returned. Each candidate's final score needs no string: the end-of-word log
+    // probability, once per context. The spellings are then built best first, and the walk
+    // stops at the first score below the last place's: no candidate after it can enter, and
+    // a spelling's first candidate holds its best score (perf phase 8: building every
+    // spelling was most of a call's memory). Equal scores go on: a tie is ordered by its string.
+    const every = beams[w.length].best;
     const eos = new Map<number, number>();
-    const spelled = new Map<Hyp, string>();
-    for (const c of beams[w.length].best) {
+    const fin = new Float64Array(every.length);
+    for (let i = 0; i < every.length; i++) {
+      const c = every[i];
       const ctx = c.parent === null ? this.start : context(c);
       const key = ctxKey(ctx, 0);
       let lp = eos.get(key);
@@ -722,17 +727,39 @@ class Mix {
         lp = this.logp(this.a.stats(ctx), this.b.stats(ctx), this.eos);
         eos.set(key, lp);
       }
-      const s = c.score + lp;
-      let o = c.piece;
-      if (c.parent !== null) {
-        let ps = spelled.get(c.parent);
-        if (ps === undefined) { ps = spelling(c.parent); spelled.set(c.parent, ps); }
-        o = ps + c.piece;
-      }
-      const v = final.get(o);
-      final.set(o, v === undefined ? [s, c.cut] : [Math.max(v[0], s), v[1] && c.cut]);
+      fin[i] = c.score + lp;
     }
-    const out = [...final].map(([o, [s, cut]]): Scored => [o, s, cut]);
+    const order = Int32Array.from(every.keys()).sort((p, q) => (fin[q] > fin[p] ? 1 : fin[q] < fin[p] ? -1 : 0));
+    const spelled = new Map<Hyp, string>();
+    const spell = (c: Cand): string => {
+      if (c.parent === null) return c.piece;
+      let ps = spelled.get(c.parent);
+      if (ps === undefined) { ps = spelling(c.parent); spelled.set(c.parent, ps); }
+      return ps + c.piece;
+    };
+    const at = new Map<string, number>(); // a spelling's place in out
+    const out: Scored[] = [];
+    const last = RULES.nbest - 1;
+    let j = 0;
+    for (; j < order.length; j++) {
+      const s = fin[order[j]];
+      if (out.length > last && s < out[last][1]) break;
+      const c = every[order[j]];
+      const o = spell(c);
+      const k = at.get(o);
+      if (k !== undefined) { out[k][2] &&= c.cut; continue; }
+      at.set(o, out.length);
+      out.push([o, s, c.cut]);
+    }
+    // A spelling is cut only if every path to it is: a candidate left may still clear one.
+    if (out.some((v) => v[2])) {
+      for (; j < order.length; j++) {
+        const c = every[order[j]];
+        if (c.cut) continue;
+        const k = at.get(spell(c));
+        if (k !== undefined) out[k][2] = false;
+      }
+    }
     return out.sort(byScore).slice(0, RULES.nbest);
   }
 }

@@ -31,6 +31,16 @@ export declare const SEARCH_VERSION: string;
 /** The scores measured for each use: names in a list 76, villages 73, a name
  * in text 81 (at most 10% of hits wrong) or 71 (20%). */
 export declare const THRESHOLDS: Readonly<Record<string, number>>;
+declare class Memo {
+    private readonly std;
+    private readonly fine;
+    private readonly fine2;
+    keys(w: string): string[];
+    fineKey(w: string): string[];
+    private fine2Keys;
+    vowelRatio(a: string, b: string): number;
+    joinedOf(ws: string[], min: number): string[];
+}
 type Sparse = [number, [number, number][]];
 type RawTable = {
     latin?: string[];
@@ -60,7 +70,7 @@ declare class Scorer {
     constructor(lang: string, latin: CostTable | undefined, pairs: Map<string, CostTable>);
     cost(a: string, b: string): number | undefined;
     calibrations(a: string, cands: string[]): Map<string, number>;
-    wordSim(a: string, b: string, cal: Map<string, number> | undefined, p: ProfileRules): number;
+    wordSim(a: string, b: string, cal: Map<string, number> | undefined, p: ProfileRules, m: Memo): number;
 }
 /** A name found by a search: its position among the indexed names, and its score. */
 export interface Hit {

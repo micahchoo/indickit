@@ -20,10 +20,12 @@ package deromanize
 
 import (
 	"bytes"
+	"cmp"
 	_ "embed"
 	"encoding/binary"
 	"encoding/json"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -89,10 +91,10 @@ func init() {
 
 var (
 	mu     sync.Mutex
-	files  = map[string][]byte{}         // file name → its bytes, from the lang packages
-	tables = map[string]*mix{}           // family + "." + lang → its loaded tables
-	pooled = map[string]*model{}         // pooled file name → its model, shared by a group
-	lists  = map[string]map[string]int{} // lang + "." + mode → word-list counts
+	files  = map[string][]byte{}      // file name → its bytes, from the lang packages
+	tables = map[string]*mix{}        // family + "." + lang → its loaded tables
+	pooled = map[string]*model{}      // pooled file name → its model, shared by a group
+	lists  = map[string][]*wordList{} // lang + "." + mode → its word lists
 )
 
 // Register is called by the lang packages; a program does not call it.
@@ -197,7 +199,7 @@ func TextMixed(text, lang string, mode Mode) string { return write(text, lang, m
 // language writes in English. Only Hindi has a list; for another language,
 // or when its package is not imported, it returns false.
 func English(word, lang string) bool {
-	_, ok := englishList(langtag.Code(lang))[clean(word)]
+	_, ok := countOf(englishList(langtag.Code(lang)), clean(word))
 	return ok
 }
 
@@ -292,11 +294,11 @@ func guarded(mode Mode) bool {
 // rest in model order. A string is looked up by normalize.Text, then normalize.Fold.
 // With guard, a cut-short string is not known, whatever the list says: a short,
 // common string (murmu → മു) would otherwise take the bonus and come first.
-func rerank(best []scored, lang string, counts map[string]int, alpha float64, guard bool) []string {
+func rerank(best []scored, lang string, lists []*wordList, alpha float64, guard bool) []string {
 	var known []scored
 	var rest []string
 	for _, b := range best {
-		if c, ok := counts[normalize.Fold(normalize.Text(b.o, lang), lang)]; ok && !(guard && b.cut) {
+		if c, ok := countOf(lists, normalize.Fold(normalize.Text(b.o, lang), lang)); ok && !(guard && b.cut) {
 			known = append(known, scored{b.s + alpha*math.Log(float64(c)), b.o, false})
 		} else {
 			rest = append(rest, b.o)
@@ -357,58 +359,115 @@ func get(f Mode, lang string) *mix {
 	return x
 }
 
-func list(lang string, mode Mode) map[string]int {
+func list(lang string, mode Mode) []*wordList {
 	key := lang + "." + string(mode)
 	mu.Lock()
 	defer mu.Unlock()
 	if c, ok := lists[key]; ok {
 		return c
 	}
-	counts := map[string]int{}
+	var ls []*wordList
 	kinds := []string{"words"}
 	if mode == Names {
 		kinds = append(kinds, "names")
 	}
 	for _, k := range kinds {
-		readList(rules.Lists[lang][k], counts)
+		if l := readList(rules.Lists[lang][k]); l != nil {
+			ls = append(ls, l)
+		}
 	}
-	lists[key] = counts
-	return counts
+	lists[key] = ls
+	return ls
 }
 
-// englishList is the language's English list (rules.json lists.<lang>.english);
-// empty when the language has none or its package is not imported.
-func englishList(lang string) map[string]int {
+func englishList(lang string) []*wordList {
 	key := lang + ".english"
 	mu.Lock()
 	defer mu.Unlock()
 	if c, ok := lists[key]; ok {
 		return c
 	}
-	counts := map[string]int{}
-	readList(rules.Lists[lang]["english"], counts)
-	lists[key] = counts
-	return counts
+	var ls []*wordList
+	if l := readList(rules.Lists[lang]["english"]); l != nil {
+		ls = append(ls, l)
+	}
+	lists[key] = ls
+	return ls
 }
 
-// readList adds an IKL2 list file's counts to counts; a missing file adds nothing.
-func readList(name string, counts map[string]int) {
+// countOf is a string's count: the sum over the lists that hold it.
+func countOf(ls []*wordList, s string) (int, bool) {
+	sum, found := 0, false
+	for _, l := range ls {
+		if c, ok := l.get(s); ok {
+			sum, found = sum+c, true
+		}
+	}
+	return sum, found
+}
+
+// wordList is an IKL2 word list kept as bytes: the keys end to end, in byte order, and
+// their counts (perf phase 8: a map of 200,000 strings was scanned by every GC cycle, a
+// third of a call's time).
+type wordList struct {
+	keys   []byte
+	ends   []int32 // key i is keys[ends[i-1]:ends[i]] (from 0 for the first)
+	counts []int
+}
+
+func (l *wordList) key(i int) []byte {
+	from := int32(0)
+	if i > 0 {
+		from = l.ends[i-1]
+	}
+	return l.keys[from:l.ends[i]]
+}
+
+func (l *wordList) get(s string) (int, bool) {
+	i := sort.Search(len(l.ends), func(i int) bool { return string(l.key(i)) >= s })
+	if i < len(l.ends) && string(l.key(i)) == s {
+		return l.counts[i], true
+	}
+	return 0, false
+}
+
+// readList reads an IKL2 file: keys in byte order, front-coded (bytes shared with the
+// previous key). A key twice is one key, its counts summed.
+func readList(name string) *wordList {
 	if name == "" || files[name] == nil {
-		return
+		return nil
 	}
 	b := files[name]
 	if !bytes.HasPrefix(b, []byte("IKL2")) {
 		panic("deromanize: not an IKL2 file")
 	}
 	r := &reader{b: b, pos: 4}
-	var prev []byte
-	for n := r.varint(); n > 0; n-- {
-		shared, l := r.varint(), r.varint()
-		key := append(append([]byte(nil), prev[:shared]...), r.b[r.pos:r.pos+l]...)
-		r.pos += l
-		prev = key
-		counts[string(key)] += r.varint()
+	n := r.varint()
+	l := &wordList{keys: make([]byte, 0, 2*len(b)), ends: make([]int32, 0, n), counts: make([]int, 0, n)}
+	from := 0 // where the last key starts
+	for ; n > 0; n-- {
+		shared, size := r.varint(), len(l.keys)
+		l.keys = append(l.keys, l.keys[from:from+shared]...)
+		k := r.varint()
+		l.keys = append(l.keys, r.b[r.pos:r.pos+k]...)
+		r.pos += k
+		count := r.varint()
+		if len(l.ends) > 0 {
+			switch c := bytes.Compare(l.keys[size:], l.keys[from:size]); {
+			case c < 0:
+				panic("deromanize: a word list out of byte order")
+			case c == 0:
+				l.counts[len(l.counts)-1] += count
+				l.keys = l.keys[:size]
+				continue
+			}
+		}
+		l.ends = append(l.ends, int32(len(l.keys)))
+		l.counts = append(l.counts, count)
+		from = size
 	}
+	l.keys = slices.Clip(l.keys)
+	return l
 }
 
 // ---- the file format (linguistic-utilities jobs/deromanize/export.py)
@@ -477,9 +536,32 @@ func ctxKey(ctx []int32) uint64 {
 	return k
 }
 
+// level is one order of a model, flat: a context's index by its key, and its
+// continuations as one run of (token, count) pairs sorted by token (perf phase 8: one
+// map entry per pair cost a hash lookup per probability).
 type level struct {
-	stats  map[uint64][2]float64 // context → (total, types) of the whole model
-	counts map[uint64]int32      // context<<idBits | token → count
+	index     map[uint64]int32 // context → its index
+	total, wb []float64        // by context: the whole model's total, and total / (total + types)
+	start     []int32          // context i's pairs are start[i] .. start[i+1]
+	tok       []int32
+	count     []int32
+	dense     []int32 // a level of one context (the unigrams): counts by token
+}
+
+// countOf is tok's count after context i.
+func (lv *level) countOf(i, tok int32) int32 {
+	if lv.dense != nil {
+		if int(tok) < len(lv.dense) {
+			return lv.dense[tok]
+		}
+		return 0
+	}
+	run := lv.tok[lv.start[i]:lv.start[i+1]]
+	j, ok := slices.BinarySearch(run, tok)
+	if !ok {
+		return 0
+	}
+	return lv.count[int(lv.start[i])+j]
 }
 
 type model struct {
@@ -491,24 +573,40 @@ type model struct {
 
 func readModel(r *reader, strs []string, in *interner) *model {
 	m := &model{vocab: r.varint(), ids: in}
+	type pair struct{ tok, count int32 }
+	var run []pair
 	for l := r.varint(); l > 0; l-- {
-		lv := level{stats: map[uint64][2]float64{}, counts: map[uint64]int32{}}
-		for c := r.varint(); c > 0; c-- {
+		n := r.varint()
+		lv := level{index: make(map[uint64]int32, n), total: make([]float64, n), wb: make([]float64, n), start: make([]int32, n+1)}
+		for c := 0; c < n; c++ {
 			ctx := make([]int32, r.varint())
 			for i := range ctx {
 				ctx[i] = in.id(strs[r.varint()])
 			}
-			key := ctxKey(ctx)
-			total, types := r.varint(), r.varint()
-			lv.stats[key] = [2]float64{float64(total), float64(types)}
+			total, types := float64(r.varint()), float64(r.varint())
+			run = run[:0]
 			prev := 0
 			for t := r.varint(); t > 0; t-- {
 				prev += r.varint()
 				tok := in.id(strs[prev])
-				lv.counts[key<<idBits|uint64(tok)] = int32(r.varint())
+				run = append(run, pair{tok, int32(r.varint())})
 				if len(m.levels) == 0 {
 					m.toks = append(m.toks, tok)
 				}
+			}
+			slices.SortFunc(run, func(a, b pair) int { return int(a.tok - b.tok) })
+			for _, p := range run {
+				lv.tok = append(lv.tok, p.tok)
+				lv.count = append(lv.count, p.count)
+			}
+			lv.index[ctxKey(ctx)] = int32(c)
+			lv.total[c], lv.wb[c] = total, total/(total+types)
+			lv.start[c+1] = int32(len(lv.tok))
+		}
+		if n == 1 && len(lv.tok) > 0 {
+			lv.dense = make([]int32, lv.tok[len(lv.tok)-1]+1)
+			for j, t := range lv.tok {
+				lv.dense[t] = lv.count[j]
 			}
 		}
 		m.levels = append(m.levels, lv)
@@ -523,17 +621,16 @@ func readModel(r *reader, strs []string, in *interner) *model {
 // hypothesis and used for every token that can follow it. A context present with no
 // continuation still applies its discount (as the reference).
 type ctxStats struct {
-	key       [3]uint64
-	has       [3]bool
+	at        [3]int32 // the context's index at order n; -1: the model has no such context
 	total, wb [3]float64
 }
 
 func (m *model) stats(ctx []int32) ctxStats {
-	var c ctxStats
+	c := ctxStats{at: [3]int32{-1, -1, -1}}
 	for n := 0; n < len(m.levels); n++ {
-		c.key[n] = ctxKey(ctx[len(ctx)-n:])
-		if st, ok := m.levels[n].stats[c.key[n]]; ok {
-			c.has[n], c.total[n], c.wb[n] = true, st[0], st[0]/(st[0]+st[1])
+		lv := &m.levels[n]
+		if i, ok := lv.index[ctxKey(ctx[len(ctx)-n:])]; ok {
+			c.at[n], c.total[n], c.wb[n] = i, lv.total[i], lv.wb[i]
 		}
 	}
 	return c
@@ -543,11 +640,11 @@ func (m *model) stats(ctx []int32) ctxStats {
 func (m *model) prob(c *ctxStats, tok int32) float64 {
 	p := 1.0 / float64(m.vocab+1)
 	for n := 0; n < len(m.levels); n++ {
-		if !c.has[n] {
+		if c.at[n] < 0 {
 			continue
 		}
 		lam := c.wb[n]
-		p = lam*float64(m.levels[n].counts[c.key[n]<<idBits|uint64(tok)])/c.total[n] + (1-lam)*p
+		p = lam*float64(m.levels[n].countOf(c.at[n], tok))/c.total[n] + (1-lam)*p
 	}
 	return p
 }
@@ -816,14 +913,19 @@ func (x *mix) decode(word string) []scored {
 			}
 		}
 	}
-	// The last position keeps every candidate (thousands for a short word), and many
-	// share a context and a parent: the end-of-word log probability is computed once
-	// per context, and a parent's spelling once per parent.
-	final := map[string]scored{}
+	// The last position keeps every candidate (thousands for a short word), but only the
+	// NBest best spellings are returned. Each candidate's final score needs no string: the
+	// end-of-word log probability, once per context. The spellings are then built best
+	// first, and the walk stops at the first score below the NBest-th: no candidate after it
+	// can enter, and a spelling's first candidate holds its best score (perf phase 8:
+	// building every spelling was most of a call's memory). Equal scores go on: a tie is
+	// ordered by its string.
+	every := beams[len(w)].every
 	eos := map[uint64]float64{}
-	spelled := map[*hyp]string{}
-	for i := range beams[len(w)].every {
-		c := &beams[len(w)].every[i]
+	fin := make([]float64, len(every))
+	order := make([]int32, len(every))
+	for i := range every {
+		c := &every[i]
 		ctx := x.start
 		if c.parent != nil {
 			ctx = c.context(h)
@@ -835,25 +937,47 @@ func (x *mix) decode(word string) []scored {
 			lp = x.logp(&sa, &sb, x.eos)
 			eos[key] = lp
 		}
-		s := c.score + lp
-		o := c.piece
-		if c.parent != nil {
-			ps, ok := spelled[c.parent]
-			if !ok {
-				ps = c.parent.spelling()
-				spelled[c.parent] = ps
-			}
-			o = ps + c.piece
-		}
-		if v, ok := final[o]; !ok {
-			final[o] = scored{s, o, c.cut}
-		} else {
-			final[o] = scored{max(v.s, s), o, v.cut && c.cut}
-		}
+		fin[i], order[i] = c.score+lp, int32(i)
 	}
-	out := make([]scored, 0, len(final))
-	for _, v := range final {
-		out = append(out, v)
+	slices.SortFunc(order, func(p, q int32) int { return cmp.Compare(fin[q], fin[p]) })
+	spelled := map[*hyp]string{}
+	spell := func(c *cand) string {
+		if c.parent == nil {
+			return c.piece
+		}
+		ps, ok := spelled[c.parent]
+		if !ok {
+			ps = c.parent.spelling()
+			spelled[c.parent] = ps
+		}
+		return ps + c.piece
+	}
+	at := map[string]int{} // a spelling's place in out
+	var out []scored
+	j := 0
+	for ; j < len(order); j++ {
+		s := fin[order[j]]
+		if len(out) >= rules.NBest && s < out[rules.NBest-1].s {
+			break
+		}
+		c := &every[order[j]]
+		o := spell(c)
+		if k, ok := at[o]; ok {
+			out[k].cut = out[k].cut && c.cut
+			continue
+		}
+		at[o] = len(out)
+		out = append(out, scored{s, o, c.cut})
+	}
+	// A spelling is cut only if every path to it is: a candidate left may still clear one.
+	if slices.ContainsFunc(out, func(v scored) bool { return v.cut }) {
+		for ; j < len(order); j++ {
+			if c := &every[order[j]]; !c.cut {
+				if k, ok := at[spell(c)]; ok {
+					out[k].cut = false
+				}
+			}
+		}
 	}
 	byScore(out)
 	if len(out) > rules.NBest {
