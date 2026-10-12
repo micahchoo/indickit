@@ -83,14 +83,16 @@ func TestTextTwiceIsOnce(t *testing.T) {
 // Finding 6, second promise, with its scope: normalize changes no key of a
 // word with no invisible character. A word that holds one can change: the
 // Urdu reader's first and last letter see it, and a word of marks and Latin
-// letters is read as Latin only without it. The known cases are below.
+// letters is read as Latin only without it. The known cases are below
+// (a ZWNJ after a lone Odia candrabindu was one until normalize rules
+// 2026-10-12, which keep it: the fonts draw both the same).
 func TestKeysUnchangedByNormalize(t *testing.T) {
 	for _, s := range []string{"फ\u093c\u093eत\u093fम\u093e", "فاطمہ", "عمران", "മ\u0d4bഹൻല\u0d3eൽ", "অ\u0982শগ\u09cdরহণ", "Rāma", "ஸ\u0bcdர\u0bc0", "১২"} {
 		if a, b := phonetic.Keys(s), phonetic.Keys(normalize.Text(s, "")); !reflect.DeepEqual(a, b) {
 			t.Errorf("Keys(%+q) = %v, Keys(Text) = %v", s, a, b)
 		}
 	}
-	for _, s := range []string{"فاطمہ\u200c", "\ufeffعمران", "\u0b01\u200c", "\u0ce2\u200cR"} {
+	for _, s := range []string{"فاطمہ\u200c", "\ufeffعمران", "\u0ce2\u200cR"} {
 		if a, b := phonetic.Keys(s), phonetic.Keys(normalize.Text(s, "")); reflect.DeepEqual(a, b) {
 			t.Errorf("Keys(%+q) no longer changes under Text: widen the promise in the README", s)
 		}

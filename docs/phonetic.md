@@ -11,11 +11,19 @@ Chiki), Sindhi, Tamil, Telugu, Urdu, and Latin spellings of all of them.
 
 ## How good it is
 
-### The rules that ship (2026-10-11.7)
+### The rules that ship (2026-10-11.8)
 
-Measured once on OpenStreetMap place names that no rule was chosen on (one
-fiftieth of the places, held out to the end): 1,704 villages, towns and
-neighbourhoods, each named in English and in one or more Indian scripts.
+Measured once, with rules 2026-10-11.7, on OpenStreetMap place names that no
+rule was chosen on (one fiftieth of the places, held out to the end): 1,704
+villages, towns and neighbourhoods, each named in English and in one or more
+Indian scripts. Rules 2026-10-11.8 were read once on a second slice of the
+same size: the same numbers as 2026-10-11.7 in every language (91% of
+pairs found, 90.7 exactly; the wrong-merge rate unchanged), because the h-less key already
+found every pair that holds ھ; that slice has no Sindhi place. Rules 2026-10-11.8 change one thing: the Perso-Arabic letter
+ھ (U+06BE) is read as h, the h Sindhi writes (سنھا = Sinha). On Wikidata
+people (DEV, not held out) Sindhi rises from 78% to 83%; 2,251 of the
+199,992 test words gain a key, and 20 of them, with ھ at the start or after
+a vowel, lose the h-less one.
 Each number is the share of a place's name pairs whose keys meet.
 
 | | phonetic | romanize + Soundex |
@@ -34,7 +42,8 @@ These are places, not people. Every people list held out for this key has
 been read, so the people numbers below were read with older rules. They
 still hold as lower bounds: every word keeps every key it had in indickit
 v0.10.0 (rules 2026-10-07), checked on all 198,782 test words but two long
-Urdu words, so every pair those rules matched is still matched.
+Urdu words and the 20 ھ words above, so every pair those rules matched is
+still matched.
 
 ### People, rules 2026-10-05
 
@@ -97,7 +106,9 @@ and a scorer learned from data gives each one a score from 0 to 100. Use it
 for a long list, for names written with titles, initials or joined words,
 and for a name in running text.
 
-Search 2026-10-11.7, on the same held-out OpenStreetMap places: each English
+Search 2026-10-11.7, on the same held-out OpenStreetMap places (search
+2026-10-11.8 on the second slice: 92% found, 91.5 exactly, at 3.0 wrong per
+10,000; the rival 72.7% at 3.0): each English
 place name looked up among the native names of its language, at the
 villages threshold.
 

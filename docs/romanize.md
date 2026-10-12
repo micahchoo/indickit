@@ -25,11 +25,18 @@ There are two modes, each with its own tables:
   human romanizations a language from Aksharantar. This is the default.
 - **names**, for fields that hold person names: trained on the English
   labels of Indian people in Wikidata. A word that the training names hold
-  and that the model would spell otherwise comes from a lookup first.
+  and that the model would spell otherwise comes from a lookup first. Since
+  rules 2026-10-12 the list is reranked: the ten best spellings by the
+  alignment score are scored again with a letter 5-gram over the training
+  English spellings (score + 0.25 × its log probability), and the best four
+  of that order are returned. The alignment model scores how each piece is
+  spelled; the letter model sees what an English spelling of a name looks
+  like as a whole (the schwa, ee against i, a lost h), which is where the
+  rank went wrong. One table, 148 KB (brotli), shared by every names page.
 
 The tables are rules as data: the Go and TypeScript code is a short loop
 over them, and both give the reference implementation's lists on every row of
-the conformance file (2,397 rows).
+the conformance file (3,221 rows).
 
 ## How good it is
 
@@ -72,7 +79,15 @@ of four. Santali is left out of the comparison: IndicXlit has no Santali.
 | People with a Wikipedia page created after November 2023 | 8116 | 71.4 / 71.8 / 87.0 | 43.1 / 43.4 / 69.1 |
 
 In all, the first spelling is an accepted one for 71.3% of the names
-(IndicXlit: 49.0%).
+(IndicXlit: 49.0%). These are the numbers of rules 2026-10-11.2. Rules
+2026-10-12 rerank the list (above); on the development names that neither
+tool's training holds, the first spelling goes from 47.0% to 51.7% at the
+shipped beam (any of four: 70.4% to 72.8%), every language gaining but
+Kannada. Read once on names held out to the end (Wikidata people of
+Bangladesh, Pakistan, Nepal and Sri Lanka; 10,773 unseen tokens): the first
+spelling goes from 37.9% to 41.0% (+3.1, 95% interval +2.5 to +3.7; any of
+four 60.1% to 62.3%), and no language falls. The table above is the number
+of rules 2026-10-11.2, a lower bound for the rules that ship.
 
 **Single words out of context.** On Aksharantar's test words that neither
 tool was trained on, IndicXlit is ahead: 55.6% against 50.1% for the first
@@ -95,8 +110,9 @@ against 39.9%. No held-out set was read for this comparison, because no
 tool came within reach.
 
 The browser file is 8 KB gzipped. The tables load on demand, one language
-and mode at a time: about 0.4 MB for names and 1.9 MB for text in a Brahmic
-language, 0.2 MB and 1.0 MB in Urdu (brotli, as jsDelivr serves them). They
+and mode at a time: about 0.5 MB for names and 1.9 MB for text in a Brahmic
+language, 0.3 MB and 1.0 MB in Urdu (brotli, as jsDelivr serves them; the
+names figure includes the 148 KB letter model every names page shares). They
 are read beside the module, else from jsDelivr at the package's version; the
 npm package carries none of them. In Go, `go get` downloads every language's
 tables once (14 MB) and a program carries only the languages it imports. One

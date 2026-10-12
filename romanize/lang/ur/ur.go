@@ -8,6 +8,7 @@ import (
 
 	"github.com/micahchoo/indickit/romanize"
 	_ "github.com/micahchoo/indickit/romanize/lang/arabic"
+	_ "github.com/micahchoo/indickit/romanize/lang/shared"
 )
 
 //go:embed ur.names.bin

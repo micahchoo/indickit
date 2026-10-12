@@ -97,6 +97,19 @@ the right sentences (95%: +1.1 to +2.5) and Marathi 1.6 (+1.1 to +2.2);
 precision falls by 0.2 and 0.4 points. Of the other languages tried, five
 lose more precision than the budget allows and three gain nothing.
 
+Kannada has 6 more endings and Marathi 10 since rules 2026-10-12 (the
+Marathi ones are postpositions written solid: ंमध्ये, बद्दल, मुळे). They
+were chosen on PIB queries inside the budget those languages had not
+spent, and checked on PIB sentences of May 2021, which no rule was chosen
+on and which were read once: Kannada finds 0.5 points more of the right
+sentences (95%: +0.2 to +1.0) and Marathi 0.8 (+0.5 to +1.4); precision
+falls by 0.4 and 0.2 points. Assamese, Gujarati and Punjabi had budget
+left, but no ending passed the bar. On the same May 2021 sentences, rules
+2026-10-11 find 5.1 (Urdu) to 17.6 (Kannada) points more of the right
+sentences than exact search: ahead of the best other stemmer in Kannada,
+Urdu, Bengali, Gujarati and Telugu, level in Marathi, behind in Hindi,
+Punjabi, Tamil and Malayalam.
+
 Sanskrit has 17 more endings since rules 2026-10-11; the Sanskrit row
 above was measured before that change. The endings were chosen on lemmas
 of the Digital Corpus of Sanskrit (DCS, CC BY 4.0), on words that also

@@ -73,6 +73,17 @@ var rules struct {
 		File   string `json:"file"`
 		Pooled string `json:"pooled"`
 	} `json:"families"`
+	// Rescore, by mode (Names): the letter n-gram that reorders the list (rules
+	// 2026-10-12), its file in lang/shared, and the knobs: the list of Depth spellings
+	// by alignment score, each plus Beta × the log probability of its letters.
+	Rescore map[Mode]struct {
+		File  string  `json:"file"`
+		Beta  float64 `json:"beta"`
+		Depth int     `json:"depth"`
+		Order int     `json:"order"`
+		Bos   string  `json:"bos"`
+		Eos   string  `json:"eos"`
+	} `json:"rescore"`
 }
 
 // RulesVersion changes whenever any output changes: store it beside
@@ -88,9 +99,10 @@ func init() {
 
 var (
 	mu     sync.Mutex
-	files  = map[string][]byte{} // file name → its bytes, from the lang packages
-	tables = map[string]*mix{}   // lang + "." + mode → its loaded tables
-	pooled = map[string]*model{} // pooled file name → its model
+	files  = map[string][]byte{}    // file name → its bytes, from the lang packages
+	tables = map[string]*mix{}      // lang + "." + mode → its loaded tables
+	pooled = map[string]*model{}    // pooled file name → its model
+	lms    = map[string]*letterLM{} // rescore file name → its letter n-gram
 )
 
 // Register is called by the lang packages; a program does not call it.
@@ -106,12 +118,18 @@ func Languages(mode Mode) []string {
 	defer mu.Unlock()
 	var out []string
 	for lang, l := range rules.Families[mode] {
-		if files[l.File] != nil && files[l.Pooled] != nil {
+		if files[l.File] != nil && files[l.Pooled] != nil && rescoreFile(mode) {
 			out = append(out, lang)
 		}
 	}
 	sort.Strings(out)
 	return out
+}
+
+// rescoreFile: the mode's letter n-gram is imported, or the mode has none (mu held).
+func rescoreFile(mode Mode) bool {
+	rc, ok := rules.Rescore[mode]
+	return !ok || files[rc.File] != nil
 }
 
 // Word returns up to n spellings of one word (n ≤ 0 means 4), most likely
@@ -225,15 +243,24 @@ func get(lang string, mode Mode) *mix {
 	mu.Lock()
 	defer mu.Unlock()
 	l, ok := rules.Families[mode][lang]
-	if !ok || files[l.File] == nil || files[l.Pooled] == nil {
+	if !ok || files[l.File] == nil || files[l.Pooled] == nil || !rescoreFile(mode) {
 		return nil
 	}
 	// keyed by the tables, not the mode: Places reuses the Words tables of most languages
-	key := fmt.Sprintf("%s|%s|%s|%d", l.File, l.Pooled, l.Tag, rules.Beam[mode])
+	rc, rescored := rules.Rescore[mode]
+	key := fmt.Sprintf("%s|%s|%s|%d|%s", l.File, l.Pooled, l.Tag, rules.Beam[mode], rc.File)
 	if x, ok := tables[key]; ok {
 		return x
 	}
 	x := newMix(files[l.File], files[l.Pooled], l.Tag, rules.Beam[mode])
+	if rescored {
+		lm, ok := lms[rc.File]
+		if !ok {
+			lm = readLetterLM(files[rc.File], rc.Order, rc.Bos, rc.Eos)
+			lms[rc.File] = lm
+		}
+		x.lm, x.beta, x.depth = lm, rc.Beta, rc.Depth
+	}
 	tables[key] = x
 	return x
 }
@@ -382,6 +409,74 @@ func readModel(r *reader, strs []string, in *interner) *model {
 	return m
 }
 
+// letterLM is the names mode's letter n-gram (rules 2026-10-12; jsm.LetterLM): a
+// Witten-Bell model over the training English spellings, letters as tokens, read from
+// the same file format. Few tokens and short contexts: plain maps keyed by the context's
+// letters, looked up a few hundred times a word.
+type letterLM struct {
+	order    int
+	vocab    int
+	bos, eos string
+	levels   []map[string]*lmCtx // level n: the last n letters → its continuations
+}
+
+type lmCtx struct {
+	total, wb float64 // total count, and the Witten-Bell weight total / (total + types)
+	count     map[string]int32
+}
+
+func readLetterLM(b []byte, order int, bos, eos string) *letterLM {
+	r, strs := open(b)
+	lm := &letterLM{order: order, bos: bos, eos: eos, vocab: r.varint()}
+	for l := r.varint(); l > 0; l-- {
+		lv := map[string]*lmCtx{}
+		for c := r.varint(); c > 0; c-- {
+			var key strings.Builder
+			for i := r.varint(); i > 0; i-- {
+				key.WriteString(strs[r.varint()])
+			}
+			e := &lmCtx{count: map[string]int32{}}
+			prev := 0
+			for t := r.varint(); t > 0; t-- {
+				prev += r.varint()
+				k := int32(r.varint())
+				e.count[strs[prev]] = k
+				e.total += float64(k)
+			}
+			e.wb = e.total / (e.total + float64(len(e.count)))
+			lv[key.String()] = e
+		}
+		lm.levels = append(lm.levels, lv)
+	}
+	return lm
+}
+
+// logp of a spelling: the sum over its letters and the end token of the Witten-Bell
+// probability, lowest order first, as prob (the reference: jsm.LetterLM.logp).
+func (lm *letterLM) logp(s string) float64 {
+	toks := make([]string, 0, lm.order+len(s))
+	for i := 0; i < lm.order-1; i++ {
+		toks = append(toks, lm.bos)
+	}
+	for _, c := range s {
+		toks = append(toks, string(c))
+	}
+	toks = append(toks, lm.eos)
+	sum := 0.0
+	for i := lm.order - 1; i < len(toks); i++ {
+		p := 1.0 / float64(lm.vocab+1)
+		for n := 0; n < lm.order && n < len(lm.levels); n++ {
+			e, ok := lm.levels[n][strings.Join(toks[i-n:i], "")]
+			if !ok {
+				continue
+			}
+			p = e.wb*float64(e.count[toks[i]])/e.total + (1-e.wb)*p
+		}
+		sum += math.Log(p)
+	}
+	return sum
+}
+
 // ctxStats are one model's statistics for one context, at each order: computed once per
 // hypothesis, then used for every token that can follow it.
 type ctxStats struct {
@@ -429,6 +524,11 @@ type mix struct {
 	eos     int32
 	options map[string][]option // native chunk → its options, English sorted
 	lookup  map[string][]string
+	// the names mode's rescoring (rules 2026-10-12): the depth best spellings by
+	// alignment score are reordered by score + beta × lm.logp(spelling)
+	lm    *letterLM
+	beta  float64
+	depth int
 }
 
 func newMix(own, pool []byte, tag string, beam int) *mix {
@@ -611,8 +711,46 @@ func (bm *beam) add(c cand) {
 	bm.best[j] = p
 }
 
-// decode: beam search over the ways to cut w into chunks; the n best spellings.
+// scored is one spelling and its score: the alignment's log probability, or, after the
+// names mode's rescoring, that plus beta × the letter n-gram's.
+type scored struct {
+	s float64
+	o string
+}
+
+func sortScored(rs []scored) { // score down, then the string up: the reference's order
+	sort.Slice(rs, func(p, q int) bool {
+		if rs[p].s != rs[q].s {
+			return rs[p].s > rs[q].s
+		}
+		return rs[p].o < rs[q].o
+	})
+}
+
+// decode: beam search over the ways to cut w into chunks; the n best spellings. With a
+// letter n-gram (names, rules 2026-10-12), the max(n, depth) best by alignment score are
+// built, each scores alignment + beta × the n-gram's log probability of its letters, and
+// the n best of that order are returned (ties by the string): jsm.decode_rescored.
 func (x *mix) decode(word string, n int) []string {
+	if n <= 0 {
+		return []string{}
+	}
+	rs := x.beamSearch(word, max(n, x.depth))
+	if x.lm != nil {
+		for i := range rs {
+			rs[i].s += x.beta * x.lm.logp(rs[i].o)
+		}
+		sortScored(rs)
+	}
+	out := make([]string, 0, n)
+	for i := 0; i < len(rs) && i < n; i++ {
+		out = append(out, rs[i].o) // as the reference: an empty spelling stays in the list
+	}
+	return out
+}
+
+// beamSearch: the n best spellings of word by alignment score, with their scores.
+func (x *mix) beamSearch(word string, n int) []scored {
 	w := []rune(stripJoiners(word))
 	h := rules.Order - 1
 	root := &hyp{ctx: x.start}
@@ -680,10 +818,6 @@ func (x *mix) decode(word string, n int) []string {
 	// walk stops at the first score below the n-th: no candidate after it can enter, and a
 	// spelling's first candidate holds its best score (perf phase 8: building every
 	// spelling was most of a call's memory). Equal scores go on: a tie is ordered by its string.
-	out := make([]string, 0, max(n, 0))
-	if n <= 0 {
-		return out
-	}
 	every := beams[len(w)].every
 	eos := map[uint64]float64{}
 	fin := make([]float64, len(every))
@@ -704,11 +838,7 @@ func (x *mix) decode(word string, n int) []string {
 		fin[i], order[i] = c.score+lp, int32(i)
 	}
 	slices.SortFunc(order, func(p, q int32) int { return cmp.Compare(fin[q], fin[p]) })
-	type res struct {
-		s float64
-		o string
-	}
-	var rs []res
+	var rs []scored
 	seen := map[string]bool{}
 	spelled := map[*hyp]string{}
 	for _, i := range order {
@@ -728,17 +858,12 @@ func (x *mix) decode(word string, n int) []string {
 		}
 		if !seen[o] {
 			seen[o] = true
-			rs = append(rs, res{s, o})
+			rs = append(rs, scored{s, o})
 		}
 	}
-	sort.Slice(rs, func(p, q int) bool {
-		if rs[p].s != rs[q].s {
-			return rs[p].s > rs[q].s
-		}
-		return rs[p].o < rs[q].o
-	})
-	for i := 0; i < len(rs) && i < n; i++ {
-		out = append(out, rs[i].o) // as the reference: an empty spelling stays in the list
+	sortScored(rs)
+	if len(rs) > n {
+		rs = rs[:n]
 	}
-	return out
+	return rs
 }

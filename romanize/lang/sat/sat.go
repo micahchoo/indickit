@@ -8,6 +8,7 @@ import (
 
 	"github.com/micahchoo/indickit/romanize"
 	_ "github.com/micahchoo/indickit/romanize/lang/olchiki"
+	_ "github.com/micahchoo/indickit/romanize/lang/shared"
 )
 
 //go:embed sat.names.bin

@@ -41,17 +41,21 @@ export interface Romanizer {
     text(text: string): string;
 }
 /**
- * Loads a language's tables for one mode: its own file and its script
- * group's pooled file (shared by the group, fetched once). It reads them
- * beside this module, else from jsDelivr at this package's version (the npm
- * package carries no tables); `base` or `fetch` replaces both. Rejects when
- * the language has no tables for the mode.
+ * Loads a language's tables for one mode: its own file, its script group's
+ * pooled file (shared by the group, fetched once) and, for the names mode,
+ * the letter n-gram every names page shares. It reads them beside this
+ * module, else from jsDelivr at this package's version (the npm package
+ * carries no tables); `base` or `fetch` replaces both. Rejects when the
+ * language has no tables for the mode.
  */
 export declare function load(lang: string, mode?: Mode, opts?: {
     fetch?: Fetcher;
     base?: URL | string;
 }): Promise<Romanizer>;
-/** Builds a Romanizer from a language's two files (for tests and offline use). */
-export declare function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8Array): Romanizer;
+/**
+ * Builds a Romanizer from a language's files (for tests and offline use): its own, its
+ * group's pooled one and, for a mode with a letter n-gram (names), that file too.
+ */
+export declare function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8Array, lm?: Uint8Array): Romanizer;
 /** @internal The model's own list for a unified word (no lookup), for the conformance test. */
 export declare function _decode(r: Romanizer, word: string, n: number): string[];

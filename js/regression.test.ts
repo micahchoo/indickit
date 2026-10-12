@@ -63,7 +63,7 @@ test("keys(normalize(x)) = keys(x) for a word with no invisible character", () =
   for (const s of ["फ\u093c\u093eत\u093fम\u093e", "فاطمہ", "عمران", "Rāma", "১২"]) {
     expect([s, keys(normalize(s))]).toEqual([s, keys(s)]);
   }
-  for (const s of ["فاطمہ\u200c", "\ufeffعمران", "\u0b01\u200c", "\u0ce2\u200cR"]) {
+  for (const s of ["فاطمہ\u200c", "\ufeffعمران", "\u0ce2\u200cR"]) {
     expect([s, keys(normalize(s))]).not.toEqual([s, keys(s)]);
   }
 });

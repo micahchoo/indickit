@@ -8,10 +8,42 @@ version, and compare `RULES_VERSION` (or `SEARCH_VERSION`) to know which
 rows. A version whose rules line equals the one before it gives every
 input the same output.
 
-## Unreleased
+## 0.12.0 (2026-10-12)
 
-Rules: phonetic 2026-10-11.7, normalize 2026-10-12, segment 2026-10-11, stem 2026-10-11, romanize 2026-10-11.2, deromanize 2026-10-09.2, phonetic-search 2026-10-11.7
+Rules: phonetic 2026-10-11.8, normalize 2026-10-12, segment 2026-10-11, stem 2026-10-12, romanize 2026-10-12, deromanize 2026-10-09.2, phonetic-search 2026-10-11.8
 
+- Faster, same output: `deromanize` 2.0x in Go and 1.35x in TypeScript (a
+  Hindi word in Go: 11.0 -> 4.4 ms); `romanize` 1.5-2.0x in Go and 1.1x in
+  TypeScript (a Hindi sentence in Go: 31 -> 15 ms). The n-gram tables are
+  sorted arrays, not one map entry per pair, and the last letter builds only
+  the spellings that can be returned, best first.
+- Faster, same output: `Search` 2.0x in Go and 2.4x in TypeScript, `NewIndex`
+  1.6x and 1.8x. A word's keys are computed once per call, and a pair of
+  words is scored once.
+- Less memory, faster loads: a loaded Hindi deromanizer keeps 18 MB of heap
+  in Go (was 35 MB) and loads in 36 ms (was 111 ms); a romanizer keeps 15 MB
+  (was 29 MB) and loads in 40 ms (was 96 ms). The Go word lists are kept as
+  bytes. (0.11.0 already made TypeScript's tables flat: a Hindi deromanizer
+  130 -> 35 MB, a romanizer 194 -> 42 MB.) A test in each port fails if a
+  loaded language grows back past its bound.
+- Changed output: phonetic 2026-10-11.7 → 2026-10-11.8, phonetic-search
+  follows. Recompute stored keys. The Perso-Arabic letter ھ (U+06BE) is read
+  as h: Sindhi writes its h with it (سنھا = Sinha, جوھي = Juhi), and the
+  reader skipped it. On Wikidata people (DEV) Sindhi rises from 78% to 83%,
+  Urdu, Kashmiri and Hindi by under a point, the wrong-match rate unchanged.
+  2,251 of the 199,992 test words (those with ھ) gain a key; every key of
+  0.11.0 is kept but for 20 of them, with ھ at the start or after a vowel,
+  where the h-less key goes (شاھ = Shah: c → ch); the one that matters is a
+  variant spelling of Chaudhry (چوھدری; the usual چودھری keeps its key).
+- Changed output: stem rules 2026-10-11 → 2026-10-12, Kannada and Marathi
+  only. Kannada gains 6 endings (ದನ್ನು ಂದು ಿವೆ ಂತೆ ಾಗ ತ್ತ) and Marathi 10
+  (postpositions written solid: ंमध्ये बद्दल मुळे ंनी ंना द्वारे कडे ंचा िक
+  ान), chosen on PIB queries inside the wrong-hit budget those languages
+  had not spent; 6,001 of the 729,361 conformance rows change (kn 3,130,
+  mr 2,871). On PIB sentences of May 2021, which no rule was chosen on and
+  which were read once, Kannada finds 0.5 points more of the right
+  sentences (95%: +0.2 to +1.0) and Marathi 0.8 (+0.5 to +1.4), at 0.4
+  and 0.2 points of precision. Recompute stored stems in kn and mr.
 - Changed output: normalize rules 2026-10-11 → 2026-10-12. Recompute stored
   normalized text. "Looks the same" is now decided by every font we hold that
   draws what `normalize` writes, 2 to 15 families a script compared by glyph
@@ -32,21 +64,26 @@ Rules: phonetic 2026-10-11.7, normalize 2026-10-12, segment 2026-10-11, stem 202
   16,327 to 47 of 83M, with 91.8% of joiner groups made equal (Odia 80.5%).
   Odia still loses a ZWNJ in some acronyms and a ZWJ after ଡ଼ + virama (310
   of 922,000 words): docs/normalize.md. The browser file grows from 16 KB to
-  22 KB gzipped: the tree holds more contexts.
-- Faster, same output: `deromanize` 2.0x in Go and 1.35x in TypeScript (a
-  Hindi word in Go: 11.0 -> 4.4 ms); `romanize` 1.5-2.0x in Go and 1.1x in
-  TypeScript (a Hindi sentence in Go: 31 -> 15 ms). The n-gram tables are
-  sorted arrays, not one map entry per pair, and the last letter builds only
-  the spellings that can be returned, best first.
-- Faster, same output: `Search` 2.0x in Go and 2.4x in TypeScript, `NewIndex`
-  1.6x and 1.8x. A word's keys are computed once per call, and a pair of
-  words is scored once.
-- Less memory, faster loads: a loaded Hindi deromanizer keeps 18 MB of heap
-  in Go (was 35 MB) and loads in 36 ms (was 111 ms); a romanizer keeps 15 MB
-  (was 29 MB) and loads in 40 ms (was 96 ms). The Go word lists are kept as
-  bytes. (0.11.0 already made TypeScript's tables flat: a Hindi deromanizer
-  130 -> 35 MB, a romanizer 194 -> 42 MB.) A test in each port fails if a
-  loaded language grows back past its bound.
+  22 KB gzipped: the tree holds more contexts; `deromanize` (22 → 28 KB)
+  and `search-key` (19 → 26 KB) embed the same tree and grow with it.
+- Changed output: romanize rules 2026-10-11.2 → 2026-10-12, the names mode
+  only (words and places are unchanged). The ten best spellings by the
+  alignment score are scored again with a letter 5-gram over the training
+  English spellings, and the best four of that order are returned: the rank
+  had English-side habits wrong (the schwa, ee against i, a lost h), and the
+  accepted spelling was usually already in the list. On development names
+  that neither tool's training holds, the first spelling is right 51.7% of
+  the time, was 47.0% (IndicXlit 39.7%); any of four 72.8%, was 70.4%. On
+  names held out to the end (Wikidata people of Bangladesh, Pakistan, Nepal
+  and Sri Lanka, read once, 10,773 unseen tokens) the first spelling goes from
+  37.9% to 41.0%, no language falling. Of the 1,008 names rows of the
+  conformance file, 83 change their first spelling and 794 their order.
+  `rules.json` gains `rescore`; the model file `lang/shared/names-lm.bin`
+  (148 KB brotli) is loaded with every names page, in Go through the
+  language package. The names lookup now holds the names the shipped beam
+  spells otherwise (13,495 entries, was 16,632 at the reference's beam).
+  TypeScript `fromBytes` takes the letter model as a fifth argument for the
+  names mode.
 
 ## 0.11.0 (2026-10-12)
 

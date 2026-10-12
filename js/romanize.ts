@@ -31,6 +31,10 @@ import { isLetter, isMark, nfc } from "./unidata";
 export type Mode = "words" | "names" | "places";
 
 type FamilyEntry = { tag: string; group: string; file: string; pooled: string };
+// The letter n-gram that reorders a mode's list (names, rules 2026-10-12): its file in
+// lang/shared, and the knobs: the depth spellings by alignment score, each plus beta × the
+// log probability of its letters.
+type Rescore = { file: string; beta: number; depth: number; order: number; bos: string; eos: string };
 type Rules = {
   rules_version: string;
   beam: Record<Mode, number>;
@@ -43,6 +47,7 @@ type Rules = {
   unify: { from: [number, number]; to_block: number; mask: number };
   groups: Record<string, [number, number][]>;
   families: Record<Mode, Record<string, FamilyEntry>>;
+  rescore?: Partial<Record<Mode, Rescore>>;
 };
 const RULES = rulesJson as unknown as Rules;
 
@@ -88,14 +93,15 @@ export interface Romanizer {
   text(text: string): string;
 }
 
-const pooledCache = new Map<string, Promise<ArrayBuffer>>();
+const pooledCache = new Map<string, Promise<ArrayBuffer>>(); // pooled and shared files, fetched once a page
 
 /**
- * Loads a language's tables for one mode: its own file and its script
- * group's pooled file (shared by the group, fetched once). It reads them
- * beside this module, else from jsDelivr at this package's version (the npm
- * package carries no tables); `base` or `fetch` replaces both. Rejects when
- * the language has no tables for the mode.
+ * Loads a language's tables for one mode: its own file, its script group's
+ * pooled file (shared by the group, fetched once) and, for the names mode,
+ * the letter n-gram every names page shares. It reads them beside this
+ * module, else from jsDelivr at this package's version (the npm package
+ * carries no tables); `base` or `fetch` replaces both. Rejects when the
+ * language has no tables for the mode.
  */
 export async function load(
   lang: string,
@@ -107,17 +113,30 @@ export async function load(
   if (!l) throw new Error(`romanize: no ${mode} tables for "${lang}"`);
   const base = new URL(opts.base ?? "../romanize/lang/", import.meta.url);
   const get = opts.fetch ?? (opts.base ? fetchBytes : defaultFetcher(base));
-  const poolKey = `${base}${l.group}/${l.pooled}`;
-  if (!pooledCache.has(poolKey)) pooledCache.set(poolKey, get(new URL(`${l.group}/${l.pooled}`, base)));
-  const [own, pool] = await Promise.all([get(new URL(`${c}/${l.file}`, base)), pooledCache.get(poolKey)!]);
-  return fromBytes(c, mode, new Uint8Array(own), new Uint8Array(pool));
+  const shared = (path: string) => {
+    const key = `${base}${path}`;
+    if (!pooledCache.has(key)) pooledCache.set(key, get(new URL(path, base)));
+    return pooledCache.get(key)!;
+  };
+  const rc = RULES.rescore?.[mode];
+  const [own, pool, lm] = await Promise.all([
+    get(new URL(`${c}/${l.file}`, base)),
+    shared(`${l.group}/${l.pooled}`),
+    rc ? shared(`shared/${rc.file}`) : undefined,
+  ]);
+  return fromBytes(c, mode, new Uint8Array(own), new Uint8Array(pool), lm && new Uint8Array(lm));
 }
 
-/** Builds a Romanizer from a language's two files (for tests and offline use). */
-export function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8Array): Romanizer {
+/**
+ * Builds a Romanizer from a language's files (for tests and offline use): its own, its
+ * group's pooled one and, for a mode with a letter n-gram (names), that file too.
+ */
+export function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8Array, lm?: Uint8Array): Romanizer {
   const l = RULES.families[mode][lang];
   if (!l) throw new Error(`romanize: no ${mode} tables for "${lang}"`);
-  const x = new Mix(own, pool, l.tag, RULES.beam[mode]);
+  const rc = RULES.rescore?.[mode];
+  if (rc && !lm) throw new Error(`romanize: the ${mode} mode needs its letter n-gram (shared/${rc.file})`);
+  const x = new Mix(own, pool, l.tag, RULES.beam[mode], rc && lm ? new LetterLM(lm, rc) : null, rc);
   const ranges = RULES.groups[l.group];
   const inScript = (ch: string) => {
     const cp = ch.codePointAt(0)!;
@@ -351,6 +370,62 @@ class Interner {
   }
 }
 
+// The names mode's letter n-gram (rules 2026-10-12; jsm.LetterLM): a Witten-Bell model over
+// the training English spellings, letters as tokens, read from the same file format. Few
+// tokens and short contexts: plain Maps keyed by the context's letters.
+type LmCtx = { total: number; wb: number; count: Map<string, number> };
+class LetterLM {
+  vocab: number;
+  levels: Map<string, LmCtx>[] = [];
+  constructor(
+    b: Uint8Array,
+    readonly rc: Rescore,
+  ) {
+    const r = new Reader(b);
+    const strs = readStrings(r);
+    this.vocab = r.varint();
+    for (let l = r.varint(); l > 0; l--) {
+      const lv = new Map<string, LmCtx>();
+      for (let c = r.varint(); c > 0; c--) {
+        let key = "";
+        for (let i = r.varint(); i > 0; i--) key += strs[r.varint()];
+        const e: LmCtx = { total: 0, wb: 0, count: new Map() };
+        let prev = 0;
+        for (let t = r.varint(); t > 0; t--) {
+          prev += r.varint();
+          const k = r.varint();
+          e.count.set(strs[prev], k);
+          e.total += k;
+        }
+        e.wb = e.total / (e.total + e.count.size);
+        lv.set(key, e);
+      }
+      this.levels.push(lv);
+    }
+  }
+
+  // log p of a spelling: the sum over its letters and the end token of the Witten-Bell
+  // probability, lowest order first, as Model.prob (the reference: jsm.LetterLM.logp)
+  logp(s: string): number {
+    const { order, bos, eos } = this.rc;
+    const toks: string[] = [];
+    for (let i = 0; i < order - 1; i++) toks.push(bos);
+    for (const c of s) toks.push(c);
+    toks.push(eos);
+    let sum = 0;
+    for (let i = order - 1; i < toks.length; i++) {
+      let p = 1 / (this.vocab + 1);
+      for (let n = 0; n < order && n < this.levels.length; n++) {
+        const e = this.levels[n].get(toks.slice(i - n, i).join(""));
+        if (!e) continue;
+        p = (e.wb * (e.count.get(toks[i]) ?? 0)) / e.total + (1 - e.wb) * p;
+      }
+      sum += Math.log(p);
+    }
+    return sum;
+  }
+}
+
 type Option = { tok: number; en: string };
 // A spelling is a chain: each hypothesis holds its parent and the piece it
 // adds, and a whole string is built only at the last position. A copy of the
@@ -439,6 +514,10 @@ class Mix {
     pool: Uint8Array,
     tag: string,
     readonly beam: number,
+    // the names mode's rescoring (rules 2026-10-12): the depth best spellings by
+    // alignment score are reordered by score + beta × lm.logp(spelling)
+    readonly lm: LetterLM | null = null,
+    readonly rescore: Rescore | undefined = undefined,
   ) {
     // The pooled model is parsed once per pooled file and shared by every language and mode
     // that reads it (a Brahmic page with several languages held one copy each before); its
@@ -489,8 +568,26 @@ class Mix {
     return Math.log(this.lam * pa + (1 - this.lam) * pb);
   }
 
-  /** Beam search over the ways to cut w into chunks; the n best spellings (an empty one included). */
+  /**
+   * Beam search over the ways to cut w into chunks; the n best spellings (an empty one
+   * included). With a letter n-gram (names, rules 2026-10-12), the max(n, depth) best by
+   * alignment score are built, each scores alignment + beta × the n-gram's log probability
+   * of its letters, and the n best of that order are returned (ties by the string):
+   * jsm.decode_rescored.
+   */
   decode(word: string, n: number): string[] {
+    if (n <= 0) return [];
+    const rs = this.beamSearch(word, this.lm && this.rescore ? Math.max(n, this.rescore.depth) : n);
+    if (this.lm && this.rescore) {
+      const beta = this.rescore.beta;
+      for (const e of rs) e[1] += beta * this.lm.logp(e[0]);
+      sortScored(rs);
+    }
+    return rs.slice(0, n).map((e) => e[0]);
+  }
+
+  /** The n best spellings of word by alignment score, with their scores. */
+  beamSearch(word: string, n: number): [string, number][] {
     const w = [...stripJoiners(word)];
     const h = RULES.order - 1;
     const root: Hyp = { score: 0, parent: null, piece: "", at: 0, ctx: this.start };
@@ -575,15 +672,18 @@ class Mix {
     const seen = new Set<string>();
     for (const i of order) {
       const s = fin[i];
-      if (n > 0 && out.length >= n && s < out[n - 1][1]) break; // n <= 0: every spelling, as slice(0, n) wants
+      if (out.length >= n && s < out[n - 1][1]) break;
       const o = spell(every[i]);
       if (!seen.has(o)) { seen.add(o); out.push([o, s]); }
     }
-    return out
-      .sort((p, q) => (p[1] !== q[1] ? q[1] - p[1] : p[0] < q[0] ? -1 : p[0] > q[0] ? 1 : 0))
-      .slice(0, n)
-      .map((e) => e[0]);
+    sortScored(out);
+    return out.slice(0, n);
   }
+}
+
+// score down, then the string up: the reference's order
+function sortScored(rs: [string, number][]): void {
+  rs.sort((p, q) => (p[1] !== q[1] ? q[1] - p[1] : p[0] < q[0] ? -1 : p[0] > q[0] ? 1 : 0));
 }
 
 function readStrings(r: Reader): string[] {

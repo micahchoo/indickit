@@ -11,112 +11,112 @@
    "as": {
     "file": "as.names.bin",
     "group": "brahmic",
-    "lookup": 669,
+    "lookup": 532,
     "pooled": "names-brahmic.bin",
     "tag": "as"
    },
    "bn": {
     "file": "bn.names.bin",
     "group": "brahmic",
-    "lookup": 1785,
+    "lookup": 1408,
     "pooled": "names-brahmic.bin",
     "tag": "bn"
    },
    "gom": {
     "file": "gom.names.bin",
     "group": "brahmic",
-    "lookup": 17,
+    "lookup": 15,
     "pooled": "names-brahmic.bin",
     "tag": "gom"
    },
    "gu": {
     "file": "gu.names.bin",
     "group": "brahmic",
-    "lookup": 131,
+    "lookup": 113,
     "pooled": "names-brahmic.bin",
     "tag": "gu"
    },
    "hi": {
     "file": "hi.names.bin",
     "group": "brahmic",
-    "lookup": 1152,
+    "lookup": 961,
     "pooled": "names-brahmic.bin",
     "tag": "hi"
    },
    "kn": {
     "file": "kn.names.bin",
     "group": "brahmic",
-    "lookup": 448,
+    "lookup": 384,
     "pooled": "names-brahmic.bin",
     "tag": "kn"
    },
    "ks": {
     "file": "ks.names.bin",
     "group": "arabic",
-    "lookup": 130,
+    "lookup": 110,
     "pooled": "names-arabic.bin",
     "tag": "ks"
    },
    "mai": {
     "file": "mai.names.bin",
     "group": "brahmic",
-    "lookup": 150,
+    "lookup": 115,
     "pooled": "names-brahmic.bin",
     "tag": "mai"
    },
    "ml": {
     "file": "ml.names.bin",
     "group": "brahmic",
-    "lookup": 908,
+    "lookup": 744,
     "pooled": "names-brahmic.bin",
     "tag": "ml"
    },
    "mni": {
     "file": "mni.names.bin",
     "group": "brahmic",
-    "lookup": 253,
+    "lookup": 251,
     "pooled": "names-brahmic.bin",
     "tag": "mni"
    },
    "mr": {
     "file": "mr.names.bin",
     "group": "brahmic",
-    "lookup": 716,
+    "lookup": 604,
     "pooled": "names-brahmic.bin",
     "tag": "mr"
    },
    "ne": {
     "file": "ne.names.bin",
     "group": "brahmic",
-    "lookup": 146,
+    "lookup": 122,
     "pooled": "names-brahmic.bin",
     "tag": "ne"
    },
    "or": {
     "file": "or.names.bin",
     "group": "brahmic",
-    "lookup": 610,
+    "lookup": 522,
     "pooled": "names-brahmic.bin",
     "tag": "or"
    },
    "pa": {
     "file": "pa.names.bin",
     "group": "brahmic",
-    "lookup": 996,
+    "lookup": 787,
     "pooled": "names-brahmic.bin",
     "tag": "pa"
    },
    "sa": {
     "file": "sa.names.bin",
     "group": "brahmic",
-    "lookup": 66,
+    "lookup": 58,
     "pooled": "names-brahmic.bin",
     "tag": "sa"
    },
    "sat": {
     "file": "sat.names.bin",
     "group": "olchiki",
-    "lookup": 407,
+    "lookup": 372,
     "pooled": "names-olchiki.bin",
     "tag": "sat"
    },
@@ -130,21 +130,21 @@
    "ta": {
     "file": "ta.names.bin",
     "group": "brahmic",
-    "lookup": 3961,
+    "lookup": 2999,
     "pooled": "names-brahmic.bin",
     "tag": "ta"
    },
    "te": {
     "file": "te.names.bin",
     "group": "brahmic",
-    "lookup": 2126,
+    "lookup": 1719,
     "pooled": "names-brahmic.bin",
     "tag": "te"
    },
    "ur": {
     "file": "ur.names.bin",
     "group": "arabic",
-    "lookup": 1961,
+    "lookup": 1679,
     "pooled": "names-arabic.bin",
     "tag": "ur"
    }
@@ -456,60 +456,61 @@
   }
  },
  "files": {
-  "as.names.bin": 89974,
+  "as.names.bin": 85541,
   "as.words.bin": 235861,
-  "bn.names.bin": 182011,
+  "bn.names.bin": 169998,
   "bn.places.bin": 126420,
   "bn.words.bin": 377631,
   "brx.words.bin": 203214,
   "doi.words.bin": 48662,
-  "gom.names.bin": 9361,
+  "gom.names.bin": 9291,
   "gom.words.bin": 324581,
-  "gu.names.bin": 38634,
+  "gu.names.bin": 38053,
   "gu.words.bin": 369955,
-  "hi.names.bin": 162471,
+  "hi.names.bin": 156295,
   "hi.places.bin": 426346,
   "hi.words.bin": 469151,
-  "kn.names.bin": 73095,
+  "kn.names.bin": 71126,
   "kn.words.bin": 273947,
-  "ks.names.bin": 36223,
+  "ks.names.bin": 35759,
   "ks.words.bin": 445916,
-  "mai.names.bin": 40421,
+  "mai.names.bin": 39392,
   "mai.words.bin": 381486,
-  "ml.names.bin": 133130,
+  "ml.names.bin": 127543,
   "ml.places.bin": 108719,
   "ml.words.bin": 342619,
-  "mni.names.bin": 12382,
+  "mni.names.bin": 12340,
   "mni.words.bin": 133348,
-  "mr.names.bin": 119082,
+  "mr.names.bin": 115410,
   "mr.places.bin": 195989,
   "mr.words.bin": 328032,
   "names-arabic.bin": 188775,
   "names-brahmic.bin": 600155,
+  "names-lm.bin": 337803,
   "names-olchiki.bin": 97591,
-  "ne.names.bin": 37468,
+  "ne.names.bin": 36696,
   "ne.words.bin": 297278,
-  "or.names.bin": 83867,
+  "or.names.bin": 80934,
   "or.places.bin": 60189,
   "or.words.bin": 286451,
-  "pa.names.bin": 140045,
+  "pa.names.bin": 133433,
   "pa.words.bin": 419146,
   "places-arabic.bin": 1562817,
   "places-brahmic.bin": 3643267,
   "places-olchiki.bin": 157265,
-  "sa.names.bin": 24600,
+  "sa.names.bin": 24300,
   "sa.words.bin": 244341,
-  "sat.names.bin": 73397,
+  "sat.names.bin": 72426,
   "sat.places.bin": 60869,
-  "sd.names.bin": 11896,
+  "sd.names.bin": 11895,
   "sd.words.bin": 463414,
-  "ta.names.bin": 295030,
+  "ta.names.bin": 262627,
   "ta.places.bin": 219152,
   "ta.words.bin": 244371,
-  "te.names.bin": 229077,
+  "te.names.bin": 215398,
   "te.places.bin": 131438,
   "te.words.bin": 295255,
-  "ur.names.bin": 192400,
+  "ur.names.bin": 185631,
   "ur.places.bin": 225409,
   "ur.words.bin": 540116,
   "words-arabic.bin": 1182374,
@@ -543,7 +544,17 @@
  "max_letters": 256,
  "max_n": 3,
  "order": 3,
- "rules_version": "2026-10-11.2",
+ "rescore": {
+  "names": {
+   "beta": 0.25,
+   "bos": "<",
+   "depth": 10,
+   "eos": ">",
+   "file": "names-lm.bin",
+   "order": 5
+  }
+ },
+ "rules_version": "2026-10-12",
  "unify": {
   "from": [
    2432,
