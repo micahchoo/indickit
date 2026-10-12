@@ -173,24 +173,27 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
     mixes.push(new Mix(files[l.file], pool, l.tag, l.group));
   }
   if (mixes.length === 0) throw new Error(`deromanize: no ${mode} tables for "${lang}"`);
-  const counts = new Map<string, number>();
+  const known: WordList[] = [];
   const lists = RULES.lists[lang] ?? {};
   for (const k of mode === "names" ? (["words", "names"] as const) : (["words"] as const)) {
     const name = lists[k];
-    if (name && files[name]) readList(files[name], counts);
+    if (name && files[name]) known.push(new WordList(files[name]));
   }
+  // a string's count: the sum over the lists that hold it
+  const countOf = (s: string): number | undefined => {
+    let sum: number | undefined;
+    for (const l of known) {
+      const c = l.get(s);
+      if (c !== undefined) sum = (sum ?? 0) + c;
+    }
+    return sum;
+  };
   // the English list: absent for most languages; for Hindi, present only when loaded with { english: true }
-  let english: Set<string> | null = new Set();
-  if (lists.english) {
-    if (files[lists.english]) {
-      const c = new Map<string, number>();
-      readList(files[lists.english], c);
-      english = new Set(c.keys());
-    } else english = null;
-  }
+  let english: WordList | "none" | null = "none";
+  if (lists.english) english = files[lists.english] ? new WordList(files[lists.english]) : null;
   const isEnglish = (latin: string): boolean => {
     if (english === null) throw new Error(`deromanize: load("${lang}", …, { english: true }) to read its English list`);
-    return english.has(clean(latin));
+    return english !== "none" && english.get(clean(latin)) !== undefined;
   };
   const alpha = RULES.alpha[mode];
   const guard = RULES.cut_modes.includes(mode); // the re-rank skips cut-short spellings
@@ -220,7 +223,7 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
     const known: [string, number][] = [];
     const rest: string[] = [];
     for (const [o, s, cut] of best) {
-      const c = counts.get(fold(normalize(o, lang), lang));
+      const c = countOf(fold(normalize(o, lang), lang));
       if (c === undefined || (guard && cut)) rest.push(o);
       else known.push([o, s + alpha * Math.log(c)]);
     }
@@ -331,21 +334,68 @@ function readStrings(r: Reader): string[] {
   return strs;
 }
 
-// IKL2: keys in byte order, front-coded (bytes shared with the previous key)
-function readList(b: Uint8Array, counts: Map<string, number>): void {
-  const r = new Reader(b, "IKL2");
-  let prev = new Uint8Array(0);
-  for (let n = r.varint(); n > 0; n--) {
-    const shared = r.varint();
-    const len = r.varint();
-    const key = new Uint8Array(shared + len);
-    key.set(prev.subarray(0, shared));
-    key.set(b.subarray(r.pos, r.pos + len), shared);
-    r.pos += len;
-    prev = key;
-    const k = DECODER.decode(key);
-    counts.set(k, (counts.get(k) ?? 0) + r.varint());
+// IKL2: keys in byte order, front-coded (bytes shared with the previous key). Kept as
+// bytes: the keys end to end, in order, and their counts; a lookup encodes the string
+// and searches. A Map of decoded strings cost Hindi's list 25 MB of heap and 120 MB of RSS.
+class WordList {
+  keys: Uint8Array;
+  ends: Uint32Array; // key i is keys[ends[i - 1] .. ends[i]) (from 0 for the first)
+  counts: Float64Array;
+
+  constructor(b: Uint8Array) {
+    const r = new Reader(b, "IKL2");
+    const n = r.varint();
+    this.ends = new Uint32Array(n);
+    this.counts = new Float64Array(n);
+    let keys = new Uint8Array(b.length * 2);
+    let size = 0, from = 0, m = 0; // from: where the last key starts
+    for (let j = 0; j < n; j++) {
+      const shared = r.varint();
+      const len = r.varint();
+      if (size + shared + len > keys.length) {
+        const k = new Uint8Array(Math.max(keys.length * 2, size + shared + len));
+        k.set(keys.subarray(0, size));
+        keys = k;
+      }
+      keys.copyWithin(size, from, from + shared);
+      keys.set(b.subarray(r.pos, r.pos + len), size + shared);
+      r.pos += len;
+      const count = r.varint();
+      const end = size + shared + len;
+      const c = m === 0 ? 1 : compare(keys, size, end, keys, from, size);
+      if (c < 0) throw new Error("deromanize: a word list out of byte order");
+      if (c === 0) this.counts[m - 1] += count; // the same key twice: one key, the counts summed
+      else {
+        this.ends[m] = end;
+        this.counts[m++] = count;
+        from = size;
+        size = end;
+      }
+    }
+    this.keys = keys.slice(0, size);
+    this.ends = this.ends.slice(0, m);
+    this.counts = this.counts.slice(0, m);
   }
+
+  get(s: string): number | undefined {
+    const q = ENCODER.encode(s);
+    let lo = 0, hi = this.ends.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      const c = compare(q, 0, q.length, this.keys, mid === 0 ? 0 : this.ends[mid - 1], this.ends[mid]);
+      if (c === 0) return this.counts[mid];
+      if (c > 0) lo = mid + 1;
+      else hi = mid;
+    }
+    return undefined;
+  }
+}
+const ENCODER = new TextEncoder();
+
+// a[i..j) against b[k..l), in byte order
+function compare(a: Uint8Array, i: number, j: number, b: Uint8Array, k: number, l: number): number {
+  for (; i < j && k < l; i++, k++) if (a[i] !== b[k]) return a[i] - b[k];
+  return (j - i) - (l - k);
 }
 
 const ID = 2 ** 21; // up to 2M distinct tokens per script group; a context of two tokens fits in 42 bits
@@ -356,8 +406,22 @@ function ctxKey(ctx: number[], from: number): number {
   return k;
 }
 
-type Level = { stats: Map<number, [number, number]>; counts: Map<number, Map<number, number>> };
-type CtxStats = { has: boolean[]; counts: (Map<number, number> | undefined)[]; total: number[]; wb: number[] };
+// One order of the model, flat: a context's index by its key, and its continuations as
+// one run of (token, count) pairs, sorted by token, in shared typed arrays. A Map for
+// each context cost about 220 bytes a pair (Hindi: 602,000 pairs, 131 MB); this, 12.
+type Level = {
+  index: Map<number, number>;
+  total: Float64Array;
+  wb: Float64Array;
+  start: Uint32Array; // context i's pairs are start[i] .. start[i + 1]
+  tok: Uint32Array;
+  count: Float64Array;
+  // the unigram level (one context, every token): counts by token, for the lookup
+  // the decoder makes most (binary search there took a quarter of its time)
+  dense: Float64Array | null;
+};
+// at[n]: the context's index in level n; absent when the model has no such context
+type CtxStats = { at: (number | undefined)[]; total: number[]; wb: number[] };
 
 class Interner {
   ids = new Map<string, number>();
@@ -386,51 +450,84 @@ class Model {
   ) {
     this.vocab = r.varint();
     for (let l = r.varint(); l > 0; l--) {
-      const lv: Level = { stats: new Map(), counts: new Map() };
-      for (let c = r.varint(); c > 0; c--) {
+      const n = r.varint();
+      const index = new Map<number, number>();
+      const total = new Float64Array(n);
+      const wb = new Float64Array(n);
+      const start = new Uint32Array(n + 1);
+      const toks: number[] = [];
+      const counts: number[] = [];
+      const run: [number, number][] = [];
+      for (let c = 0; c < n; c++) {
         const ctx: number[] = [];
         for (let i = r.varint(); i > 0; i--) ctx.push(ids.id(strs[r.varint()]));
-        const key = ctxKey(ctx, 0);
-        const total = r.varint();
+        const t = r.varint();
         const types = r.varint();
-        const counts = new Map<number, number>();
+        run.length = 0;
         let prev = 0;
-        for (let t = r.varint(); t > 0; t--) {
+        for (let k = r.varint(); k > 0; k--) {
           prev += r.varint();
           const tok = ids.id(strs[prev]);
-          counts.set(tok, r.varint());
+          run.push([tok, r.varint()]);
           if (this.levels.length === 0) this.toks.push(tok);
         }
-        lv.stats.set(key, [total, types]);
-        lv.counts.set(key, counts);
+        run.sort((p, q) => p[0] - q[0]);
+        for (const [tok, k] of run) {
+          toks.push(tok);
+          counts.push(k);
+        }
+        index.set(ctxKey(ctx, 0), c);
+        total[c] = t;
+        wb[c] = t / (t + types);
+        start[c + 1] = toks.length;
       }
-      this.levels.push(lv);
+      let dense: Float64Array | null = null;
+      if (n === 1) {
+        dense = new Float64Array(toks.length === 0 ? 0 : toks[toks.length - 1] + 1);
+        for (let j = 0; j < toks.length; j++) dense[toks[j]] = counts[j];
+      }
+      this.levels.push({ index, total, wb, start, tok: Uint32Array.from(toks), count: Float64Array.from(counts), dense });
     }
     if (ids.strs.length >= ID) throw new Error("deromanize: beyond the engine's limits");
   }
 
   stats(ctx: number[]): CtxStats {
-    const s: CtxStats = { has: [], counts: [], total: [], wb: [] };
+    const s: CtxStats = { at: [], total: [], wb: [] };
     for (let n = 0; n < this.levels.length; n++) {
-      const key = ctxKey(ctx, ctx.length - n);
-      const st = this.levels[n].stats.get(key);
-      if (st) {
-        s.has[n] = true;
-        s.counts[n] = this.levels[n].counts.get(key);
-        s.total[n] = st[0];
-        s.wb[n] = st[0] / (st[0] + st[1]);
+      const lv = this.levels[n];
+      const i = lv.index.get(ctxKey(ctx, ctx.length - n));
+      if (i !== undefined) {
+        s.at[n] = i;
+        s.total[n] = lv.total[i];
+        s.wb[n] = lv.wb[i];
       }
     }
     return s;
+  }
+
+  // tok's count after context i of level n: a binary search of the context's run
+  count(n: number, i: number, tok: number): number {
+    const lv = this.levels[n];
+    if (lv.dense !== null) return tok < lv.dense.length ? lv.dense[tok] : 0;
+    let lo = lv.start[i], hi = lv.start[i + 1];
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      const t = lv.tok[mid];
+      if (t === tok) return lv.count[mid];
+      if (t < tok) lo = mid + 1;
+      else hi = mid;
+    }
+    return 0;
   }
 
   // Witten-Bell interpolation, lowest order first (as the reference)
   prob(s: CtxStats, tok: number): number {
     let p = 1 / (this.vocab + 1);
     for (let n = 0; n < this.levels.length; n++) {
-      if (!s.has[n]) continue;
+      const i = s.at[n];
+      if (i === undefined) continue;
       const lam = s.wb[n];
-      p = (lam * (s.counts[n]?.get(tok) ?? 0)) / s.total[n] + (1 - lam) * p;
+      p = (lam * this.count(n, i, tok)) / s.total[n] + (1 - lam) * p;
     }
     return p;
   }

@@ -228,63 +228,114 @@ function ctxKey(ctx: number[], from: number): number {
   return k;
 }
 
-type Level = { stats: Map<number, [number, number]>; counts: Map<number, Map<number, number>> };
+// One order of the model, flat: a context's index by its key, and its continuations as
+// one run of (token, count) pairs, sorted by token, in shared typed arrays. A Map for
+// each context cost Hindi's words and names 185,000 Maps and 240 MB of heap.
+type Level = {
+  index: Map<number, number>;
+  total: Float64Array;
+  wb: Float64Array;
+  start: Uint32Array; // context i's pairs are start[i] .. start[i + 1]
+  tok: Uint32Array;
+  count: Float64Array;
+  // a level of one context (the unigrams: every token): counts by token, for the lookup
+  // the decoder makes most
+  dense: Float64Array | null;
+};
 
 class Model {
   vocab: number;
   levels: Level[] = [];
+  toks: number[] = []; // the unigram tokens, in file order
   constructor(r: Reader, strs: string[], ids: Interner) {
     this.vocab = r.varint();
     for (let l = r.varint(); l > 0; l--) {
-      const lv: Level = { stats: new Map(), counts: new Map() };
-      for (let c = r.varint(); c > 0; c--) {
+      const n = r.varint();
+      const index = new Map<number, number>();
+      const total = new Float64Array(n);
+      const wb = new Float64Array(n);
+      const start = new Uint32Array(n + 1);
+      const toks: number[] = [];
+      const counts: number[] = [];
+      const run: [number, number][] = [];
+      for (let c = 0; c < n; c++) {
         const ctx: number[] = [];
         for (let i = r.varint(); i > 0; i--) ctx.push(ids.id(strs[r.varint()]));
-        const key = ctxKey(ctx, 0);
-        const counts = new Map<number, number>();
-        let total = 0;
+        run.length = 0;
+        let t = 0;
         let prev = 0;
-        for (let t = r.varint(); t > 0; t--) {
+        for (let k = r.varint(); k > 0; k--) {
           prev += r.varint();
-          const k = r.varint();
-          counts.set(ids.id(strs[prev]), k);
-          total += k;
+          const tok = ids.id(strs[prev]);
+          const v = r.varint();
+          run.push([tok, v]);
+          t += v;
+          if (this.levels.length === 0) this.toks.push(tok);
         }
-        lv.stats.set(key, [total, counts.size]);
-        lv.counts.set(key, counts);
+        run.sort((p, q) => p[0] - q[0]);
+        for (const [tok, v] of run) {
+          toks.push(tok);
+          counts.push(v);
+        }
+        index.set(ctxKey(ctx, 0), c);
+        total[c] = t;
+        wb[c] = t / (t + run.length);
+        start[c + 1] = toks.length;
       }
-      this.levels.push(lv);
+      let dense: Float64Array | null = null;
+      if (n === 1) {
+        dense = new Float64Array(toks.length === 0 ? 0 : toks[toks.length - 1] + 1);
+        for (let j = 0; j < toks.length; j++) dense[toks[j]] = counts[j];
+      }
+      this.levels.push({ index, total, wb, start, tok: Uint32Array.from(toks), count: Float64Array.from(counts), dense });
     }
   }
 
-  // a context's statistics at each order, computed once per hypothesis
+  // a context's statistics at each order, computed once per hypothesis; a context
+  // with no continuations is skipped
   stats(ctx: number[]): CtxStats {
-    const s: CtxStats = { counts: [], total: [], wb: [] };
+    const s: CtxStats = { at: [], total: [], wb: [] };
     for (let n = 0; n < this.levels.length; n++) {
-      const key = ctxKey(ctx, ctx.length - n);
-      const st = this.levels[n].stats.get(key);
-      if (st && st[1] !== 0) {
-        s.counts[n] = this.levels[n].counts.get(key)!;
-        s.total[n] = st[0];
-        s.wb[n] = st[0] / (st[0] + st[1]);
+      const lv = this.levels[n];
+      const i = lv.index.get(ctxKey(ctx, ctx.length - n));
+      if (i !== undefined && lv.start[i + 1] !== lv.start[i]) {
+        s.at[n] = i;
+        s.total[n] = lv.total[i];
+        s.wb[n] = lv.wb[i];
       }
     }
     return s;
+  }
+
+  // tok's count after context i of level n: a binary search of the context's run
+  count(n: number, i: number, tok: number): number {
+    const lv = this.levels[n];
+    if (lv.dense !== null) return tok < lv.dense.length ? lv.dense[tok] : 0;
+    let lo = lv.start[i], hi = lv.start[i + 1];
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      const t = lv.tok[mid];
+      if (t === tok) return lv.count[mid];
+      if (t < tok) lo = mid + 1;
+      else hi = mid;
+    }
+    return 0;
   }
 
   // Witten-Bell interpolation, lowest order first (as the reference)
   prob(s: CtxStats, tok: number): number {
     let p = 1 / (this.vocab + 1);
     for (let n = 0; n < this.levels.length; n++) {
-      const c = s.counts[n];
-      if (!c) continue;
+      const i = s.at[n];
+      if (i === undefined) continue;
       const lam = s.wb[n];
-      p = (lam * (c.get(tok) ?? 0)) / s.total[n] + (1 - lam) * p;
+      p = (lam * this.count(n, i, tok)) / s.total[n] + (1 - lam) * p;
     }
     return p;
   }
 }
-type CtxStats = { counts: (Map<number, number> | undefined)[]; total: number[]; wb: number[] };
+// at[n]: the context's index in level n; absent when the model has no such context
+type CtxStats = { at: (number | undefined)[]; total: number[]; wb: number[] };
 
 class Interner {
   ids = new Map<string, number>();
@@ -417,17 +468,15 @@ class Mix {
     this.eos = ids.id(RULES.eos);
     const seen = new Set<number>();
     for (const m of [this.a, this.b]) {
-      for (const counts of m.levels[0].counts.values()) {
-        for (const t of counts.keys()) {
-          if (t === this.eos || seen.has(t)) continue;
-          seen.add(t);
-          const s = ids.strs[t];
-          const i = s.indexOf("|");
-          const chunk = s.slice(0, i);
-          const list = this.options.get(chunk) ?? [];
-          list.push({ tok: t, en: s.slice(i + 1) });
-          this.options.set(chunk, list);
-        }
+      for (const t of m.toks) {
+        if (t === this.eos || seen.has(t)) continue;
+        seen.add(t);
+        const s = ids.strs[t];
+        const i = s.indexOf("|");
+        const chunk = s.slice(0, i);
+        const list = this.options.get(chunk) ?? [];
+        list.push({ tok: t, en: s.slice(i + 1) });
+        this.options.set(chunk, list);
       }
     }
     for (const list of this.options.values()) list.sort((p, q) => (p.en < q.en ? -1 : p.en > q.en ? 1 : 0));
