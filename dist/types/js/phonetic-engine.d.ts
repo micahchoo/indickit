@@ -6,9 +6,11 @@
  * @module
  */
 import rulesJson from "../phonetic/rules.json";
-type Rules = Omit<typeof rulesJson, "initials" | "titles" | "initial_branches" | "brahmic" | "extra"> & {
+type Rules = Omit<typeof rulesJson, "initials" | "abbreviations" | "second_readings" | "titles" | "initial_branches" | "brahmic" | "extra"> & {
     extra: Record<string, string>;
     initials?: Record<string, string[]>;
+    abbreviations?: Record<string, string[]>;
+    second_readings?: string[][];
     initial_branches?: {
         from: number;
         to: number;

@@ -467,6 +467,7 @@
   "gom.words.bin": 324581,
   "gu.names.bin": 38053,
   "gu.words.bin": 369955,
+  "hi.known.bin": 146343,
   "hi.names.bin": 156295,
   "hi.places.bin": 426346,
   "hi.words.bin": 469151,
@@ -554,7 +555,15 @@
    "order": 5
   }
  },
- "rules_version": "2026-10-12",
+ "route": {
+  "names": {
+   "hi": {
+    "else": "words",
+    "file": "hi.known.bin"
+   }
+  }
+ },
+ "rules_version": "2026-10-13",
  "unify": {
   "from": [
    2432,

@@ -9,6 +9,12 @@ const disk = async (url: URL) => {
   return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
 };
 const cache = new Map<string, Romanizer>();
+// names mode with the route on (Hindi, rules 2026-10-13)
+async function routed(lang: string): Promise<Romanizer> {
+  const k = `${lang}.names.route`;
+  if (!cache.has(k)) cache.set(k, await load(lang, "names", { fetch: disk, route: true }));
+  return cache.get(k)!;
+}
 async function get(lang: string, mode: Mode): Promise<Romanizer> {
   const k = `${lang}.${mode}`;
   if (!cache.has(k)) cache.set(k, await load(lang, mode, { fetch: disk }));
@@ -25,6 +31,8 @@ test("every conformance row: the Python reference's lists", async () => {
   for (const [fam, lang, word, want] of rows) {
     const got = fam === "names-lookup"
       ? (await get(lang, "names")).word(word, 4)
+      : fam === "names-routed"
+      ? (await routed(lang)).word(word, 4)
       : _decode(await get(lang, fam as Mode), word, 4);
     if (JSON.stringify(got) !== JSON.stringify(want)) bad.push(`${fam} ${lang} ${word}: ${JSON.stringify(got)} ≠ ${JSON.stringify(want)}`);
   }
@@ -130,4 +138,33 @@ test("places mode: own tables for Tamil, the words tables for Kannada", async ()
   for (const w of ["ಬೆಂಗಳೂರು", "ಮೈಸೂರು"]) {
     expect((await get("kn", "places")).word(w)).toEqual((await get("kn", "words")).word(w));
   }
+});
+
+// The Hindi route is an option (rules 2026-10-13): load("hi", "names") routes nothing; with
+// { route: true } a word the names tables were trained on keeps its names list and any other
+// word gets the words list (PIB, held out: Hindi 55.0% to 62.2%). Only Hindi has a route: the
+// other languages lose on Wikidata's unseen names.
+test("Hindi names: the route is an option", async () => {
+  const names = await get("hi", "names");
+  const route = await routed("hi");
+  const words = await get("hi", "words");
+  const pushpendra = ["pushpendra", "pushpender", "pushpinder", "puspendra"];
+  expect(names.word("पुष्पेन्द्र")).toEqual(pushpendra);
+  expect(route.word("पुष्पेन्द्र")).toEqual(pushpendra);
+  for (const w of ["गेवरा", "झुमरीतलैया"]) {
+    expect([w, route.word(w)]).toEqual([w, words.word(w)]);
+    expect([w, JSON.stringify(names.word(w)) === JSON.stringify(words.word(w))]).toEqual([w, false]);
+  }
+  expect(route.text("पुष्पेन्द्र गेवरा")).toBe(`pushpendra ${words.word("गेवरा", 1)[0]}`);
+  const mr = await get("mr", "names");
+  const mrRoute = await load("mr", "names", { fetch: disk, route: true });
+  for (const w of ["गेवरा", "झुमरीतलैया", "पुष्पेन्द्र"]) expect(mrRoute.word(w)).toEqual(mr.word(w));
+  const own = readFileSync(new URL("../romanize/lang/hi/hi.names.bin", import.meta.url));
+  const pool = readFileSync(new URL("../romanize/lang/brahmic/names-brahmic.bin", import.meta.url));
+  const lm = readFileSync(new URL("../romanize/lang/shared/names-lm.bin", import.meta.url));
+  expect(fromBytes("hi", "names", own, pool, lm).word("गेवरा")).toEqual(names.word("गेवरा"));
+  const known = readFileSync(new URL("../romanize/lang/hi/hi.known.bin", import.meta.url));
+  expect(fromBytes("hi", "names", own, pool, lm, { known, other: words }).word("गेवरा")).toEqual(words.word("गेवरा"));
+  expect(() => fromBytes("hi", "names", own, pool, lm, { known, other: names })).toThrow(/words Romanizer/);
+  expect(languages("names")).toContain("hi");
 });

@@ -7,6 +7,9 @@
  * running text (the default); "names" for fields known to hold person
  * names, where a lookup of known names comes first; and "places" for place
  * names (its own tables in nine languages, the "words" tables in the others).
+ * In Hindi, `load("hi", "names", { route: true })` spells only the names the
+ * names tables were trained on with them, and every other word with the
+ * "words" tables.
  *
  * The tables are learned from data and loaded per language, on demand:
  *
@@ -35,6 +38,10 @@ type FamilyEntry = { tag: string; group: string; file: string; pooled: string };
 // lang/shared, and the knobs: the depth spellings by alignment score, each plus beta × the
 // log probability of its letters.
 type Rescore = { file: string; beta: number; depth: number; order: number; bos: string; eos: string };
+// The route of a mode in a language (names, Hindi; rules 2026-10-13), on with load's `route`:
+// a word in the known list (its file in the language's folder: the names tables' training
+// tokens) is spelled by the mode's tables; any other word by the "else" mode's.
+type Route = { file: string; else: Mode };
 type Rules = {
   rules_version: string;
   beam: Record<Mode, number>;
@@ -48,6 +55,7 @@ type Rules = {
   groups: Record<string, [number, number][]>;
   families: Record<Mode, Record<string, FamilyEntry>>;
   rescore?: Partial<Record<Mode, Rescore>>;
+  route?: Partial<Record<Mode, Record<string, Route>>>;
 };
 const RULES = rulesJson as unknown as Rules;
 
@@ -98,7 +106,13 @@ const pooledCache = new Map<string, Promise<ArrayBuffer>>(); // pooled and share
 /**
  * Loads a language's tables for one mode: its own file, its script group's
  * pooled file (shared by the group, fetched once) and, for the names mode,
- * the letter n-gram every names page shares. It reads them beside this
+ * the letter n-gram every names page shares. With `route: true`, Hindi's
+ * names mode also loads its list of known names and its words tables
+ * (rules 2026-10-13): a name the names tables were trained on keeps its
+ * names list, and any other word gets the words list. On names in news held
+ * out (PIB, August 2023) Hindi's first spelling goes from 55.0% to 62.2%;
+ * the page grows from 0.56 MB to 2.5 MB (26 KB on a page that has Hindi's
+ * words tables). In a language or mode with no route, `route` changes nothing. It reads them beside this
  * module, else from jsDelivr at this package's version (the npm package
  * carries no tables); `base` or `fetch` replaces both. Rejects when the
  * language has no tables for the mode.
@@ -106,7 +120,7 @@ const pooledCache = new Map<string, Promise<ArrayBuffer>>(); // pooled and share
 export async function load(
   lang: string,
   mode: Mode = "words",
-  opts: { fetch?: Fetcher; base?: URL | string } = {},
+  opts: { fetch?: Fetcher; base?: URL | string; route?: boolean } = {},
 ): Promise<Romanizer> {
   const c = langCode(lang);
   const l = RULES.families[mode][c];
@@ -119,23 +133,42 @@ export async function load(
     return pooledCache.get(key)!;
   };
   const rc = RULES.rescore?.[mode];
-  const [own, pool, lm] = await Promise.all([
+  const rt = opts.route ? RULES.route?.[mode]?.[c] : undefined;
+  const [own, pool, lm, known, other] = await Promise.all([
     get(new URL(`${c}/${l.file}`, base)),
     shared(`${l.group}/${l.pooled}`),
     rc ? shared(`shared/${rc.file}`) : undefined,
+    rt ? get(new URL(`${c}/${rt.file}`, base)) : undefined,
+    rt ? load(c, rt.else, { ...opts, route: false }) : undefined,
   ]);
-  return fromBytes(c, mode, new Uint8Array(own), new Uint8Array(pool), lm && new Uint8Array(lm));
+  return fromBytes(c, mode, new Uint8Array(own), new Uint8Array(pool), lm && new Uint8Array(lm),
+    known && other ? { known: new Uint8Array(known), other } : undefined);
 }
 
 /**
  * Builds a Romanizer from a language's files (for tests and offline use): its own, its
- * group's pooled one and, for a mode with a letter n-gram (names), that file too.
+ * group's pooled one and, for a mode with a letter n-gram (names), that file too. `route`
+ * turns the route on where the mode has one (Hindi names): the known list's file and the
+ * Romanizer of the other mode (Hindi words), as `load(..., { route: true })` passes them.
  */
-export function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8Array, lm?: Uint8Array): Romanizer {
+export function fromBytes(
+  lang: string,
+  mode: Mode,
+  own: Uint8Array,
+  pool: Uint8Array,
+  lm?: Uint8Array,
+  route?: { known: Uint8Array; other: Romanizer },
+): Romanizer {
   const l = RULES.families[mode][lang];
   if (!l) throw new Error(`romanize: no ${mode} tables for "${lang}"`);
   const rc = RULES.rescore?.[mode];
   if (rc && !lm) throw new Error(`romanize: the ${mode} mode needs its letter n-gram (shared/${rc.file})`);
+  const rt = route ? RULES.route?.[mode]?.[lang] : undefined;
+  if (route && rt && (route.other.mode !== rt.else || route.other.lang !== lang)) {
+    throw new Error(`romanize: the ${mode} route of "${lang}" needs the ${lang} ${rt.else} Romanizer`);
+  }
+  // the route: a word outside the known list is spelled by the other mode
+  const known = rt ? readKnown(route!.known) : null;
   const x = new Mix(own, pool, l.tag, RULES.beam[mode], rc && lm ? new LetterLM(lm, rc) : null, rc);
   const ranges = RULES.groups[l.group];
   const inScript = (ch: string) => {
@@ -157,8 +190,9 @@ export function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8
       for (let i = 0; i < cps.length; i += RULES.max_letters) out += word(cps.slice(i, i + RULES.max_letters).join(""), 1)[0] ?? "";
       return out === "" ? [] : [out];
     }
-    const known = x.lookup.get(s);
-    if (known) return known.slice(0, n);
+    const spellings = x.lookup.get(s);
+    if (spellings) return spellings.slice(0, n);
+    if (known && !known.has(s)) return route!.other.word(s, n);
     return x.decode(unify(s), n).filter((o) => o !== "");
   };
   const r: Romanizer = {
@@ -684,6 +718,13 @@ class Mix {
 // score down, then the string up: the reference's order
 function sortScored(rs: [string, number][]): void {
   rs.sort((p, q) => (p[1] !== q[1] ? q[1] - p[1] : p[0] < q[0] ? -1 : p[0] > q[0] ? 1 : 0));
+}
+
+// A known-token file: an empty string table, then one token a line (export.py, "known file").
+function readKnown(b: Uint8Array): Set<string> {
+  const r = new Reader(b);
+  readStrings(r);
+  return new Set(DECODER.decode(b.subarray(r.pos)).split("\n"));
 }
 
 function readStrings(r: Reader): string[] {

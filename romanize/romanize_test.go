@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
+	"unicode"
 
 	"github.com/micahchoo/indickit/romanize"
 	_ "github.com/micahchoo/indickit/romanize/lang/arabic"
@@ -41,7 +43,8 @@ import (
 // testdata/conformance.jsonl.gz: from the Python reference (linguistic-utilities
 // jobs/romanize/export.py). Decode rows [family, lang, unified word, [top 4]] are the
 // model's own lists; lookup rows ["names-lookup", lang, word, [spellings]] are what
-// Word returns for a known name.
+// Word returns for a known name; route rows ["names-routed", lang, word, [top 4]] are
+// what WordWith returns in the names mode with Options{Route: true} (Hindi, rules 2026-10-13).
 func TestConformance(t *testing.T) {
 	f, err := os.Open("testdata/conformance.jsonl.gz")
 	if err != nil {
@@ -70,6 +73,11 @@ func TestConformance(t *testing.T) {
 		switch fam {
 		case "names-lookup":
 			got = romanize.Word(word, lang, romanize.Names, 4)
+		case "names-routed":
+			var err error
+			if got, err = romanize.WordWith(word, lang, romanize.Names, 4, romanize.Options{Route: true}); err != nil {
+				t.Fatal(err)
+			}
 		default:
 			got = romanize.Decode(word, lang, romanize.Mode(fam), 4)
 		}
@@ -199,5 +207,75 @@ func TestPlacesRoute(t *testing.T) {
 	}
 	if differ == 0 {
 		t.Error("ta: places mode gives the words mode's lists: its own tables are not loaded")
+	}
+}
+
+// The Hindi route is an option (rules 2026-10-13): Word in the names mode routes
+// nothing; WordWith with Options{Route: true} keeps the names list for a word the
+// names tables were trained on and gives any other word the words list. Unseen names
+// in news are spelled better by the words tables in Hindi (PIB, held out: 55.0% to
+// 62.2%), not in the other languages (Wikidata's unseen names fall).
+func TestHindiNamesRoute(t *testing.T) {
+	route := romanize.Options{Route: true}
+	word := func(w, lang string) []string {
+		got, err := romanize.WordWith(w, lang, romanize.Names, 4, route)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return got
+	}
+	// पुष्पेन्द्र is in hi.known.bin: the names list either way (the words list ends pushpandra, pushpendr)
+	for _, got := range [][]string{romanize.Word("पुष्पेन्द्र", "hi", romanize.Names, 4), word("पुष्पेन्द्र", "hi")} {
+		if fmt.Sprint(got) != "[pushpendra pushpender pushpinder puspendra]" {
+			t.Errorf("a known name: %v", got)
+		}
+	}
+	for _, w := range []string{"गेवरा", "झुमरीतलैया"} { // not in the list
+		names, words := romanize.Word(w, "hi", romanize.Names, 4), romanize.Word(w, "hi", romanize.Words, 4)
+		if got := word(w, "hi"); !reflect.DeepEqual(got, words) {
+			t.Errorf("hi %s routed: %v, words %v", w, got, words)
+		}
+		if reflect.DeepEqual(names, words) {
+			t.Errorf("hi %s: Word in the names mode gives the words list %v: the default routed", w, names)
+		}
+	}
+	for _, w := range []string{"गेवरा", "झुमरीतलैया", "पुष्पेन्द्र"} { // Marathi has no route: the option changes nothing
+		if got, want := word(w, "mr"), romanize.Word(w, "mr", romanize.Names, 4); !reflect.DeepEqual(got, want) {
+			t.Errorf("mr %s: routed %v, names %v", w, got, want)
+		}
+	}
+	got, err := romanize.TextWith("पुष्पेन्द्र गेवरा", "hi", romanize.Names, route)
+	if err != nil || got != "pushpendra "+romanize.Word("गेवरा", "hi", romanize.Words, 1)[0] {
+		t.Errorf("TextWith: %q, %v", got, err)
+	}
+	if !slices.Contains(romanize.Languages(romanize.Names), "hi") {
+		t.Error("Languages(Names) lacks hi")
+	}
+}
+
+// Text cuts a run at punctuation, so a known word with punctuation ('धूमिल', अल-अबिदीन) could
+// never match the route's list: the list holds the bare runs Text sees (rules 2026-10-13).
+func TestRouteListHoldsBareRuns(t *testing.T) {
+	b, err := os.ReadFile("lang/hi/hi.known.bin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, w := range strings.Split(string(b[5:]), "\n") { // "IKR1", then 0: no strings
+		for _, r := range w {
+			if !unicode.IsLetter(r) && !unicode.IsMark(r) {
+				t.Errorf("hi.known.bin %q: %U is not a letter or a mark", w, r)
+				break
+			}
+		}
+	}
+	route := romanize.Options{Route: true}
+	got, err := romanize.TextWith("'धूमिल' अल-अबिदीन", "hi", romanize.Names, route)
+	var want []string
+	for _, w := range []string{"धूमिल", "अल", "अबिदीन"} {
+		s, _ := romanize.WordWith(w, "hi", romanize.Names, 1, route)
+		want = append(want, s[0])
+	}
+	if err != nil || got != fmt.Sprintf("'%s' %s-%s", want[0], want[1], want[2]) {
+		t.Errorf("TextWith: %q (%v), want the routed words %v", got, err, want)
 	}
 }

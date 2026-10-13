@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/micahchoo/indickit/deromanize"
@@ -35,6 +36,7 @@ import (
 	_ "github.com/micahchoo/indickit/deromanize/lang/ta"
 	_ "github.com/micahchoo/indickit/deromanize/lang/te"
 	_ "github.com/micahchoo/indickit/deromanize/lang/ur"
+	"github.com/micahchoo/indickit/normalize"
 )
 
 // testdata/conformance.jsonl.gz: from the Python reference (linguistic-utilities
@@ -137,6 +139,56 @@ func TestCutShortSpellingIsNotFirst(t *testing.T) {
 	}
 	if deromanize.RulesVersion < "2026-10-09" {
 		t.Errorf("rules version %s predates the cut-short guard", deromanize.RulesVersion)
+	}
+}
+
+// Rules 2026-10-12: a spelling the renderer draws broken, or with punctuation inside (a
+// danda or an Arabic comma learned into a chunk), goes after every whole one, in both
+// modes (rule wf); and the cut-short guard is on in words mode for ks mni sa sd, each
+// judged in its own language (rules "cut_langs").
+func TestBrokenOrCutWordIsNotFirst(t *testing.T) {
+	cases := []struct {
+		word, lang string
+		want, not  string // the first answer now, and the one rules 2026-10-09.2 gave
+	}{
+		{"diyagayahe", "ur", "دیاگیاہے", "دیاگیاہے۔"},     // wf: punctuation
+		{"hataaundathe", "ne", "हाताउँदथे", "हाताउँदथे।"}, // wf: a danda
+		{"rafi", "sd", "رافي", "ري،"},                     // the guard (sd) and wf
+		{"hinzi", "ks", "ہنزی", "ہندی"},                   // the guard (ks): nothing written for z
+	}
+	for _, c := range cases {
+		got := deromanize.Word(c.word, c.lang, deromanize.Words, 4)
+		if len(got) == 0 || got[0] != c.want {
+			t.Errorf("%s %q: got %q, want %q first (not %q)", c.lang, c.word, got, c.want, c.not)
+		}
+	}
+	if deromanize.RulesVersion < "2026-10-12" {
+		t.Errorf("rules version %s predates rule wf and cut_langs", deromanize.RulesVersion)
+	}
+}
+
+// Rules 2026-10-12.1: the output is normalized text. With normalize 2026-10-12.1 a spelling
+// with a two-part vowel sign typed in the other order (জােট) is keyed as the frequent word
+// (জোট) and took its count, so it rose to second as a string normalize would rewrite.
+func TestOutputIsNormalizedText(t *testing.T) {
+	for _, c := range []struct{ word, lang string }{{"jaate", "bn"}, {"hoayar", "bn"}, {"phogat", "ta"}} {
+		for _, mode := range []deromanize.Mode{deromanize.Words, deromanize.Names} {
+			got := deromanize.Word(c.word, c.lang, mode, 4)
+			if len(got) == 0 {
+				t.Fatalf("%s %q %s: nothing", c.lang, c.word, mode)
+			}
+			for i, o := range got {
+				if n := normalize.Text(o, c.lang); n != o {
+					t.Errorf("%s %q %s: %q is not normalized (normalize writes %q)", c.lang, c.word, mode, o, n)
+				}
+				if slices.Contains(got[:i], o) {
+					t.Errorf("%s %q %s: %q twice in %q", c.lang, c.word, mode, o, got)
+				}
+			}
+		}
+	}
+	if deromanize.RulesVersion < "2026-10-12.1" {
+		t.Errorf("rules version %s predates the normalized output", deromanize.RulesVersion)
 	}
 }
 

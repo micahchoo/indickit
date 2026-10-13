@@ -34,9 +34,20 @@ There are two modes, each with its own tables:
   like as a whole (the schwa, ee against i, a lost h), which is where the
   rank went wrong. One table, 148 KB (brotli), shared by every names page.
 
+  Since rules 2026-10-13, Hindi's names mode has an option, the route:
+  `load("hi", "names", { route: true })` in TypeScript,
+  `WordWith(w, "hi", Names, n, Options{Route: true})` (and `TextWith`) in
+  Go. With it, a word in the list of Hindi words the names tables were
+  trained on (7,604 words, 26 KB brotli) gets the names list, and any other
+  word gets the words list. News writers spell an unknown Hindi name as
+  typists spell a word, and the words tables learned typists' spellings.
+  Without the option the names mode gives what it gave before. In the other
+  languages the words tables spell unknown names worse than the names tables
+  (see [Names in news](#how-good-it-is)), so only Hindi has the route.
+
 The tables are rules as data: the Go and TypeScript code is a short loop
 over them, and both give the reference implementation's lists on every row of
-the conformance file (3,221 rows).
+the conformance file (3,347 rows).
 
 ## How good it is
 
@@ -87,7 +98,40 @@ Kannada. Read once on names held out to the end (Wikidata people of
 Bangladesh, Pakistan, Nepal and Sri Lanka; 10,773 unseen tokens): the first
 spelling goes from 37.9% to 41.0% (+3.1, 95% interval +2.5 to +3.7; any of
 four 60.1% to 62.3%), and no language falls. The table above is the number
-of rules 2026-10-11.2, a lower bound for the rules that ship.
+of rules 2026-10-11.2, a lower bound for rules 2026-10-12 and 2026-10-13,
+whose names mode gives the same lists. Hindi's route (an option) changes
+only Hindi names that the names tables were not trained on: on the
+development names that neither tool's training holds, Hindi's first spelling
+goes from 57.6% to 54.4% with it (3.2 points, inside the noise of 340 words).
+
+**Names in news.** Name pairs from the English and the
+Indian-language press releases of the Press Information Bureau (PIB) of
+August 2023, held out: 2,950 pairs in 11 languages. A word counts as a name
+when Naamapadam's tagged news marks it as a person or a place in at least
+half of its uses; no romanizer chose the pairs. The first spelling, then any
+of four, is the spelling the English release prints:
+
+| PIB, August 2023 | Words | names mode | with Hindi's route | IndicXlit |
+|---|---|---|---|---|
+| All | 2950 | 48.1 / 59.0 | 49.6 / 60.4 | 49.6 / 63.9 |
+| Not in romanize's training | 651 | 39.8 / 55.5 | 43.5 / 60.1 | 58.7 / 70.2 |
+| Hindi | 609 | 55.0 / 66.0 | 62.2 / 73.1 | 59.1 / 76.0 |
+
+The names mode's first spelling is the printed one for
+48.1% of the names (IndicXlit: 49.6%), level within the noise (95% interval of
+the difference −3.3 to +0.4). On names it was not trained on it is far
+behind: 39.8% against 58.7%. Hindi's route was chosen on PIB's releases of
+November 2025 (development data: +6.2 points in Hindi) and confirmed once on
+August 2023: Hindi goes from 55.0% to 62.2% (+7.2 points, 95% interval +4.1
+to +10.0), ahead of IndicXlit's 59.1%; names it was trained on keep their
+spellings. The route stops at Hindi because the other languages pay for it
+on Wikidata's names: on the development names that neither tool's training
+holds, routing every language to the words tables takes the first spelling
+from 51.7% to 33.7% (Tamil −24.0 points, Assamese −30.0; Santali has no
+words tables). The route is an option because of what it costs in a
+browser: a Hindi names page grows from 0.56 MB to 2.5 MB, since it also
+loads the words tables; on a page that has Hindi's words tables already,
+it costs 26 KB. In Go, `lang/hi` carries the words tables either way.
 
 **Single words out of context.** On Aksharantar's test words that neither
 tool was trained on, IndicXlit is ahead: 55.6% against 50.1% for the first
@@ -109,10 +153,13 @@ IndicXlit: 47.5%). It is ahead in one language: Urdu running text, 46.1%
 against 39.9%. No held-out set was read for this comparison, because no
 tool came within reach.
 
-The browser file is 8 KB gzipped. The tables load on demand, one language
+The browser file is 9 KB gzipped (8.5 KB; it crossed 8 KB with the Hindi route option in 0.13.0). The tables load on demand, one language
 and mode at a time: about 0.5 MB for names and 1.9 MB for text in a Brahmic
 language, 0.3 MB and 1.0 MB in Urdu (brotli, as jsDelivr serves them; the
-names figure includes the 148 KB letter model every names page shares). They
+names figure includes the 148 KB letter model every names page shares).
+With the route option, Hindi's names page also loads its words tables and
+its list of known names: 2.5 MB, or 26 KB more on a page that has Hindi's
+words tables. They
 are read beside the module, else from jsDelivr at the package's version; the
 npm package carries none of them. In Go, `go get` downloads every language's
 tables once (14 MB) and a program carries only the languages it imports. One
@@ -198,6 +245,10 @@ in the tables.
 - **Places.** On OpenStreetMap place names IndicXlit is 5.5 points ahead of the places mode
   ([Place names](#place-names)), most in Kannada (10.7), whose places mode uses its words tables.
 - **Rare words out of context**, as above: IndicXlit is 5.5 points ahead.
+- **Names it was not trained on**, in news: IndicXlit is ahead, 58.7% against
+  39.8% for the first spelling (43.5% with Hindi's route option;
+  [Names in news](#how-good-it-is)). The names tables learned Wikidata's
+  English labels, and news writers spell many names otherwise.
 - **Santali** has names only; **Bodo** and **Dogri** have words only.
   Dogri was measured on Aksharantar's words (32.2% for the first spelling;
   IndicXlit has no Dogri).

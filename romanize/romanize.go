@@ -6,7 +6,9 @@
 // Words, for running text (the default); Names, for fields known to hold
 // person names, where a lookup of known names comes first; and Places, for
 // place names (its own tables in nine languages, the Words tables in the
-// others).
+// others). In Hindi, WordWith and TextWith with Options{Route: true} spell
+// only the names the Names tables were trained on with them, and every other
+// word with the Words tables.
 //
 // The tables are learned from data (see the README for what, and how good
 // they are) and loaded per language: import the languages you need,
@@ -84,6 +86,14 @@ var rules struct {
 		Bos   string  `json:"bos"`
 		Eos   string  `json:"eos"`
 	} `json:"rescore"`
+	// Route, by mode and language (Names, Hindi; rules 2026-10-13), used with
+	// Options.Route: a word in the known list (File, in the language's package: the
+	// names tables' training tokens) is spelled by the mode's tables; any other word
+	// by Else's.
+	Route map[Mode]map[string]struct {
+		File string `json:"file"`
+		Else Mode   `json:"else"`
+	} `json:"route"`
 }
 
 // RulesVersion changes whenever any output changes: store it beside
@@ -99,10 +109,11 @@ func init() {
 
 var (
 	mu     sync.Mutex
-	files  = map[string][]byte{}    // file name → its bytes, from the lang packages
-	tables = map[string]*mix{}      // lang + "." + mode → its loaded tables
-	pooled = map[string]*model{}    // pooled file name → its model
-	lms    = map[string]*letterLM{} // rescore file name → its letter n-gram
+	files  = map[string][]byte{}              // file name → its bytes, from the lang packages
+	tables = map[string]*mix{}                // lang + "." + mode → its loaded tables
+	pooled = map[string]*model{}              // pooled file name → its model
+	lms    = map[string]*letterLM{}           // rescore file name → its letter n-gram
+	knowns = map[string]map[string]struct{}{} // route file name → its known words
 )
 
 // Register is called by the lang packages; a program does not call it.
@@ -117,8 +128,8 @@ func Languages(mode Mode) []string {
 	mu.Lock()
 	defer mu.Unlock()
 	var out []string
-	for lang, l := range rules.Families[mode] {
-		if files[l.File] != nil && files[l.Pooled] != nil && rescoreFile(mode) {
+	for lang := range rules.Families[mode] {
+		if ready(lang, mode) {
 			out = append(out, lang)
 		}
 	}
@@ -126,10 +137,58 @@ func Languages(mode Mode) []string {
 	return out
 }
 
-// rescoreFile: the mode's letter n-gram is imported, or the mode has none (mu held).
-func rescoreFile(mode Mode) bool {
-	rc, ok := rules.Rescore[mode]
-	return !ok || files[rc.File] != nil
+// ready: every file the language needs in this mode is imported (mu held): its own
+// and pooled tables, and the mode's letter n-gram.
+func ready(lang string, mode Mode) bool {
+	l, ok := rules.Families[mode][lang]
+	if !ok || files[l.File] == nil || files[l.Pooled] == nil {
+		return false
+	}
+	if rc, ok := rules.Rescore[mode]; ok && files[rc.File] == nil {
+		return false
+	}
+	return true
+}
+
+// Options change how WordWith and TextWith spell. The zero Options is Word and Text.
+type Options struct {
+	// Route (Names mode, Hindi; rules 2026-10-13): a word the Names tables were
+	// trained on keeps its Names list, and any other word gets the Words list.
+	// On names in news held out (PIB, August 2023) Hindi's first spelling goes
+	// from 55.0% to 62.2%. It needs the language's Words tables (lang/hi has
+	// them). In a language or mode with no route it changes nothing.
+	Route bool
+}
+
+// route is a language's route in one mode: its known words and the other mode.
+type route struct {
+	known map[string]struct{}
+	other Mode
+}
+
+// routeOf gives the route Options asks for, or nil when there is none; an error
+// when the route's files are not imported.
+func routeOf(lang string, mode Mode, o Options) (*route, error) {
+	rt, ok := rules.Route[mode][lang]
+	if !o.Route || !ok {
+		return nil, nil
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if files[rt.File] == nil || !ready(lang, rt.Else) {
+		return nil, fmt.Errorf("romanize: the %s route of %q needs %s and the %s tables: import its lang package", mode, lang, rt.File, rt.Else)
+	}
+	k, ok := knowns[rt.File]
+	if !ok { // the known list: one word a line after the (empty) string table
+		r, _ := open(files[rt.File])
+		toks := strings.Split(string(r.b[r.pos:]), "\n")
+		k = make(map[string]struct{}, len(toks))
+		for _, t := range toks {
+			k[t] = struct{}{}
+		}
+		knowns[rt.File] = k
+	}
+	return &route{known: k, other: rt.Else}, nil
 }
 
 // Word returns up to n spellings of one word (n ≤ 0 means 4), most likely
@@ -137,10 +196,25 @@ func rescoreFile(mode Mode) bool {
 // this mode, or the word has none of the language's letters. Joiners
 // (U+200C, U+200D) are deleted first: they shape a letter and spell nothing.
 func Word(word, lang string, mode Mode, n int) []string {
+	return wordRouted(word, langtag.Code(lang), mode, n, nil)
+}
+
+// WordWith is Word with options. It returns an error when an option needs
+// files that are not imported.
+func WordWith(word, lang string, mode Mode, n int, o Options) ([]string, error) {
+	c := langtag.Code(lang)
+	rt, err := routeOf(c, mode, o)
+	if err != nil {
+		return nil, err
+	}
+	return wordRouted(word, c, mode, n, rt), nil
+}
+
+func wordRouted(word, lang string, mode Mode, n int, rt *route) []string {
 	if n <= 0 {
 		n = 4
 	}
-	x := get(langtag.Code(lang), mode)
+	x := get(lang, mode)
 	if x == nil {
 		return nil
 	}
@@ -150,7 +224,7 @@ func Word(word, lang string, mode Mode, n int) []string {
 		// quadratic (32K code points: 49 s); real words are far shorter.
 		var b strings.Builder
 		for i := 0; i < len(rs); i += rules.MaxLetters {
-			if s := Word(string(rs[i:min(i+rules.MaxLetters, len(rs))]), lang, mode, 1); len(s) > 0 {
+			if s := wordRouted(string(rs[i:min(i+rules.MaxLetters, len(rs))]), lang, mode, 1, rt); len(s) > 0 {
 				b.WriteString(s[0])
 			}
 		}
@@ -161,6 +235,11 @@ func Word(word, lang string, mode Mode, n int) []string {
 	}
 	if s, ok := x.lookup[w]; ok {
 		return append([]string(nil), s[:min(n, len(s))]...)
+	}
+	if rt != nil { // the route: a word outside the known list takes the other mode
+		if _, ok := rt.known[w]; !ok {
+			return wordRouted(w, lang, rt.other, n, nil)
+		}
 	}
 	var out []string
 	for _, s := range x.decode(unify(w), n) {
@@ -174,7 +253,21 @@ func Word(word, lang string, mode Mode, n int) []string {
 // Text romanizes every run of the language's script in text (top spelling
 // of each word) and keeps everything else as it is.
 func Text(text, lang string, mode Mode) string {
+	return textRouted(text, langtag.Code(lang), mode, nil)
+}
+
+// TextWith is Text with options. It returns an error when an option needs
+// files that are not imported.
+func TextWith(text, lang string, mode Mode, o Options) (string, error) {
 	c := langtag.Code(lang)
+	rt, err := routeOf(c, mode, o)
+	if err != nil {
+		return "", err
+	}
+	return textRouted(text, c, mode, rt), nil
+}
+
+func textRouted(text, c string, mode Mode, rt *route) string {
 	l, ok := rules.Families[mode][c]
 	if !ok || get(c, mode) == nil {
 		return text
@@ -203,7 +296,7 @@ func Text(text, lang string, mode Mode) string {
 		for j < len(rs) && in(rs[j]) && (unidata.IsLetter(rs[j]) || unidata.IsMark(rs[j]) || rs[j] == 0x200C || rs[j] == 0x200D) {
 			j++
 		}
-		if out := Word(string(rs[i:j]), c, mode, 1); len(out) > 0 {
+		if out := wordRouted(string(rs[i:j]), c, mode, 1, rt); len(out) > 0 {
 			b.WriteString(out[0])
 		} else {
 			b.WriteString(string(rs[i:j]))
@@ -242,10 +335,10 @@ func unify(w string) string {
 func get(lang string, mode Mode) *mix {
 	mu.Lock()
 	defer mu.Unlock()
-	l, ok := rules.Families[mode][lang]
-	if !ok || files[l.File] == nil || files[l.Pooled] == nil || !rescoreFile(mode) {
+	if !ready(lang, mode) {
 		return nil
 	}
+	l := rules.Families[mode][lang]
 	// keyed by the tables, not the mode: Places reuses the Words tables of most languages
 	rc, rescored := rules.Rescore[mode]
 	key := fmt.Sprintf("%s|%s|%s|%d|%s", l.File, l.Pooled, l.Tag, rules.Beam[mode], rc.File)

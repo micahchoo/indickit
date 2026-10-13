@@ -65,7 +65,9 @@ test("match", () => {
     ["सुरेश", "சுரேஷ்", true],
     ["Parvez Khan", "پرویز خان", true],
     ["Imran", "عمران", true], // rules 2026-10-11.3: an initial alif or ع is also i (a known miss before)
-    ["Aligarh", "अलीगढ", false], // known miss: Latin rh is r and h; ढ is ṭh
+    ["Aligarh", "अलीगढ", true], // rules 2026-10-12: Latin rh is also r (a known miss before)
+    ["Sardar Vallabhbhai Patel", "સરદાર વલ્લભભાઈ પટેલ", true], // rules 2026-10-12: a title is dropped in every script
+    ["Sardar Vallabhbhai Patel", "সর্দার বল্লভভাই প্যাটেল", true],
     ["Rāma", "राम", true], // accents are removed
     ["राम", "काम", false], // Rām is not kām
     ["Ram Singh", "राम", false], // word counts differ
@@ -89,7 +91,7 @@ test("nameKeys meet across scripts; the rules are versioned", () => {
   expect(j.size > 0 && joinedKeys("சுப்ரமணியன்சுவாமிநாதன்").some((k) => j.has(k))).toBe(true);
   const j6 = new Set(joinedKeys("Amartya Sen")); // 6 classes: the floor from 2026-10-11.6
   expect(j6.size > 0 && joinedKeys("अमर्त्यसेन").some((k) => j6.has(k))).toBe(true);
-  expect(RULES_VERSION).toBe("2026-10-11.8");
+  expect(RULES_VERSION).toBe("2026-10-12");
   // rules 2026-10-11: titles dropped, initials read, the demo's misses
   for (const [a, b] of [["Smt. J. Shantha", "श्रीमती जे. शान्ता"], ["Dr. C. P. Joshi", "डॉ. सी.पी. जोशी"],
     ["Singh", "সিং"], ["Lakshmi", "லட்சுமி"], ["Shri", "श्री"],

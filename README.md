@@ -99,14 +99,14 @@ TypeScript, set `moduleResolution` to `nodenext` or `bundler`; the old
 In a browser, with no build step:
 
 ```js
-import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.12.0/dist/normalize.js";
-import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.12.0/dist/stem.js";
-import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.12.0/dist/phonetic.js";
-import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.12.0/dist/segment.js";
-import { load } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.12.0/dist/romanize.js";
-import { loadSearch } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.12.0/dist/phonetic-search.js";
-import { load as loadDeromanize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.12.0/dist/deromanize.js";
-import { isWellFormed } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.12.0/dist/wellformed.js";
+import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/normalize.js";
+import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/stem.js";
+import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/phonetic.js";
+import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/segment.js";
+import { load } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/romanize.js";
+import { loadSearch } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/phonetic-search.js";
+import { load as loadDeromanize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/deromanize.js";
+import { isWellFormed } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/wellformed.js";
 ```
 
 Each utility is its own file, so a page loads only the rules it uses.
@@ -383,12 +383,14 @@ key("bahut") === key("bohot");     // true: both are बहुत
 key("kahaan") === key("kahan");    // false: कहाँ and कहा
 ```
 
-On words `deromanize` never trained on (Dakshina's lexicons, Bengali,
-Hindi, Marathi, Tamil, Telugu and Urdu), this key matches 30–67% of the
-pairs of spellings of one word and gives 3–20% of spellings the key of
-another word. Fuzzy matching (one edit) matches 28–65% and gives 28–51% a
-wrong match. Keys from all four spellings match 52–88%, at 16–46% wrong.
-Tamil is the weakest language. The `phonetic` key is not for this: it drops
+On words `deromanize` never trained on (Dakshina's test lexicons, read
+once, 11 languages: Bengali, Gujarati, Hindi, Kannada, Malayalam, Marathi,
+Punjabi, Sindhi, Tamil, Telugu and Urdu), this key matches 40–69% of the
+pairs of spellings of one word and gives 0–13% of spellings the key of
+another word. Fuzzy matching (one edit) matches 33–57% and gives 10–39% a
+wrong match. Keys from all four spellings match 54–84%, at 4–33% wrong.
+Malayalam is the weakest language: level with fuzzy matching, at a tenth of
+its wrong matches. The `phonetic` key is not for this: it drops
 vowels, which carry a Latin-typed word.
 
 ### The same in Go
@@ -458,12 +460,12 @@ other tools tried and each weak spot are in `docs/`.
 
 | Utility | Result | Best other tool | Browser file | Details |
 |---|---|---|---|---|
-| `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 22 KB | [docs/normalize.md](docs/normalize.md) |
+| `normalize` | makes 88.1% of look-alike spellings equal, and changes the look of no word | Indic NLP Library: 82.4%, and changes 0.68% of words | 23 KB | [docs/normalize.md](docs/normalize.md) |
 | `stem` | finds 3.7–15 points more of the right sentences than exact search, in 22 languages | ahead in 5 languages, level in 2, a trade in 4, behind in Nepali; no other stemmer for the other 10 | 4 KB | [docs/stem.md](docs/stem.md) |
-| `phonetic` | finds 89% of place-name pairs across scripts (OpenStreetMap, held out, rules 2026-10-11.7; 91% on a second slice, rules 2026-10-11.8); 84% of people on clean names in 21 languages (rules 2026-10-05, a lower bound for the rules that ship); 88% of a second roster as written (titles, initials; rules 2026-10-11); with `phonetic-search`, 93% of places (search 2026-10-11.7; 92% on the second slice, search 2026-10-11.8) and 86% of a roster as written (search 2026-10-09) | romanize + Soundex: 71% of place pairs, 23% of people in Tamil; cannot read Urdu; ICU + fuzzy match: 74% of places | 8 KB | [docs/phonetic.md](docs/phonetic.md) |
+| `phonetic` | finds 89% of place-name pairs across scripts (OpenStreetMap, held out, rules 2026-10-11.7; 91% on a second slice, rules 2026-10-11.8; rules 2026-10-12 add 0.34 points on a third); 84% of people on clean names in 21 languages (rules 2026-10-05, a lower bound for the rules that ship); 88% of a second roster as written (titles, initials; rules 2026-10-11); with `phonetic-search`, 93% of places (search 2026-10-11.7; 92% on the second slice, search 2026-10-11.8) and 86% of a roster as written (search 2026-10-09) | romanize + Soundex: 71% of place pairs, 23% of people in Tamil; cannot read Urdu; ICU + fuzzy match: 74% of places | 9 KB | [docs/phonetic.md](docs/phonetic.md) |
 | `segment` | cuts 0.05% of Kannada words wrongly | `Intl.Segmenter`: 50.3% | 8 KB | [docs/segment.md](docs/segment.md) |
-| `romanize` | writes 48.9% of the words of running text as people typed them, in 11 languages; 71.3% of names (tables: 0.2–1.8 MB a language) | IndicXlit (Python, a 119 MB model): 37.9% and 49.0% | 8 KB | [docs/romanize.md](docs/romanize.md) |
-| `deromanize` | writes the right word first for 87.1% of the words of Hindi news typed in Latin, and in four for 97.4%; 69.7% of names in 19 languages (tables: 0.3–3.1 MB a language) | IndicXlit: 86.1%, 89.7% and 66.4%; behind on rare words out of context | 28 KB | [docs/deromanize.md](docs/deromanize.md) |
+| `romanize` | writes 48.9% of the words of running text as people typed them, in 11 languages; 71.3% of names; in news, 48.1% of names and 39.8% of names it was not trained on; in Hindi, the route option (names it was not trained on get the words tables; 26 KB more on a page that has them, 2.5 MB otherwise) takes news names from 55.0% to 62.2% (Hindi only: in the other languages it loses on Wikidata's names) (tables: 0.2–1.8 MB a language) | IndicXlit (Python, a 119 MB model): 37.9% and 49.0%; in news 49.6%, 58.7% and 59.1% | 9 KB | [docs/romanize.md](docs/romanize.md) |
+| `deromanize` | writes the right word first for 87.1% of the words of Hindi news typed in Latin, and in four for 97.4%; 81.1% of typed sentences in 11 languages (Dakshina, rules 2026-10-12); 69.7% of names in 19 languages; on development names 69.2% with one accepted spelling and 74.5% with every attested spelling, the key of 0.13.0 (tables: 0.3–3.1 MB a language) | IndicXlit: 86.1%, 89.7%, 77.1% and 66.4%; 66.2% and 71.4%; behind on isolated words out of context (69.4% against 72.6% on Dakshina's lexicons) | 34 KB | [docs/deromanize.md](docs/deromanize.md) |
 | `wellformed` | agrees with HarfBuzz on 100% of 135,944 held-out PDF words (9,594 of them broken) and 2,146,974 new Wikipedia words | a check that the word starts with a combining sign: finds 84% of the broken words, with 4,667 false alarms | 6 KB | [docs/wellformed.md](docs/wellformed.md) |
 
 (Browser files are gzipped.)
@@ -515,7 +517,9 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
 - **`romanize` is behind IndicXlit on OpenStreetMap place names and on rare
   single words**: on a held-out slice of OpenStreetMap the places mode is
   right 44.4% of the time, IndicXlit 49.1% (it leads on village names, 57.6%
-  against 52.8%; Kannada has no places tables). Santali has names only; Bodo and Dogri have
+  against 52.8%; Kannada has no places tables). On names in news that its
+  tables were not trained on, IndicXlit is ahead, 58.7% against 39.8%
+  (Hindi's route option spells them with its words tables). Santali has names only; Bodo and Dogri have
   text only. Bodo writes ख थ फ as kh th ph, as typists do, not as
   Aksharantar's k t f. Manipuri in Bengali script loses syllables in the words mode;
   its tables were trained on Meetei Mayek. See [docs/romanize.md](docs/romanize.md).
@@ -566,8 +570,8 @@ Every table and switch of a utility is in its rules file
 Go and TypeScript code is a short loop over it.
 Both are checked against a conformance file of inputs with the outputs that
 a reference implementation gave them: 345,276 inputs for `normalize`,
-418,665 for `stem`, 199,992 for `phonetic`, 858,654 for `segment`, 3,221
-for `romanize`, 2,990 for `deromanize`, 32,279 for `wellformed`, and 1,031 search rows for
+418,665 for `stem`, 199,992 for `phonetic`, 858,654 for `segment`, 3,347
+for `romanize`, 3,119 for `deromanize`, 32,279 for `wellformed`, and 1,031 search rows for
 `phonetic-search` (`*/testdata/*conformance.jsonl.gz`). A change that makes any one disagree
 on any input fails the build.
 

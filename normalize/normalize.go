@@ -53,7 +53,14 @@ const digits = "0123456789abcdefghijklmnopqrstuvwxyz"
 type rawRules struct {
 	Version   string `json:"version"`
 	MaxPasses int    `json:"max_passes"`
-	Chillu    struct {
+	// rule 1b: a multi-part vowel sign typed in another order -> the sign,
+	// only after a character whose offset in its Brahmic block (U+0900 to
+	// U+0D7F) is in after (a consonant or a nukta)
+	Order struct {
+		Map   map[string]string `json:"map"`
+		After [][2]rune         `json:"after"`
+	} `json:"order"`
+	Chillu struct {
 		Map       map[string]string `json:"map"`
 		Virama    string            `json:"virama"`
 		Joiner    string            `json:"joiner"`
@@ -134,6 +141,9 @@ type foldStep struct {
 type engine struct {
 	version          string
 	maxPasses        int
+	order            map[string][]rune // rule 1b: typed order -> the sign
+	orderLongest     int               // the longest typed order, in code points
+	orderAfter       [][2]rune         // block offsets of the characters it may follow
 	invisible        map[rune]byte
 	left, right      int
 	scripts          [][][2]rune // index i is the script digits[i]
@@ -207,6 +217,11 @@ func load(data []byte) (*engine, error) {
 		khCons: r.KhandaTa.Cluster.Consonants, khNukta: first(r.KhandaTa.Cluster.Nukta),
 		khVir: first(r.KhandaTa.Cluster.Virama), khLeft: []rune(r.KhandaTa.Cluster.LeftSigns),
 		khReph: []rune(r.KhandaTa.Cluster.Reph), khNotAfterReph: r.KhandaTa.Cluster.NotAfterReph,
+	}
+	e.order, e.orderAfter = map[string][]rune{}, r.Order.After
+	for from, to := range r.Order.Map {
+		e.order[from] = []rune(to)
+		e.orderLongest = max(e.orderLongest, len([]rune(from)))
 	}
 	for c, sym := range r.Invisible {
 		e.invisible[first(c)] = sym[0]
@@ -389,8 +404,50 @@ func (e *engine) deletes(before []rune, c rune, after []rune) bool {
 	return t != nil && t.invisible
 }
 
+// reorder is rule 1b: a multi-part vowel sign typed in another order becomes
+// the sign, where the character before it (in s) is a base of orderAfter.
+func (e *engine) reorder(s []rune) []rune {
+	if len(e.order) == 0 {
+		return s
+	}
+	base := func(c rune) bool {
+		if c < 0x0900 || c > 0x0D7F {
+			return false
+		}
+		for _, r := range e.orderAfter {
+			if c%0x80 >= r[0] && c%0x80 <= r[1] {
+				return true
+			}
+		}
+		return false
+	}
+	out := make([]rune, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if i > 0 && base(s[i-1]) {
+			if n, to := e.orderAt(s[i:]); n > 0 {
+				out = append(out, to...)
+				i += n - 1
+				continue
+			}
+		}
+		out = append(out, s[i])
+	}
+	return out
+}
+
+// orderAt gives the length of the longest typed order at the start of rest,
+// and its sign; 0 when none starts there.
+func (e *engine) orderAt(rest []rune) (int, []rune) {
+	for n := min(len(rest), e.orderLongest); n > 1; n-- {
+		if to, ok := e.order[string(rest[:n])]; ok {
+			return n, to
+		}
+	}
+	return 0, nil
+}
+
 func (e *engine) onePass(text, lang string) string {
-	s := []rune(unorm.NFC(text))
+	s := e.reorder([]rune(unorm.NFC(text))) // rule 1, then 1b
 	at := func(i int) rune { // -1 past the end
 		if i < len(s) {
 			return s[i]

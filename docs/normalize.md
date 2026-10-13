@@ -66,6 +66,18 @@ written before a second virama (ന് + ZWJ + ്, a web spelling of nta). Afte
 them 47 of 83M Malayalam words change their look (a ZWNJ after the dot reph
 ൎ); before them, 16,327.
 
+Rules 2026-10-12.1 add one rule and change nothing else: a two-part vowel
+sign typed as its parts in the other order (Odia କଠାେର, ା then େ, which
+draws as କଠୋର) becomes the sign itself, after a consonant or a nukta, in the
+16 orders of Bengali, Odia, Tamil, Kannada and Malayalam that every font we
+hold draws the same after every consonant (four Kannada orders draw
+differently and stay). NFC composes the parts only in one order, so no earlier
+rule and no deleted joiner could make the two equal. On the other half of the
+Odia web text above, never read before: look-alike groups made equal 80.5% →
+81.2% (the most possible: 92.5%); of the 215 groups that hold such a spelling,
+rules 2026-10-12 join 1 and these join 172; no word changed its look by this
+rule. `fold` is unchanged.
+
 `fold` was measured against the two tools a user can pick today, each with
 its best options: Indic NLP Library, and Lucene, which Elasticsearch,
 OpenSearch and Solr run. On data no rule was chosen on (rules 2026-10-07):
@@ -84,7 +96,7 @@ rivals find more where they merge different sounds: Lucene's Hindi and
 Bengali filters make long vowels short, so की "of" and कि "that" become one
 word; Indic NLP drops a final long ā in Telugu and Kannada.
 
-The browser file is 22 KB gzipped.
+The browser file is 23 KB gzipped.
 
 Known weak spots:
 
@@ -108,7 +120,9 @@ Known weak spots:
 - **Odia acronyms and ଡ଼:** a ZWNJ between RA + virama and a vowel letter
   (ଆର୍ + ZWNJ + ଇ, as in the acronym MGNREGS typed with joiners), and a ZWJ after ଡ଼ + virama, are
   deleted where every Odia font shows them: 310 of 922,000 Odia words with a
-  joiner in web text. Fixed in the next rules version.
+  joiner in web text; the same on the other half of that text (rules
+  2026-10-12.1). Fixed in a later rules version: the fix is in the table the
+  rules are learned from, a rebuild.
 - **Martel and Laila** (Devanagari) move the mark after a deleted joiner by
   1% and 0.2% of an em, a shift no reader sees; they did not decide the rules.
 - **The nukta merge can join two words:** राज "rule" and राज़ "secret". Many

@@ -7,6 +7,9 @@
  * running text (the default); "names" for fields known to hold person
  * names, where a lookup of known names comes first; and "places" for place
  * names (its own tables in nine languages, the "words" tables in the others).
+ * In Hindi, `load("hi", "names", { route: true })` spells only the names the
+ * names tables were trained on with them, and every other word with the
+ * "words" tables.
  *
  * The tables are learned from data and loaded per language, on demand:
  *
@@ -43,7 +46,13 @@ export interface Romanizer {
 /**
  * Loads a language's tables for one mode: its own file, its script group's
  * pooled file (shared by the group, fetched once) and, for the names mode,
- * the letter n-gram every names page shares. It reads them beside this
+ * the letter n-gram every names page shares. With `route: true`, Hindi's
+ * names mode also loads its list of known names and its words tables
+ * (rules 2026-10-13): a name the names tables were trained on keeps its
+ * names list, and any other word gets the words list. On names in news held
+ * out (PIB, August 2023) Hindi's first spelling goes from 55.0% to 62.2%;
+ * the page grows from 0.56 MB to 2.5 MB (26 KB on a page that has Hindi's
+ * words tables). In a language or mode with no route, `route` changes nothing. It reads them beside this
  * module, else from jsDelivr at this package's version (the npm package
  * carries no tables); `base` or `fetch` replaces both. Rejects when the
  * language has no tables for the mode.
@@ -51,11 +60,17 @@ export interface Romanizer {
 export declare function load(lang: string, mode?: Mode, opts?: {
     fetch?: Fetcher;
     base?: URL | string;
+    route?: boolean;
 }): Promise<Romanizer>;
 /**
  * Builds a Romanizer from a language's files (for tests and offline use): its own, its
- * group's pooled one and, for a mode with a letter n-gram (names), that file too.
+ * group's pooled one and, for a mode with a letter n-gram (names), that file too. `route`
+ * turns the route on where the mode has one (Hindi names): the known list's file and the
+ * Romanizer of the other mode (Hindi words), as `load(..., { route: true })` passes them.
  */
-export declare function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8Array, lm?: Uint8Array): Romanizer;
+export declare function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8Array, lm?: Uint8Array, route?: {
+    known: Uint8Array;
+    other: Romanizer;
+}): Romanizer;
 /** @internal The model's own list for a unified word (no lookup), for the conformance test. */
 export declare function _decode(r: Romanizer, word: string, n: number): string[];

@@ -36,5 +36,5 @@ test("cases", () => {
   ];
   for (const [text, lang, want] of cases) expect([text, normalize(text, lang)]).toEqual([text, want]);
   expect(fold("हिन्दी", "hi")).toBe("हिंदी"); // हिन्दी -> हिंदी
-  expect(RULES_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  expect(RULES_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}(\.\d+)?$/); // a date, or a date and a step (2026-10-12.1)
 });

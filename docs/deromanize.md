@@ -29,13 +29,29 @@ The letters that may write nothing are the vowels, h (aspiration is written
 with the consonant before it), y and w (a glide fuses into a vowel sign),
 and the second letter of a double ("dutt": one sound). On the development
 names this moved the first answer from 68.1% to 69.2% right (19 languages).
-The rule is for names only: in words mode it cost Tamil 2 points on
-development text, so words mode is unchanged and its output is that of
-rules 2026-10-08 (every words-mode row of the earlier conformance file is
-reproduced). In the table below, the words-mode rows still hold; the
-names-mode rows (69.7% on Wikidata FINAL) are of rules 2026-10-08 and are
-not re-read: a held-out set is read once (`MAINTAINING.md`, "Changing
-rules").
+In words mode the rule cost Tamil 2 points on development text, so since
+rules 2026-10-12 it is on there only for the four languages where it gains
+in their own data, each with a paired 95% interval above zero: Manipuri
+(+1.6 points on development words), Kashmiri (+0.9), Sanskrit (+0.6, and
++1.0 on running text) and Sindhi (+0.7 on running text).
+
+Since rules 2026-10-12, a spelling that a renderer would draw broken (a
+dotted circle: two vowel signs, a sign after a virama, `wellformed`'s
+check) or that holds punctuation (a danda or an Arabic comma that the model
+learned inside a piece: अभवत्।) goes after every whole spelling, in both
+modes; each group keeps its order. On development data it moved no
+language down (61 language-and-set cells) and Nepali, Sanskrit and
+Manipuri running text up by 0.8 to 2 points. The same release gives
+Sanskrit a words model trained on all of Aksharantar's Sanskrit pairs, not
+60,000 (+2.8 points on development words, +1.4 on running text).
+
+Since rules 2026-10-12.1 every answer is normalized text: a spelling
+`normalize` would rewrite is returned in its normalized form, and a duplicate
+that results is dropped.
+
+The held-out rows below were read with the rules named in each row; a
+held-out set is read once (`MAINTAINING.md`, "Changing rules"), so the rows
+of earlier rules are not read again.
 
 There are two modes:
 
@@ -48,7 +64,7 @@ There are two modes:
 
 The tables are rules as data: the Go and TypeScript code is a short loop
 over them, and both give the reference implementation's lists on every row
-of the conformance file (2,990 rows).
+of the conformance file (3,119 rows).
 
 ## How good it is
 
@@ -74,8 +90,36 @@ On running text the two are level at the first answer, and `deromanize` is
 ahead in four (97.4% against 89.7%). On names it is ahead. On rare words out
 of context and on names that neither tool has seen, IndicXlit is ahead.
 
-Running text in the 11 languages of Google's Dakshina sentences was measured
-on development data only: 80.6% / 88.0% against 77.1% / 87.9%.
+Two more sets, held out and read once with rules 2026-10-12 (0.13.0), both
+from Google's Dakshina, typed by its annotators in 11 languages:
+
+| Held out, rules 2026-10-12 | deromanize | IndicXlit |
+|---|---|---|
+| Running text, Dakshina's typed Wikipedia sentences (test, 11 languages, 33,000 words) | 81.1 / 88.0 | 77.1 / 87.9 |
+| Isolated words, Dakshina's test lexicons (11 languages, 76,043 typings) | 69.4 / 81.1 | 72.6 / 83.5 |
+
+Neither tool trained on any word of the lexicons. On the sentences the first
+answer is right for 81.1% of the words, against IndicXlit's 77.1% (80.8% on
+development sentences with the same rules); on isolated words for 69.4%,
+against 72.6%: 3.1 points behind, most in Malayalam and Tamil (5.3 and 5.4).
+
+**The names key changed in 0.13.0.** Until 0.12.0, a typed name had one right
+answer: the spelling in the person's Wikidata label. One name often has
+several accepted spellings, so from 0.13.0 a typed name token accepts every
+spelling that development people with the same English name token carry,
+when it sounds the same (shares a phonetic key). The new key counts more
+answers right for both tools. On the development names (19 languages),
+rules 2026-10-12, the first answer and any of four:
+
+| Development names, rules 2026-10-12 | deromanize | IndicXlit |
+|---|---|---|
+| one accepted spelling (the old key) | 69.2 / 84.2 | 66.2 / 81.7 |
+| every attested spelling (the new key) | 74.5 / 86.1 | 71.4 / 84.5 |
+| names neither tool trained on, old key | 44.4 / 69.5 | 48.4 / 72.7 |
+| names neither tool trained on, new key | 52.3 / 73.5 | 54.6 / 76.2 |
+
+The jump from 69.2% to 74.5% is the key, not the writer: IndicXlit moves as
+much, from 66.2% to 71.4%. The held-out names rows above use the old key and rules 2026-10-08.
 
 **The input method you can install today.** On the Hindi development
 words, hindi-ime's offline dictionary (an input method for Linux) found the
@@ -88,7 +132,8 @@ right word first 58.8% of the time and had no word at all for 26.1%;
   `textMixed` (below). About 8% of the words of romanized Hinglish are
   English. `word` and `text` write every word they are given in the Indian
   script.
-- **Rare words out of context** are 10 points behind IndicXlit.
+- **Rare words out of context** are 10 points behind IndicXlit (Aksharantar);
+  on Dakshina's more common isolated words, 3.1 points.
 - **Santali** has names only; **Bodo** and **Dogri** have words only.
 
 ## English in Hindi text
@@ -141,5 +186,6 @@ own model, and its word list. Brotli-compressed: Hindi 1.97 MB, Urdu 1.35 MB,
 Tamil 2.57 MB, Malayalam 3.13 MB. The npm package carries no tables:
 `load()` reads them beside the module, else from jsDelivr at the package's
 version. In Go, import the languages you need; a program carries only
-their files. The browser file is 28 KB gzipped: it holds `normalize`, which
-the re-rank uses to look words up.
+their files. The browser file is 34 KB gzipped: it holds `normalize`, which
+the re-rank uses to look words up, and since rules 2026-10-12 `wellformed`
+(6 KB), which puts a broken spelling last.

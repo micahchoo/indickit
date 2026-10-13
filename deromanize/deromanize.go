@@ -33,6 +33,7 @@ import (
 
 	langtag "github.com/micahchoo/indickit/internal/lang"
 	"github.com/micahchoo/indickit/normalize"
+	"github.com/micahchoo/indickit/wellformed"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -68,6 +69,8 @@ var rules struct {
 	Alpha          map[Mode]float64     `json:"alpha"`
 	Silent         string               `json:"silent"`
 	CutModes       []Mode               `json:"cut_modes"` // the modes whose re-rank skips a cut-short spelling
+	CutLangs       map[Mode][]string    `json:"cut_langs"` // per mode, the languages whose re-rank skips it too
+	WfModes        []Mode               `json:"wf_modes"`  // the modes that put a broken spelling after every whole one
 	Blocks         map[string]rune      `json:"blocks"`
 	Groups         map[string][][2]rune `json:"groups"`
 	Unify          struct {
@@ -176,8 +179,12 @@ func Word(latin, lang string, mode Mode, n int) []string {
 	if best == nil {
 		return nil
 	}
+	ranked := normalized(rerank(best, c, list(c, mode), rules.Alpha[mode], guarded(mode, c)), c)
+	if slices.Contains(rules.WfModes, mode) {
+		ranked = wholeFirst(ranked)
+	}
 	var out []string // a spelling that writes nothing is no suggestion: dropped, as in romanize
-	for _, o := range rerank(best, c, list(c, mode), rules.Alpha[mode], guarded(mode)) {
+	for _, o := range ranked {
 		if o != "" {
 			out = append(out, o)
 		}
@@ -280,14 +287,42 @@ func candidates(w, lang string, mode Mode) []scored {
 	return out
 }
 
-// guarded: does the mode's re-rank skip cut-short spellings (rules "cut_modes")?
-func guarded(mode Mode) bool {
-	for _, m := range rules.CutModes {
-		if m == mode {
-			return true
+// guarded: does the re-rank skip cut-short spellings? In the modes of rules "cut_modes"
+// (names), and in a mode for the languages rules "cut_langs" lists under it (words: ks mni
+// sa sd, each judged in its own language).
+func guarded(mode Mode, lang string) bool {
+	return slices.Contains(rules.CutModes, mode) || slices.Contains(rules.CutLangs[mode], lang)
+}
+
+// normalized: each spelling as normalize.Text writes it, in its place; a duplicate that
+// results is dropped, the first kept (rules 2026-10-12.1). The output is normalized text:
+// a spelling with a two-part vowel sign typed in the other order (জােট) is keyed as the
+// frequent word (জোট) and took its count, and the user received a string normalize rewrites.
+func normalized(ranked []string, lang string) []string {
+	out := make([]string, 0, len(ranked))
+	for _, o := range ranked {
+		if o = normalize.Text(o, lang); !slices.Contains(out, o) {
+			out = append(out, o)
 		}
 	}
-	return false
+	return out
+}
+
+// wholeFirst: the spellings a renderer draws whole first, then the broken ones, each in
+// its order (rules "wf_modes"). Broken: wellformed.Check is false (a dotted circle: two
+// vowel signs, a sign after a virama), or it holds punctuation (a danda learned inside a
+// chunk: अभवत्।).
+func wholeFirst(ranked []string) []string {
+	out := make([]string, 0, len(ranked))
+	var broken []string
+	for _, o := range ranked {
+		if wellformed.Check(o) && !strings.ContainsFunc(o, unicode.IsPunct) {
+			out = append(out, o)
+		} else {
+			broken = append(broken, o)
+		}
+	}
+	return append(out, broken...)
 }
 
 // rerank: known strings by log score + α · log(count) in the word list, then the

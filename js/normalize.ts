@@ -142,8 +142,32 @@ function compile(r: Rules) {
     return s[k] !== undefined && khLeft.has(s[k]);
   }
 
+  // Rule 1b: a multi-part vowel sign typed in another order becomes the sign,
+  // only after a character whose offset in its Brahmic block (U+0900 to
+  // U+0D7F) is in order.after (a consonant or a nukta).
+  const order = new Map(Object.entries(r.order.map));
+  const orderLongest = Math.max(0, ...Array.from(order.keys(), (k) => Array.from(k).length));
+  const orderBase = (c: number) =>
+    c >= 0x0900 && c <= 0x0d7f && r.order.after.some(([lo, hi]) => c % 0x80 >= lo && c % 0x80 <= hi);
+  function reorder(s: number[]): number[] {
+    const out: number[] = [];
+    for (let i = 0; i < s.length; i++) {
+      if (i > 0 && orderBase(s[i - 1])) {
+        let n = Math.min(orderLongest, s.length - i), to: string | undefined;
+        for (; n > 1; n--) if ((to = order.get(fromCodePoints(s.slice(i, i + n)))) !== undefined) break;
+        if (n > 1) {
+          out.push(...Array.from(to!, cp));
+          i += n - 1;
+          continue;
+        }
+      }
+      out.push(s[i]);
+    }
+    return out;
+  }
+
   function onePass(text: string, lang: string | undefined): string {
-    let s = Array.from(nfc(text), cp);
+    let s = reorder(Array.from(nfc(text), cp));
     // rule 2: consonant + virama + ZWJ -> chillu, not after a virama, not before not_before
     let out: number[] = [];
     for (let i = 0; i < s.length; i++) {

@@ -144,7 +144,7 @@ none of this. The conformance tests prove it is the same.
 
 A bug report ("these two names should match") is DEV data. Add it to a
 test as a fix or as a known miss, as the phonetic tests do with Aligarh / अलीगढ
-(Imran / عمران was one until rules 2026-10-11.3 fixed it).
+(a known miss until rules 2026-10-12) and Imran / عمران (until rules 2026-10-11.3).
 Do not change a rule for one report until the climb shows that the change
 helps on DEV and keeps the wrong-match rate within budget.
 

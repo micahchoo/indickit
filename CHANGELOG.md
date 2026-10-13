@@ -8,6 +8,75 @@ version, and compare `RULES_VERSION` (or `SEARCH_VERSION`) to know which
 rows. A version whose rules line equals the one before it gives every
 input the same output.
 
+## 0.13.0 (2026-10-13)
+
+Rules: phonetic 2026-10-12, phonetic-search 2026-10-12, normalize 2026-10-12.1, segment 2026-10-11, stem 2026-10-12, romanize 2026-10-13, deromanize 2026-10-12.1
+
+- Changed output: phonetic 2026-10-11.8 → 2026-10-12, phonetic-search
+  follows (thresholds unchanged). Recompute stored keys. Six folds from the
+  key's misses on village names: a Latin final -on is also -o (Pimpalgaon =
+  पिंपळगाव), Bk and Kh are also budruk and khurd, a Latin rh is also r
+  (Aligarh = अलीगढ, a known miss before), Bengali-script ওয় is also ov
+  (Dewan = দেওয়ান), a Latin initial ye is also e (Yekodi = एकोडी), Tamil ா்
+  is also ர் (நாவலூா் = Navallur). The native forms of the titles Sardar,
+  Maulana, Janab and Begum are dropped like the Latin ones:
+  match("Sardar Vallabhbhai Patel", "સરદાર વલ્લભભાઈ પટેલ") is now true.
+  On OpenStreetMap places held out to this read (1,506 places), mean recall
+  rises 0.34 points (95%: +0.14 to +0.72), Marathi 2.4, Hindi 2.0, wrong
+  merges +1.2%; on the development half of LGD villages 79.4% → 83.2%.
+  Every key of 0.12.0 is kept; 1,334 of the 199,992 test words gain one.
+  rules.json gains two fields both ports read: `abbreviations` and
+  `second_readings`. The browser file grows to 9 KB gzipped.
+- New option, default output unchanged: romanize rules 2026-10-12 →
+  2026-10-13 adds a route to Hindi's names mode. Every call as before gives
+  the same output as 2026-10-12. With the route, a word in the list of Hindi
+  names the tables were trained on (7,604 words,
+  `romanize/lang/hi/hi.known.bin`, 26 KB brotli) keeps its names list, and
+  any other word gets the words mode's list. On names in news held out (PIB,
+  August 2023) Hindi's first spelling goes from 55.0% to 62.2% (+7.2
+  points, 95% interval +4.1 to +10.0; IndicXlit 59.1%). Only Hindi has a
+  route: in the other languages the words tables spell Wikidata's unseen
+  names worse.
+- API: TypeScript `load("hi", "names", { route: true })` turns the route on;
+  it also fetches the Hindi words tables and the list (26 KB more on a page
+  that has the words tables, 2.5 MB in all otherwise). `fromBytes` takes an
+  optional sixth argument, `{ known, other }` (the list's bytes and the Hindi
+  words Romanizer), and routes only when it is given. Go:
+  `romanize.WordWith` and `romanize.TextWith` take `romanize.Options{Route:
+  true}` and return an error when the list or the words tables are not
+  imported (`lang/hi` imports both). `Word`, `Text` and `Languages` are
+  unchanged. The browser file grows to 9 KB gzipped.
+- Changed output: deromanize rules 2026-10-09.2 → 2026-10-12.1. Recompute stored
+  output. Sanskrit's words model learns from all of Aksharantar's Sanskrit pairs (+2.8
+  points on development words, +1.4 on running text). A spelling a renderer would draw
+  broken (a dotted circle) or with punctuation inside (अभवत्।, ري،) goes after every
+  whole spelling, in both modes. In words mode, a spelling that writes nothing for a
+  consonant is no longer ranked first in Kashmiri, Manipuri, Sanskrit and Sindhi. The
+  word lists are keyed with normalize 2026-10-12.1 (217 keys in as bn kn ml or ta, each a
+  two-part vowel sign typed in the other order, merge into the frequent word's key). Of the
+  conformance file's 3,028 shared inputs, 297 change, 33 at the first answer (sa 17,
+  sd 5, ks 3, ur 2, as 2, bn brx ne ta 1). Held out, read once: Dakshina's typed
+  sentences (11 languages) 81.1% first against IndicXlit's 77.1%; Dakshina's test
+  lexicons 69.4% against 72.6%. The names key changed: a typed name now accepts every
+  attested spelling (development names 69.2% → 74.5%; IndicXlit 66.2% → 71.4%).
+  deromanize output is always normalized text: a spelling that normalize rewrites is
+  returned in its normalized form, and a duplicate that results is dropped (74 of 3,114
+  conformance inputs change against the unreleased 2026-10-12, 6 at the first answer, 5
+  of them in bytes only).
+  The browser file grows from 28 KB to 34 KB gzipped: it now holds `wellformed`.
+- Changed output: normalize rules 2026-10-12 → 2026-10-12.1. Recompute stored
+  text. One rule added, nothing else changes: a two-part vowel sign typed as
+  its parts in the other order (Odia କଠାେର, ା then େ, drawn as କଠୋର) becomes
+  the sign, after a consonant or a nukta, in the 16 orders of Bengali, Odia,
+  Tamil, Kannada and Malayalam that every font we hold draws the same (four
+  Kannada orders stay). On the other half of the Odia web text (IndicCorp v2,
+  read once): look-alike groups made equal 80.5% → 81.2%; of 215 groups holding
+  such a spelling, 1 → 172 joined; no word changed its look by this rule.
+  `fold` is unchanged; no search key of the conformance sample moves.
+  rules.json gains `order`, which both ports read. The browser file is 22.5 KB
+  gzipped (README budget 23 KB). deromanize's word lists are keyed by
+  normalize and are re-exported against this version.
+
 ## 0.12.0 (2026-10-12)
 
 Rules: phonetic 2026-10-11.8, normalize 2026-10-12, segment 2026-10-11, stem 2026-10-12, romanize 2026-10-12, deromanize 2026-10-09.2, phonetic-search 2026-10-11.8

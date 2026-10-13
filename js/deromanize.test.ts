@@ -94,6 +94,40 @@ test("a cut-short spelling is not first", async () => {
   expect(RULES_VERSION >= "2026-10-09").toBe(true);
 }, 120_000);
 
+// Rules 2026-10-12: a spelling the renderer draws broken, or with punctuation inside, goes after
+// every whole one (rule wf); the cut-short guard is on in words mode for ks mni sa sd (cut_langs).
+test("a broken or cut-short word is not first", async () => {
+  const cases: [string, string, string, string][] = [
+    ["diyagayahe", "ur", "دیاگیاہے", "دیاگیاہے۔"], // wf: punctuation
+    ["hataaundathe", "ne", "हाताउँदथे", "हाताउँदथे।"], // wf: a danda
+    ["rafi", "sd", "رافي", "ري،"], // the guard (sd) and wf
+    ["hinzi", "ks", "ہنزی", "ہندی"], // the guard (ks)
+  ];
+  for (const [word, lang, want, not] of cases) {
+    const got = (await get(lang, "words")).word(word, 4);
+    expect([word, got[0], got[0] !== not]).toEqual([word, want, true]);
+  }
+  const { RULES_VERSION } = await import("./deromanize");
+  expect(RULES_VERSION >= "2026-10-12").toBe(true);
+}, 120_000);
+
+// Rules 2026-10-12.1: the output is normalized text. With normalize 2026-10-12.1 a spelling
+// with a two-part vowel sign typed in the other order (জােট) is keyed as the frequent word
+// (জোট) and took its count, so it rose to second as a string normalize would rewrite.
+test("the output is normalized text, no spelling twice", async () => {
+  const { normalize } = await import("./normalize");
+  for (const [word, lang] of [["jaate", "bn"], ["hoayar", "bn"], ["phogat", "ta"]] as const) {
+    for (const mode of ["words", "names"] as Mode[]) {
+      const got = (await get(lang, mode)).word(word, 4);
+      expect(got.length).toBeGreaterThan(0);
+      expect(got.map((o) => normalize(o, lang))).toEqual(got);
+      expect(new Set(got).size).toBe(got.length);
+    }
+  }
+  const { RULES_VERSION } = await import("./deromanize");
+  expect(RULES_VERSION >= "2026-10-12.1").toBe(true);
+}, 120_000);
+
 // deromanize/testdata/english-conformance.jsonl.gz: ["english", lang, word, bool] and
 // ["text-mixed", lang, text, output] from the Python reference; the same file the Go test reads.
 test("the English list: every english-conformance row", async () => {

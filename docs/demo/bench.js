@@ -213,7 +213,7 @@ const PANELS = [
         { a: "Rajnath Singh", b: "راجناتھ سنگھ", note: "Latin and Urdu" },
         { a: "Singh", b: "सिंह", note: "fixed in 0.8.0" },
         { a: "Singh", b: "Sinha", note: "the cost of that fix" },
-        { a: "Imran", b: "عمران", note: "a known miss" },
+        { a: "Imran", b: "عمران", note: "fixed in 0.11.0" },
         { a: "Block 1", b: "Block 2", note: "numbers keep their value" },
       ];
       root.innerHTML = `
@@ -295,8 +295,8 @@ const PANELS = [
         { lang: "hi", mode: "words", text: title("hi"), label: "A Hindi title", note: "words mode" },
         { lang: "ta", mode: "words", text: title("ta"), label: "A Tamil title", note: "words mode" },
         { lang: "kn", mode: "names", text: "ದ್ರೌಪದಿ ಮುರ್ಮು", label: "ದ್ರೌಪದಿ ಮುರ್ಮು", note: "names mode" },
-        { lang: "hi", mode: "words", text: "प्राप्\u200Dत विश्\u200Dव", label: "प्राप्\u200Dत विश्\u200Dव", note: "fault: a joiner cuts the word" },
-        { lang: "mni", mode: "names", text: "রামেন ওরাম", label: "রামেন ওরাম", note: "fault: Manipuri drops syllables" },
+        { lang: "hi", mode: "words", text: "प्राप्\u200Dत विश्\u200Dव", label: "प्राप्\u200Dत विश्\u200Dव", note: "fixed in 0.9.0: a joiner cut the word" },
+        { lang: "mni", mode: "names", text: "রামেন ওরাম", label: "রামেন ওরাম", note: "fixed in 0.9.0: Manipuri dropped syllables" },
         { lang: "hi", mode: "words", text: "एक देकर", label: "एक देकर", note: "fault: English look-alikes" },
       ];
       root.innerHTML = `
@@ -336,8 +336,8 @@ const PANELS = [
         { t: "amar sonar bangla", lang: "bn", mode: "words", note: "Bengali" },
         { t: "vanakkam", lang: "ta", mode: "words", note: "Tamil" },
         { t: "chandrayaan", lang: "te", mode: "words", note: "Telugu" },
-        { t: "murmu", lang: "ml", mode: "names", note: "fault: names mode cuts it" },
-        { t: "chandrayaan", lang: "ur", mode: "names", note: "fault: Urdu names mode" },
+        { t: "murmu", lang: "ml", mode: "names", note: "fixed in 0.9.0: names mode cut it" },
+        { t: "chandrayaan", lang: "ur", mode: "names", note: "fixed in 0.9.0: Urdu names mode cut it" },
       ];
       root.innerHTML = `
         <div class="try">

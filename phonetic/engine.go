@@ -73,9 +73,13 @@ type rawRules struct {
 	} `json:"joined"`
 	DigitZeros []rune              `json:"digit_zeros"`
 	Initials   map[string][]string `json:"initials"`
-	Titles     []string            `json:"titles"`
-	MaxKeys    int                 `json:"max_keys"`
-	Suffixes   []struct {
+	// place-abbr: a Latin abbreviation also keys as the word it stands for (bk = budruk)
+	Abbreviations map[string][]string `json:"abbreviations"`
+	// ta-aa-r: a word holding the first spelling also keys with every one read as the second
+	SecondReadings [][2]string `json:"second_readings"`
+	Titles         []string    `json:"titles"`
+	MaxKeys        int         `json:"max_keys"`
+	Suffixes       []struct {
 		From    rune     `json:"from"`
 		To      rune     `json:"to"`
 		Endings []string `json:"endings"`
@@ -134,6 +138,8 @@ type engine struct {
 	flapOffsets              []rune
 	joinedMin                int                 // joined keys shorter than this find too many names
 	initials                 map[string][]string // a one-letter Latin word also keys as its spoken name
+	abbreviations            map[string][]string // a Latin abbreviation also keys as its word (bk = budruk)
+	secondReadings           [][2]string         // a word holding p[0] also keys with every p[0] read as p[1]
 	titles                   map[string]bool     // a name's leading words in this set are dropped
 	rewrite                  [][2]string         // Brahmic spellings rewritten, in order, before reading (ml-tta)
 	rewriteBases             [][2]string         // the same, as one more base after the suffix stems (ml-tta-add)
@@ -171,7 +177,8 @@ func load(data []byte) (*engine, error) {
 		dropFinalVowel: r.Steps["drop-final-vowel"],
 		nukta:          r.Brahmic.NuktaOffset, flapClass: one(r.Brahmic.FlapClass),
 		flapOffsets: r.Brahmic.FlapOffsets, joinedMin: r.Joined.MinClasses,
-		initials: r.Initials, titles: map[string]bool{},
+		initials: r.Initials, abbreviations: r.Abbreviations, secondReadings: r.SecondReadings,
+		titles: map[string]bool{},
 	}
 	for _, t := range r.Titles {
 		k.titles[t] = true
@@ -510,6 +517,7 @@ func (k *engine) keys(word string) []string {
 		return []string{n}
 	}
 	bases := append([]string{word}, k.initials[word]...) // M = em = एम = எம்
+	bases = append(bases, k.abbreviations[word]...)      // Bk = budruk = बुद्रुक
 	first, _ := utf8.DecodeRuneInString(word)
 	for _, s := range k.suffixes {
 		if first < s.from || first > s.to {
@@ -520,6 +528,11 @@ func (k *engine) keys(word string) []string {
 				bases = append(bases, word[:len(word)-len(e)])
 				break
 			}
+		}
+	}
+	for _, p := range k.secondReadings { // Tamil ா் typed for ர் (reference.py#keys, ta-aa-r)
+		if strings.Contains(word, p[0]) {
+			bases = append(bases, strings.ReplaceAll(word, p[0], p[1]))
 		}
 	}
 	if len(k.rewriteBases) > 0 { // a second reading of each base (reference.py#keys, ml-tta-add)

@@ -104,7 +104,7 @@ func TestMatch(t *testing.T) {
 		{"सुरेश", "சுரேஷ்", true},
 		{"Parvez Khan", "پرویز خان", true},
 		{"Imran", "عمران", true},       // rules 2026-10-11.3: an initial alif or ع is also i (a known miss before)
-		{"Aligarh", "अलीगढ", false},    // known miss: Latin rh is r and h; ढ is ṭh
+		{"Aligarh", "अलीगढ", true},     // rules 2026-10-12: Latin rh is also r (a known miss before)
 		{"Rāma", "राम", true},          // accents are removed
 		{"राम", "काम", false},          // Rām is not kām
 		{"Ram Singh", "राम", false},    // word counts differ
@@ -114,6 +114,8 @@ func TestMatch(t *testing.T) {
 		{"Singh", "सिंह", true},                // rules 2026-10-07: Latin "ngh" is anusvara + h
 		{"Bidhuri", "बिधू\u0921\u093cी", true}, // the flap, as NFC writes it: ड + nukta
 		{"Rao", "राव", true},                   // व after a is also a vowel
+		{"Sardar Vallabhbhai Patel", "સરદાર વલ્લભભાઈ પટેલ", true}, // rules 2026-10-12: a title is dropped in every script
+		{"Sardar Vallabhbhai Patel", "সর্দার বল্লভভাই প্যাটেল", true},
 	} {
 		if got := Match(c.a, c.b); got != c.want {
 			t.Errorf("Match(%q, %q) = %v, want %v", c.a, c.b, got, c.want)
@@ -143,7 +145,7 @@ func TestNameKeys(t *testing.T) {
 	if len(a) == 0 || !shareOne(a, b) {
 		t.Errorf("JoinedKeys do not meet: %v and %v", a, b)
 	}
-	if RulesVersion != "2026-10-11.8" {
+	if RulesVersion != "2026-10-12" {
 		t.Errorf("RulesVersion = %q", RulesVersion)
 	}
 	// rules 2026-10-11: titles dropped, initials read, the demo's misses

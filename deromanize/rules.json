@@ -17,6 +17,14 @@
   "te": 3072
  },
  "bos": "<s>",
+ "cut_langs": {
+  "words": [
+   "ks",
+   "mni",
+   "sa",
+   "sd"
+  ]
+ },
  "cut_modes": [
   "names"
  ],
@@ -274,11 +282,11 @@
   }
  },
  "files": {
-  "as.list.bin": 968637,
+  "as.list.bin": 968539,
   "as.names-list.bin": 36290,
   "as.names.bin": 56650,
   "as.words.bin": 176986,
-  "bn.list.bin": 3079000,
+  "bn.list.bin": 3077317,
   "bn.names-list.bin": 80018,
   "bn.names.bin": 93290,
   "bn.words.bin": 274214,
@@ -299,7 +307,7 @@
   "hi.names-list.bin": 67117,
   "hi.names.bin": 95894,
   "hi.words.bin": 346268,
-  "kn.list.bin": 5503072,
+  "kn.list.bin": 5503070,
   "kn.names-list.bin": 31357,
   "kn.names.bin": 49035,
   "kn.words.bin": 180882,
@@ -311,7 +319,7 @@
   "mai.names-list.bin": 15030,
   "mai.names.bin": 30010,
   "mai.words.bin": 265014,
-  "ml.list.bin": 7515032,
+  "ml.list.bin": 7515090,
   "ml.names-list.bin": 54838,
   "ml.names.bin": 77706,
   "ml.words.bin": 216480,
@@ -331,7 +339,7 @@
   "ne.names-list.bin": 13305,
   "ne.names.bin": 28449,
   "ne.words.bin": 218450,
-  "or.list.bin": 875046,
+  "or.list.bin": 875035,
   "or.names-list.bin": 33026,
   "or.names.bin": 49200,
   "or.words.bin": 198961,
@@ -342,7 +350,7 @@
   "sa.list.bin": 1837666,
   "sa.names-list.bin": 6983,
   "sa.names.bin": 20106,
-  "sa.words.bin": 169505,
+  "sa.words.bin": 275157,
   "sat.list.bin": 484539,
   "sat.names-list.bin": 34457,
   "sat.names.bin": 65022,
@@ -350,15 +358,15 @@
   "sd.names-list.bin": 2602,
   "sd.names.bin": 8121,
   "sd.words.bin": 327439,
-  "ta.list.bin": 5456850,
-  "ta.names-list.bin": 115847,
+  "ta.list.bin": 5456556,
+  "ta.names-list.bin": 115830,
   "ta.names.bin": 118779,
   "ta.words.bin": 178395,
   "te.list.bin": 2904372,
   "te.names-list.bin": 114224,
   "te.names.bin": 119410,
   "te.words.bin": 199661,
-  "ur.list.bin": 1546931,
+  "ur.list.bin": 1546864,
   "ur.names-list.bin": 61255,
   "ur.names.bin": 99309,
   "ur.words.bin": 380888,
@@ -494,7 +502,7 @@
  "max_n": 3,
  "nbest": 16,
  "order": 3,
- "rules_version": "2026-10-09.2",
+ "rules_version": "2026-10-12.1",
  "silent": "aeiouhwy",
  "unify": {
   "from": [
@@ -505,5 +513,9 @@
   "to_block": 2304
  },
  "unknown_penalty": 20.0,
- "version": 1
+ "version": 1,
+ "wf_modes": [
+  "names",
+  "words"
+ ]
 }

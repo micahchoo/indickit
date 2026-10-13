@@ -116,11 +116,13 @@ let rn = 0, rmiss = 0;
 for (const line of romRows.split("\n")) {
   if (!line) continue;
   const [fam, lang, word, want] = JSON.parse(line);
-  const mode = fam === "names-lookup" ? "names" : fam;
-  const key = `${lang}.${mode}`;
-  if (!loaded.has(key)) loaded.set(key, await R.load(lang, mode, { fetch: disk }));
+  const word4 = fam === "names-lookup" || fam === "names-routed"; // what word() returns (lookup, route)
+  const mode = word4 ? "names" : fam;
+  const route = fam === "names-routed"; // the route option (Hindi, rules 2026-10-13)
+  const key = `${lang}.${mode}.${route}`;
+  if (!loaded.has(key)) loaded.set(key, await R.load(lang, mode, { fetch: disk, route }));
   const r = loaded.get(key);
-  const got = fam === "names-lookup" ? r.word(word, 4) : R._decode(r, word, 4);
+  const got = word4 ? r.word(word, 4) : R._decode(r, word, 4);
   rn++;
   if (JSON.stringify(got) !== JSON.stringify(want)) {
     if (rmiss++ < 10) console.error(JSON.stringify([fam, lang, word, want, got]));

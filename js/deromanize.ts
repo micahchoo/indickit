@@ -26,6 +26,7 @@ import rulesJson from "../deromanize/rules.json" with { type: "json" };
 import { version as PACKAGE_VERSION } from "../package.json" with { type: "json" };
 import { langCode } from "./lang";
 import { fold, normalize } from "./normalize";
+import { isWellFormed } from "./wellformed";
 
 /** The tables: "words" for running text, "names" for person names. */
 export type Mode = "words" | "names";
@@ -44,6 +45,8 @@ type Rules = {
   alpha: Record<Mode, number>;
   silent: string;
   cut_modes: Mode[];
+  cut_langs: Partial<Record<Mode, string[]>>;
+  wf_modes: Mode[];
   blocks: Record<string, number>;
   groups: Record<string, [number, number][]>;
   families: Record<Mode, Record<string, FamilyEntry>>;
@@ -196,7 +199,10 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
     return english !== "none" && english.get(clean(latin)) !== undefined;
   };
   const alpha = RULES.alpha[mode];
-  const guard = RULES.cut_modes.includes(mode); // the re-rank skips cut-short spellings
+  // the re-rank skips cut-short spellings: in the modes of cut_modes (names), and in a mode
+  // for the languages cut_langs lists under it (words: ks mni sa sd, each judged in its own language)
+  const guard = RULES.cut_modes.includes(mode) || (RULES.cut_langs[mode] ?? []).includes(lang);
+  const wf = RULES.wf_modes.includes(mode);
   const word = (latin: string, n = 4): string[] => {
     const w = clean(latin);
     if (w === "") return [];
@@ -227,8 +233,17 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
       if (c === undefined || (guard && cut)) rest.push(o);
       else known.push([o, s + alpha * Math.log(c)]);
     }
+    let ranked = [...known.sort(byScore).map((e) => e[0]), ...rest];
+    // each spelling as normalize writes it, in its place; a duplicate that results is dropped,
+    // the first kept (rules 2026-10-12.1): the output is normalized text. A spelling with a
+    // two-part vowel sign typed in the other order (জােট) is keyed as the frequent word (জোট)
+    // and took its count, and the user received a string normalize would rewrite.
+    ranked = ranked.map((o) => normalize(o, lang)).filter((o, i, a) => a.indexOf(o) === i);
+    // wf_modes: the spellings a renderer draws whole first, then the broken ones (a dotted
+    // circle, or punctuation inside: अभवत्।), each in its order
+    if (wf) ranked = [...ranked.filter(whole), ...ranked.filter((o) => !whole(o))];
     // a spelling that writes nothing is no suggestion: dropped, as in romanize
-    return [...known.sort(byScore).map((e) => e[0]), ...rest].filter((o) => o !== "").slice(0, n);
+    return ranked.filter((o) => o !== "").slice(0, n);
   };
   const write = (t: string, keepEnglish: boolean): string => {
     const cs = [...t];
@@ -258,6 +273,8 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
     },
   };
 }
+
+const whole = (o: string): boolean => isWellFormed(o) && !/\p{P}/u.test(o);
 
 /** A spelling, its log score, and whether every path to it wrote nothing for a consonant (cuts). */
 type Scored = [string, number, boolean];

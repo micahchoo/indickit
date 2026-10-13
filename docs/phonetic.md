@@ -11,7 +11,23 @@ Chiki), Sindhi, Tamil, Telugu, Urdu, and Latin spellings of all of them.
 
 ## How good it is
 
-### The rules that ship (2026-10-11.8)
+### The rules that ship (2026-10-12)
+
+Rules 2026-10-12 add six folds, built from the key's misses on village names
+(the Local Government Directory, development half; not held out): a Latin
+final -on is also -o (Pimpalgaon = पिंपळगाव), Bk and Kh are also budruk and
+khurd (बुद्रुक, खुर्द), a Latin rh is also r (Aligarh = अलीगढ), Bengali-script
+ওয় is also ov (Dewan = দেওয়ান), a Latin initial ye is also e (Yekodi = एकोडी),
+and Tamil ா் is also ர் (நாவலூா் = Navallur). On the development half of the
+villages, the key finds 83.2% (79.4% before; ICU + fuzzy match 81.6%): a
+development number. Read once on a third OpenStreetMap slice that no rule
+was chosen on (1,506 places whose names no rule saw): mean recall over
+languages rises 0.34 points (95% interval +0.14 to +0.72), Marathi 2.4,
+Hindi 2.0; no language falls; wrong merges rise 1.2%. They also drop the
+native forms of the titles Sardar, Maulana, Janab and Begum, as the Latin
+forms already were: "Sardar Vallabhbhai Patel" now matches સરદાર વલ્લભભાઈ
+પટેલ. Every key of rules 2026-10-11.8 is kept; 1,334 of the 199,992 test
+words gain one.
 
 Measured once, with rules 2026-10-11.7, on OpenStreetMap place names that no
 rule was chosen on (one fiftieth of the places, held out to the end): 1,704
@@ -81,7 +97,7 @@ name among 81,000 English names returns about one wrong person.
 
 One word takes 0.6 µs in Go and 0.7 µs in Node, on one core. A million
 names index in about 2 s (Go) or 3 s (Node); a search takes 2–3 µs. The
-browser file is 8 KB gzipped.
+browser file is 9 KB gzipped.
 
 Known weak spots:
 
@@ -94,8 +110,8 @@ Known weak spots:
   counts: "Ebrahim" and इब्रहिम् do not match. In Urdu, Kashmiri and Sindhi
   script an initial alif or ع is also read as i, e or u (rules 2026-10-11.3),
   so "Imran" and عمران match.
-- **-garh written ढ.** "Aligarh" and अलीगढ do not match: Latin rh is read as
-  r and h.
+- **-garh written ढ.** Since rules 2026-10-12, "Aligarh" and अलीगढ match: a
+  Latin rh is also read as r.
 - **Dogri and Bodo** were measured on ordinary words only; there was no
   set of names.
 

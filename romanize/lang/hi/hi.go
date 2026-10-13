@@ -11,17 +11,21 @@ import (
 	_ "github.com/micahchoo/indickit/romanize/lang/shared"
 )
 
-//go:embed hi.names.bin
+//go:embed hi.known.bin
 var f0 []byte
 
-//go:embed hi.places.bin
+//go:embed hi.names.bin
 var f1 []byte
 
-//go:embed hi.words.bin
+//go:embed hi.places.bin
 var f2 []byte
 
+//go:embed hi.words.bin
+var f3 []byte
+
 func init() {
-	romanize.Register("hi.names.bin", f0)
-	romanize.Register("hi.places.bin", f1)
-	romanize.Register("hi.words.bin", f2)
+	romanize.Register("hi.known.bin", f0)
+	romanize.Register("hi.names.bin", f1)
+	romanize.Register("hi.places.bin", f2)
+	romanize.Register("hi.words.bin", f3)
 }

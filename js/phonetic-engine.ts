@@ -11,9 +11,11 @@ import { isMn, nfc, nfd } from "./unidata";
 
 // initials and titles are absent from the scorer's fine rules files
 // extra differs between rules files (sd-implosive adds four letters), so it is a plain map
-type Rules = Omit<typeof rulesJson, "initials" | "titles" | "initial_branches" | "brahmic" | "extra"> & {
+type Rules = Omit<typeof rulesJson, "initials" | "abbreviations" | "second_readings" | "titles" | "initial_branches" | "brahmic" | "extra"> & {
   extra: Record<string, string>;
   initials?: Record<string, string[]>;
+  abbreviations?: Record<string, string[]>;
+  second_readings?: string[][];
   initial_branches?: { from: number; to: number; also: string }[];
   brahmic: Omit<typeof rulesJson.brahmic, "rewrite" | "rewrite_bases"> & { rewrite?: string[][]; rewrite_bases?: string[][] };
 };
@@ -233,11 +235,15 @@ export function compile(rules: Rules) {
   // Never holds "": a word with no letter and no number has no key.
   // a one-letter Latin word also keys as its spoken name: M = em = एम = எம்
   const initials = new Map<string, string[]>(Object.entries(rules.initials ?? {}));
+  // a Latin abbreviation also keys as the word it stands for: Bk = budruk = बुद्रुक
+  const abbreviations = new Map<string, string[]>(Object.entries(rules.abbreviations ?? {}));
+  // a word holding x also keys with every x read as y: Tamil ா் typed for ர்
+  const secondReadings = (rules.second_readings ?? []) as [string, string][];
 
   return function keys(word: string): string[] {
     const n = number(word);
     if (n !== undefined) return [n];
-    const bases = [word, ...(initials.get(word) ?? [])];
+    const bases = [word, ...(initials.get(word) ?? []), ...(abbreviations.get(word) ?? [])];
     const first = word.charCodeAt(0);
     for (const sf of rules.suffixes) {
       if (first < sf.from || first > sf.to) continue;
@@ -245,6 +251,7 @@ export function compile(rules: Rules) {
         if (word.endsWith(e) && word.length - e.length >= 2) { bases.push(word.slice(0, -e.length)); break; }
       }
     }
+    for (const [x, y] of secondReadings) if (word.includes(x)) bases.push(word.replaceAll(x, y));
     if (rewriteBases.length) {
       for (const b of bases.slice()) {
         let r = b;

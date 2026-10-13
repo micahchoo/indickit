@@ -1,5 +1,5 @@
 {
- "indickit": "0.8.0 + rules romanize 2026-10-08, deromanize 2026-10-09",
+ "indickit": "0.13.0 (rules romanize 2026-10-13, deromanize 2026-10-12.1)",
  "names": [
   "Lakshmi",
   "Droupadi Murmu",
@@ -29,8 +29,8 @@
      "mohammad rafi"
     ],
     "Chandrayaan": [
-     "চন্দ্রয়ান",
-     "chandraan"
+     "চন্দ্ৰয়ান",
+     "chandan"
     ]
    }
   },
@@ -56,7 +56,7 @@
     ],
     "Chandrayaan": [
      "চন্দ্রয়ান",
-     "chandraan"
+     "chandan"
     ]
    }
   },
@@ -78,7 +78,7 @@
     ],
     "Mohammed Rafi": [
      "महाममेड राफि",
-     "mohammed rapi"
+     "mohammed raphi"
     ],
     "Chandrayaan": [
      "चन्द्रयान",
@@ -212,7 +212,7 @@
     ],
     "Chandrayaan": [
      "چندرایان",
-     "chandraiyan"
+     "chandrayan"
     ]
    }
   },
@@ -308,7 +308,7 @@
     ],
     "Rajnath Singh": [
      "ꯔꯥꯖꯅ ꯁꯤꯡꯍ",
-     "rajn singh"
+     "rajna singh"
     ],
     "Mohammed Rafi": [
      "ꯃꯣꯍꯝꯃꯦꯗ ꯔꯥꯐꯤ",
@@ -341,8 +341,8 @@
      "mohammad rafi"
     ],
     "Chandrayaan": [
-     "चन्द्रय़ान",
-     "chandraan"
+     "चन्द्रय़ान",
+     "chandrayan"
     ]
    }
   },
@@ -486,11 +486,11 @@
     ],
     "Droupadi Murmu": [
      "دروپدی مرمت",
-     "draupadi mirmat"
+     "draupadi mirmit"
     ],
     "Rajnath Singh": [
      "رجناتھ سنگھ",
-     "rjanath singh"
+     "rajnath singh"
     ],
     "Mohammed Rafi": [
      "محمد رفت",

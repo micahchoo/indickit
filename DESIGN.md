@@ -475,6 +475,31 @@ context (consonant + virama, the character, a consonant) tries every pair.
   languages, the rule takes a language tag. Bengali র and Assamese ৰ look the
   same only as ra-phala. With `lang`, each language keeps its own ra.
 
+### A rule for one language is judged in that language
+
+The step on the mean that a climb uses (phonetic: 0.2 points) is the wrong gate for a rule scoped to
+one script or one language. Such a rule moves the mean of 23 languages by
+one twenty-third of its own gain: +4.6 in Santali reads as +0.2 on the
+mean, and anything smaller is invisible. Phonetic summed its Tamil folds
+into a bundle to clear the step (phase 18), and kept six one-language
+folds under it by hand (phases 18 and 34). This is that practice, written
+down (owner, 2026-10-12).
+
+Keep a rule scoped by script or language tag when all four hold:
+
+- its gain in that language has a paired 95% interval above zero;
+- it costs nothing measurable in any other language;
+- its cost in that language stays within that language's cap;
+- its cost still counts against the mean budget.
+
+The interval is paired (the same pairs, before and after), not the level
+band of the language's recall, which is wide where the language is thin
+(Konkani ±7.5, Sindhi ±4.8). A rule that fails any line goes back to the
+mean step. A rule that helps one language and is blocked by a cap in a
+second language of the same script (an Arabic-script fold and Kashmiri's
+wrong-hit cap) is scoped by language only where the key takes a language
+tag; where it does not, scoping is an API change, not a rule change.
+
 ### Standards are inputs, not verdicts
 
 Unicode chapter 12 says to treat ന്റ and ൻ്റ as the same. The SMC fonts draw
