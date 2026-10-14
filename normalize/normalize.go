@@ -71,6 +71,12 @@ type rawRules struct {
 		Assamese      string   `json:"assamese"`
 		Bengali       string   `json:"bengali"`
 		AssameseLangs []string `json:"assamese_langs"`
+		// rules 2026-10-13: ra + Zwnj + virama + Ya is ra + Zwj + virama + Ya; the other ra +
+		// virama before a consonant in RephBefore is the language's own (the reph)
+		Zwnj       string    `json:"zwnj"`
+		Zwj        string    `json:"zwj"`
+		Ya         string    `json:"ya"`
+		RephBefore [][2]rune `json:"reph_before"`
 	} `json:"ra"`
 	KhandaTa struct {
 		From      string    `json:"from"`
@@ -142,6 +148,7 @@ type engine struct {
 	version          string
 	maxPasses        int
 	order            map[string][]rune // rule 1b: typed order -> the sign
+	orderFirst       map[rune]bool     // the characters a typed order can start with
 	orderLongest     int               // the longest typed order, in code points
 	orderAfter       [][2]rune         // block offsets of the characters it may follow
 	invisible        map[rune]byte
@@ -157,6 +164,9 @@ type engine struct {
 	raAssamese       rune
 	raBengali        rune
 	assameseLangs    []string
+	raZwnj, raZwj    rune
+	raYa             rune
+	rephBefore       [][2]rune
 	khandaFrom       []rune
 	khandaTo         rune
 	khandaNotBefore  [][2]rune
@@ -213,15 +223,19 @@ func load(data []byte) (*engine, error) {
 		chVirama: first(r.Chillu.Virama), chJoin: first(r.Chillu.Joiner), chNotBefore: []rune(r.Chillu.NotBefore),
 		raVirama: first(r.Ra.Virama), raAssamese: first(r.Ra.Assamese), raBengali: first(r.Ra.Bengali),
 		assameseLangs: r.Ra.AssameseLangs,
-		khandaFrom:    []rune(r.KhandaTa.From), khandaTo: first(r.KhandaTa.To), khandaNotBefore: r.KhandaTa.NotBefore,
+		raZwnj:        first(r.Ra.Zwnj), raZwj: first(r.Ra.Zwj), raYa: first(r.Ra.Ya), rephBefore: r.Ra.RephBefore,
+		khandaFrom: []rune(r.KhandaTa.From), khandaTo: first(r.KhandaTa.To), khandaNotBefore: r.KhandaTa.NotBefore,
 		khCons: r.KhandaTa.Cluster.Consonants, khNukta: first(r.KhandaTa.Cluster.Nukta),
 		khVir: first(r.KhandaTa.Cluster.Virama), khLeft: []rune(r.KhandaTa.Cluster.LeftSigns),
 		khReph: []rune(r.KhandaTa.Cluster.Reph), khNotAfterReph: r.KhandaTa.Cluster.NotAfterReph,
 	}
 	e.order, e.orderAfter = map[string][]rune{}, r.Order.After
+	e.orderFirst = map[rune]bool{}
 	for from, to := range r.Order.Map {
+		fromRunes := []rune(from)
+		e.orderFirst[fromRunes[0]] = true
 		e.order[from] = []rune(to)
-		e.orderLongest = max(e.orderLongest, len([]rune(from)))
+		e.orderLongest = max(e.orderLongest, len(fromRunes))
 	}
 	for c, sym := range r.Invisible {
 		e.invisible[first(c)] = sym[0]
@@ -423,7 +437,7 @@ func (e *engine) reorder(s []rune) []rune {
 	}
 	out := make([]rune, 0, len(s))
 	for i := 0; i < len(s); i++ {
-		if i > 0 && base(s[i-1]) {
+		if i > 0 && base(s[i-1]) && e.orderFirst[s[i]] {
 			if n, to := e.orderAt(s[i:]); n > 0 {
 				out = append(out, to...)
 				i += n - 1
@@ -448,7 +462,7 @@ func (e *engine) orderAt(rest []rune) (int, []rune) {
 
 func (e *engine) onePass(text, lang string) string {
 	s := e.reorder([]rune(unorm.NFC(text))) // rule 1, then 1b
-	at := func(i int) rune { // -1 past the end
+	at := func(i int) rune {                // -1 past the end
 		if i < len(s) {
 			return s[i]
 		}
@@ -477,6 +491,28 @@ func (e *engine) onePass(text, lang string) string {
 			i++
 		} else {
 			out = append(out, s[i])
+		}
+	}
+	// rule 3, 2026-10-13: ra + ZWNJ + virama + ya is ra + ZWJ + virama + ya; then the reph
+	if e.raZwnj != 0 {
+		s, out = out, make([]rune, 0, len(out))
+		for i := 0; i < len(s); i++ {
+			if (s[i] == e.raBengali || s[i] == e.raAssamese) && at(i+1) == e.raZwnj && at(i+2) == e.raVirama && at(i+3) == e.raYa {
+				out = append(out, s[i], e.raZwj)
+				i++
+			} else {
+				out = append(out, s[i])
+			}
+		}
+		s, out = out, make([]rune, 0, len(out))
+		for i := 0; i < len(s); i++ {
+			c := s[i]
+			if c == other && at(i+1) == e.raVirama {
+				if next := at(i + 2); next != -1 && slices.ContainsFunc(e.rephBefore, func(r [2]rune) bool { return next >= r[0] && next <= r[1] }) {
+					c = own
+				}
+			}
+			out = append(out, c)
 		}
 	}
 	s, out = out, make([]rune, 0, len(out))

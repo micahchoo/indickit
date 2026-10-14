@@ -239,11 +239,28 @@ func TestEnglishConformance(t *testing.T) {
 	}
 }
 
-// A language with no English list: TextMixed is Text.
+// Rules 2026-10-14: Kannada, Malayalam and Tamil have an English list. A known
+// English word is English and a native Latin-typed word is not; both words are
+// rows of testdata/english-conformance.jsonl.gz.
+func TestDravidianEnglishLists(t *testing.T) {
+	for _, lang := range []string{"kn", "ml", "ta"} {
+		if !deromanize.English("phone", lang) {
+			t.Errorf("English(%q, %s) = false, want true", "phone", lang)
+		}
+		if deromanize.English("kal", lang) {
+			t.Errorf("English(%q, %s) = true, want false", "kal", lang)
+		}
+	}
+	if deromanize.RulesVersion < "2026-10-14" {
+		t.Errorf("rules version %s predates the Dravidian English lists", deromanize.RulesVersion)
+	}
+}
+
+// A language with no English list (Bengali; Marathi has one since rules 2026-10-13): TextMixed is Text.
 func TestTextMixedWithoutList(t *testing.T) {
 	for _, s := range []string{"kal meeting hai", "the office", ""} {
-		if a, b := deromanize.TextMixed(s, "mr", deromanize.Words), deromanize.Text(s, "mr", deromanize.Words); a != b {
-			t.Errorf("mr %q: TextMixed %q, Text %q", s, a, b)
+		if a, b := deromanize.TextMixed(s, "bn", deromanize.Words), deromanize.Text(s, "bn", deromanize.Words); a != b {
+			t.Errorf("bn %q: TextMixed %q, Text %q", s, a, b)
 		}
 	}
 }

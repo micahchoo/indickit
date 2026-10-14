@@ -145,8 +145,14 @@ func TestNameKeys(t *testing.T) {
 	if len(a) == 0 || !shareOne(a, b) {
 		t.Errorf("JoinedKeys do not meet: %v and %v", a, b)
 	}
-	if RulesVersion != "2026-10-12" {
+	if RulesVersion != "2026-10-13" {
 		t.Errorf("RulesVersion = %q", RulesVersion)
+	}
+	// rules 2026-10-13: Meetei Mayek read as Bengali-script Manipuri is (ꯑ carries a vowel sign; ꯪ before a consonant is ŋ)
+	for _, p := range [][2]string{{"ꯑꯣꯏꯕ", "ওইবা"}, {"ꯈꯪꯕ", "খঙবা"}} {
+		if !shareOne(Keys(p[0]), Keys(p[1])) {
+			t.Errorf("Keys(%s) %v and Keys(%s) %v share none", p[0], Keys(p[0]), p[1], Keys(p[1]))
+		}
 	}
 	// rules 2026-10-11: titles dropped, initials read, the demo's misses
 	for _, p := range [][2]string{

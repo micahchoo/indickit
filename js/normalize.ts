@@ -125,6 +125,8 @@ function compile(r: Rules) {
   for (const [from, to] of Object.entries(r.chillu.map)) chillu.set(cp(from), cp(to));
   const ch = { virama: cp(r.chillu.virama), joiner: cp(r.chillu.joiner), notBefore: new Set(Array.from(r.chillu.not_before, cp)) };
   const ra = { virama: cp(r.ra.virama), assamese: cp(r.ra.assamese), bengali: cp(r.ra.bengali) };
+  // rules 2026-10-13: ra + ZWNJ + virama + ya is ra + ZWJ + virama + ya; then the reph
+  const ra2 = r.ra.zwnj ? { zwnj: cp(r.ra.zwnj), zwj: cp(r.ra.zwj), ya: cp(r.ra.ya), before: r.ra.reph_before as [number, number][] } : null;
   const khanda = { from: Array.from(r.khanda_ta.from, cp), to: cp(r.khanda_ta.to), notBefore: r.khanda_ta.not_before };
   const cluster = r.khanda_ta.cluster;
   const khCons = (c: number | undefined) =>
@@ -188,6 +190,23 @@ function compile(r: Rules) {
         out.push(ra.virama, own);
         i++;
       } else out.push(s[i]);
+    }
+    if (ra2) {
+      s = out;
+      out = [];
+      for (let i = 0; i < s.length; i++) {
+        if ((s[i] === ra.bengali || s[i] === ra.assamese) && s[i + 1] === ra2.zwnj && s[i + 2] === ra.virama && s[i + 3] === ra2.ya) {
+          out.push(s[i], ra2.zwj);
+          i++;
+        } else out.push(s[i]);
+      }
+      s = out;
+      out = [];
+      for (let i = 0; i < s.length; i++) {
+        const next = s[i + 2];
+        const reph = s[i] === other && s[i + 1] === ra.virama && next !== undefined && ra2.before.some(([lo, hi]) => next >= lo && next <= hi);
+        out.push(reph ? own : s[i]);
+      }
     }
     s = out;
     out = [];

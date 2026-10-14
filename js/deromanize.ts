@@ -98,8 +98,9 @@ export interface Deromanizer {
   text(text: string): string;
   /**
    * Is the Latin-typed word, read as `word` reads it, in the language's English list
-   * (an English word a typist of the language writes in English)? Only Hindi has a list:
-   * load it with `{ english: true }`. False for a language with no list.
+   * (an English word a typist of the language writes in English)? Hindi, Marathi, Kannada,
+   * Malayalam and Tamil have a list: load it with `{ english: true }`. False for a
+   * language with no list.
    */
   isEnglish(word: string): boolean;
   /**
@@ -191,7 +192,8 @@ export function fromBytes(lang: string, mode: Mode, files: Record<string, Uint8A
     }
     return sum;
   };
-  // the English list: absent for most languages; for Hindi, present only when loaded with { english: true }
+  // the English list: absent for most languages; for Hindi, Marathi, Kannada, Malayalam
+  // and Tamil, present only when loaded with { english: true }
   let english: WordList | "none" | null = "none";
   if (lists.english) english = files[lists.english] ? new WordList(files[lists.english]) : null;
   const isEnglish = (latin: string): boolean => {

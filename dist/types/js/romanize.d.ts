@@ -11,6 +11,14 @@
  * names tables were trained on with them, and every other word with the
  * "words" tables.
  *
+ * A language written in a script its own tables cannot read is spelled by the
+ * tables of a language of that script (rules 2026-10-13.1): Sindhi, Kashmiri
+ * and Urdu in Devanagari by Hindi's, Punjabi in Shahmukhi by Urdu's. Pass
+ * `load(lang, mode, { secondScript: true })` to load those tables too; without
+ * it such a word gives []. Sindhi in Devanagari and Manipuri in Bengali
+ * script are converted to the script of their own tables first (rules
+ * 2026-10-13.2): no other tables needed.
+ *
  * The tables are learned from data and loaded per language, on demand:
  *
  *     const r = await load("hi");        // fetches the Hindi and Brahmic files (beside this module, else jsDelivr)
@@ -61,16 +69,20 @@ export declare function load(lang: string, mode?: Mode, opts?: {
     fetch?: Fetcher;
     base?: URL | string;
     route?: boolean;
+    secondScript?: boolean;
 }): Promise<Romanizer>;
 /**
  * Builds a Romanizer from a language's files (for tests and offline use): its own, its
  * group's pooled one and, for a mode with a letter n-gram (names), that file too. `route`
  * turns the route on where the mode has one (Hindi names): the known list's file and the
  * Romanizer of the other mode (Hindi words), as `load(..., { route: true })` passes them.
+ * `second` holds, by language, the Romanizers that spell a word in a second script (the
+ * language's script route, same mode), as `load(..., { secondScript: true })` passes them;
+ * a second-script word whose Romanizer is missing gives [].
  */
 export declare function fromBytes(lang: string, mode: Mode, own: Uint8Array, pool: Uint8Array, lm?: Uint8Array, route?: {
     known: Uint8Array;
     other: Romanizer;
-}): Romanizer;
+}, second?: Record<string, Romanizer>): Romanizer;
 /** @internal The model's own list for a unified word (no lookup), for the conformance test. */
 export declare function _decode(r: Romanizer, word: string, n: number): string[];

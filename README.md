@@ -99,14 +99,14 @@ TypeScript, set `moduleResolution` to `nodenext` or `bundler`; the old
 In a browser, with no build step:
 
 ```js
-import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/normalize.js";
-import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/stem.js";
-import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/phonetic.js";
-import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/segment.js";
-import { load } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/romanize.js";
-import { loadSearch } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/phonetic-search.js";
-import { load as loadDeromanize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/deromanize.js";
-import { isWellFormed } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.13.0/dist/wellformed.js";
+import { normalize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.14.0/dist/normalize.js";
+import { stem } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.14.0/dist/stem.js";
+import { match } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.14.0/dist/phonetic.js";
+import { segment } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.14.0/dist/segment.js";
+import { load } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.14.0/dist/romanize.js";
+import { loadSearch } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.14.0/dist/phonetic-search.js";
+import { load as loadDeromanize } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.14.0/dist/deromanize.js";
+import { isWellFormed } from "https://cdn.jsdelivr.net/gh/micahchoo/indickit@v0.14.0/dist/wellformed.js";
 ```
 
 Each utility is its own file, so a page loads only the rules it uses.
@@ -464,8 +464,8 @@ other tools tried and each weak spot are in `docs/`.
 | `stem` | finds 3.7–15 points more of the right sentences than exact search, in 22 languages | ahead in 5 languages, level in 2, a trade in 4, behind in Nepali; no other stemmer for the other 10 | 4 KB | [docs/stem.md](docs/stem.md) |
 | `phonetic` | finds 89% of place-name pairs across scripts (OpenStreetMap, held out, rules 2026-10-11.7; 91% on a second slice, rules 2026-10-11.8; rules 2026-10-12 add 0.34 points on a third); 84% of people on clean names in 21 languages (rules 2026-10-05, a lower bound for the rules that ship); 88% of a second roster as written (titles, initials; rules 2026-10-11); with `phonetic-search`, 93% of places (search 2026-10-11.7; 92% on the second slice, search 2026-10-11.8) and 86% of a roster as written (search 2026-10-09) | romanize + Soundex: 71% of place pairs, 23% of people in Tamil; cannot read Urdu; ICU + fuzzy match: 74% of places | 9 KB | [docs/phonetic.md](docs/phonetic.md) |
 | `segment` | cuts 0.05% of Kannada words wrongly | `Intl.Segmenter`: 50.3% | 8 KB | [docs/segment.md](docs/segment.md) |
-| `romanize` | writes 48.9% of the words of running text as people typed them, in 11 languages; 71.3% of names; in news, 48.1% of names and 39.8% of names it was not trained on; in Hindi, the route option (names it was not trained on get the words tables; 26 KB more on a page that has them, 2.5 MB otherwise) takes news names from 55.0% to 62.2% (Hindi only: in the other languages it loses on Wikidata's names) (tables: 0.2–1.8 MB a language) | IndicXlit (Python, a 119 MB model): 37.9% and 49.0%; in news 49.6%, 58.7% and 59.1% | 9 KB | [docs/romanize.md](docs/romanize.md) |
-| `deromanize` | writes the right word first for 87.1% of the words of Hindi news typed in Latin, and in four for 97.4%; 81.1% of typed sentences in 11 languages (Dakshina, rules 2026-10-12); 69.7% of names in 19 languages; on development names 69.2% with one accepted spelling and 74.5% with every attested spelling, the key of 0.13.0 (tables: 0.3–3.1 MB a language) | IndicXlit: 86.1%, 89.7%, 77.1% and 66.4%; 66.2% and 71.4%; behind on isolated words out of context (69.4% against 72.6% on Dakshina's lexicons) | 34 KB | [docs/deromanize.md](docs/deromanize.md) |
+| `romanize` | writes 48.9% of the words of running text as people typed them, in 11 languages; 71.3% of names; in news, 48.1% of names and 39.8% of names it was not trained on; in Hindi, the route option (names it was not trained on get the words tables; 26 KB more on a page that has them, 2.5 MB otherwise) takes news names from 55.0% to 62.2% (Hindi only: in the other languages it loses on Wikidata's names) (tables: 0.2–1.8 MB a language) | IndicXlit (Python, a 119 MB model): 37.9% and 49.0%; in news 49.6%, 58.7% and 59.1% | 11 KB | [docs/romanize.md](docs/romanize.md) |
+| `deromanize` | writes the right word first for 87.1% of the words of Hindi news typed in Latin, and in four for 97.4%; 81.1% of typed sentences in 11 languages (Dakshina, rules 2026-10-12); 69.7% of names in 19 languages; on development names 69.2% with one accepted spelling and 74.5% with every attested spelling, the key of 0.13.0; with its English list, 94.1% of Malayalam and Kannada typed words are right and 91.6% of Tamil (Hindi's list: 89.3%, 81.8% and 89.1%; Kannada calls 7.1% of its words English) (tables: 0.3–3.1 MB a language) | IndicXlit: 86.1%, 89.7%, 77.1% and 66.4%; 66.2% and 71.4%; behind on isolated words out of context (69.4% against 72.6% on Dakshina's lexicons) | 35 KB | [docs/deromanize.md](docs/deromanize.md) |
 | `wellformed` | agrees with HarfBuzz on 100% of 135,944 held-out PDF words (9,594 of them broken) and 2,146,974 new Wikipedia words | a check that the word starts with a combining sign: finds 84% of the broken words, with 4,667 false alarms | 6 KB | [docs/wellformed.md](docs/wellformed.md) |
 
 (Browser files are gzipped.)
@@ -478,10 +478,10 @@ best of them, indic-trans (about 200 MB), gives 34.7% on running text against
 ## Limits
 
 - **`deromanize` writes English words in the Indian script too**, unless
-  you use `textMixed` (Hindi only). Its English list finds 62% of the English
-  words of typed Hinglish and leaves 2.4% of the Hindi words in Latin, most
-  of them chat spellings ("to" for तो, "he" for है). On rare words out of
-  context it is 10 points behind IndicXlit. See
+  you use `textMixed` (Hindi, Marathi, Kannada, Malayalam and Tamil). Its English list finds 62% of the English words of typed Hinglish and leaves 2.4% of the Hindi words in Latin, most
+  of them chat spellings ("to" for तो, "he" for है). Kannada's list is too eager: it calls 7.1% of Kannada words typed
+  in Latin English and leaves them in Latin (Malayalam 1.7%, Tamil 2.8%). On
+  rare words out of context it is 10 points behind IndicXlit. See
   [docs/deromanize.md](docs/deromanize.md#english-in-hindi-text).
 - **Only HarfBuzz was tested** for "looks the same" (`normalize`,
   `segment`). Windows and Apple draw text with their own engines.

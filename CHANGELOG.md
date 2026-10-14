@@ -8,6 +8,78 @@ version, and compare `RULES_VERSION` (or `SEARCH_VERSION`) to know which
 rows. A version whose rules line equals the one before it gives every
 input the same output.
 
+## 0.14.0 (2026-10-14)
+
+Rules: phonetic 2026-10-13, phonetic-search 2026-10-13, normalize 2026-10-13, segment 2026-10-11, stem 2026-10-12, romanize 2026-10-13.2, deromanize 2026-10-14
+
+- Changed output: phonetic 2026-10-12 → 2026-10-13, phonetic-search
+  follows (thresholds unchanged). Meetei Mayek only: the letter ꯑ before a
+  vowel sign only carries it (ꯑꯣꯏꯕ keys as ওইবা does), and ꯪ before a
+  consonant is ŋ as Bengali-script ঙ is (ꯈꯪꯕ = খঙবা). Recompute stored keys
+  of Meetei Mayek words; no other word's keys change (14 of the 200,006
+  conformance words change, all Meetei Mayek). On development names
+  (Wikidata) Manipuri recall rises 1.64 points (95%: +0.52 to +3.13), the
+  wrong rate unchanged; Urdu moves −0.01. On FLORES word pairs, a
+  Bengali-script Manipuri word and its Meetei Mayek twin share a key 83.4% →
+  87.7% of the time. No held-out number. rules.json's `meetei` gains
+  `carrier`, `carrier_before`, `nung` and `nung_class`.
+- Changed output: normalize 2026-10-12.1 → 2026-10-13, Bengali script
+  only. Rule 3 (the language's own ra) now covers the reph too: in Bengali
+  text ৰ before a virama and a consonant becomes র (বৰ্তমান = বর্তমান), in
+  Assamese text র becomes ৰ; and ra + ZWNJ + ্য becomes ra + ZWJ + ্য
+  (র‌্যাব = র‍্যাব). Every design font draws each pair the same (Ansary et al.
+  2024's look-alikes, checked on development words: 579 Bengali and 5,072
+  Assamese word types change, none visibly). Recompute stored normalized
+  text in Bengali script. deromanize's output is normalized text, so its
+  Assamese and Bengali candidates follow (deromanize 2026-10-13).
+- Changed output: romanize 2026-10-13 → 2026-10-13.2 (.1 the route, .2 the converters). A language written in
+  a script its own tables cannot read is spelled by the tables of a language
+  of that script, in every mode: Kashmiri and Urdu in Devanagari by Hindi's,
+  Punjabi in Shahmukhi by Urdu's (Sindhi and Manipuri: converted, below). Before, such a word gave a broken
+  spelling (सरकार in Kashmiri → "sr"); Text() left the run as it was. Go:
+  import the route's language too (lang/hi, lang/ur); TypeScript:
+  `load(lang, mode, { secondScript: true })`. Without it such a word gives
+  nil (Go) or [] (TypeScript). Only words wholly in the
+  second script change; every other output is the same. Measured on
+  development data only (FLORES dev word pairs, judged by Aksharantar's human
+  romanizations of the Perso-Arabic twin, words the tables never saw):
+  Sindhi in Devanagari 7.9% → 32.5% first spelling right, Kashmiri 15.0% →
+  43.1%. Urdu in Devanagari and Punjabi in Shahmukhi: not measured (no data).
+  No held-out number. rules.json gains `script_route`; dist/romanize.js
+  grows from 8.5 to 11 KB gzipped (the converters below).
+  Sindhi in Devanagari and Manipuri in Bengali script are not routed to
+  another language: they are converted to the script of their own tables
+  first (Sindhi: Rathore et al. 2023; Manipuri: Singh 2012; rules.json
+  `converters`), so no other import is needed. On development words the
+  tables never saw, Sindhi in Devanagari is right first 50.1% of the time
+  (7.9% before, 32.5% through Hindi's tables); Bengali-script Manipuri
+  agrees with its Meetei Mayek twin 76.1% of the time (20.7% before).
+- Changed output: deromanize 2026-10-12.1 → 2026-10-13, textMixed only.
+  Marathi gets an English list, made as Hindi's (the most frequent English
+  words less those a Marathi typist writes often): in Marathi, textMixed
+  keeps English words as typed, where before it equalled text. On
+  L3Cube-MeLID's test split, read once (14,428 Roman-script Marathi words),
+  93.4% of words are right (79.7% before), 1.3% of Marathi words are called
+  English, 72.3% of English words are found. word, text and every other
+  language give the same output. Go: lang/mr carries the list; TypeScript:
+  `load("mr", "words", { english: true })`, 22 KB gzipped.
+- Changed output: deromanize 2026-10-13 → 2026-10-14, isEnglish and textMixed
+  only. Kannada, Malayalam and Tamil get an English list each, made as Hindi's
+  and Marathi's (the most frequent English words less those a typist of the
+  language writes often): in each of the three, `isEnglish` answers true for a
+  word on the list, where before nothing was English, and `textMixed` keeps
+  English words as typed, where before it equalled `text`. On CoLI-Dravidian's
+  train split, read once: the right word for 94.1% of Malayalam words (89.3%
+  with Hindi's list) and 91.6% of Tamil (89.1%), with 1.7% and 2.8% of native
+  words called English. Kannada is 94.1% (81.8% with Hindi's list) and is
+  shipped by the owner's decision although its read failed the planned cap:
+  7.1% of Kannada words typed in Latin are called English and stay in Latin.
+  `word`, `text` and every other language give the same output. Go: lang/kn,
+  lang/ml and lang/ta carry the lists; TypeScript:
+  `load("kn"|"ml"|"ta", "words", { english: true })`.
+
+- Faster, same output: normalize's Go port tries rule 1b only at a code point that can start a typed order (Fold about 4% faster on the conformance inputs); every output is unchanged.
+
 ## 0.13.0 (2026-10-13)
 
 Rules: phonetic 2026-10-12, phonetic-search 2026-10-12, normalize 2026-10-12.1, segment 2026-10-11, stem 2026-10-12, romanize 2026-10-13, deromanize 2026-10-12.1

@@ -129,9 +129,21 @@ export function compile(rules: Rules) {
     return out;
   }
 
+  // rules 2026-10-13: the carrier before one of carrier_before is not read (mni-atiya); nung
+  // before a letter whose class is not a vowel reads nung_class (mni-nung)
+  const me = rules.meetei as { carrier?: string; carrier_before?: string; nung?: string; nung_class?: string };
   function readMeetei(word: string): string {
+    const cs = [...word];
     let out = "";
-    for (const ch of word) out += meetei.get(ch) ?? "";
+    for (let i = 0; i < cs.length; i++) {
+      const ch = cs[i];
+      if (me.carrier && ch === me.carrier && i + 1 < cs.length && (me.carrier_before ?? "").includes(cs[i + 1])) continue;
+      if (me.nung && ch === me.nung && i + 1 < cs.length) {
+        const c = meetei.get(cs[i + 1]);
+        if (c !== undefined && !vowels.has(c)) { out += me.nung_class; continue; }
+      }
+      out += meetei.get(ch) ?? "";
+    }
     return out;
   }
 

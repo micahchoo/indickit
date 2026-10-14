@@ -8,6 +8,11 @@ It reads 21 Indian languages and English: Assamese, Bengali, Gujarati,
 Hindi, Kannada, Kashmiri, Konkani, Maithili, Malayalam, Manipuri (Meetei
 Mayek), Marathi, Nepali, Odia, Punjabi (Gurmukhi), Sanskrit, Santali (Ol
 Chiki), Sindhi, Tamil, Telugu, Urdu, and Latin spellings of all of them.
+Manipuri is written in Meetei Mayek and in Bengali script; since rules
+2026-10-13 a word keys the same in both more often: ꯑ before a vowel sign
+only carries it (ꯑꯣꯏꯕ = ওইবা), and ꯪ before a consonant is ŋ (ꯈꯪꯕ = খঙবা).
+On FLORES word pairs, a Bengali-script word and its Meetei Mayek twin share a
+key 87.7% of the time, up from 83.4% (development data).
 
 ## How good it is
 
@@ -171,7 +176,7 @@ and 78%.
   श्रीमती, திரு) are dropped in the query and in the list: "Narendra Modi"
   scores 100 against "श्री नरेंद्र मोदी" in a list of four names (73
   before). A title in the middle of a name still weighs as much as a name.
-- **Size.** The browser file is 15 KB gzipped, and a language's table 2–6
+- **Size.** The browser file is 16 KB gzipped, and a language's table 2–6
   KB more, loaded when you call `loadSearch`.
 - **Cap what users type.** The scorer compares each query word with each
   candidate word, so its cost grows with their product, and a name's
@@ -223,6 +228,9 @@ of wrong names.
   the same fuzzy match finds 78% of villages. What indickit adds is an
   index: one lookup per name, from any script to any script. A fuzzy match
   compares the query with every name in the list.
+- **Telugu villages: use the search.** Many Telugu village names are one word in Telugu and two in English (Kunta Palle = కుంటపల్లి).
+  Key matching finds 81.5% of Telugu villages; `phonetic-search` proposes the joined forms as candidates and finds 93.5% at the villages threshold, at 5.9 wrong per 10,000.
+  Both are development numbers, on the same half of the Telangana and Andhra Pradesh villages.
 - **Short names give many wrong matches.** Most village names are one
   short word. In Maharashtra's 35,988 villages, one search returns about 26
   wrong villages. Search within a district, not within a state.

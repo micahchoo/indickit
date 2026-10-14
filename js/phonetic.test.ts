@@ -91,7 +91,9 @@ test("nameKeys meet across scripts; the rules are versioned", () => {
   expect(j.size > 0 && joinedKeys("சுப்ரமணியன்சுவாமிநாதன்").some((k) => j.has(k))).toBe(true);
   const j6 = new Set(joinedKeys("Amartya Sen")); // 6 classes: the floor from 2026-10-11.6
   expect(j6.size > 0 && joinedKeys("अमर्त्यसेन").some((k) => j6.has(k))).toBe(true);
-  expect(RULES_VERSION).toBe("2026-10-12");
+  expect(RULES_VERSION).toBe("2026-10-13");
+  // rules 2026-10-13: Meetei Mayek read as Bengali-script Manipuri is
+  for (const [a, b] of [["ꯑꯣꯏꯕ", "ওইবা"], ["ꯈꯪꯕ", "খঙবা"]]) expect([a, keys(a).some((k) => keys(b).includes(k))]).toEqual([a, true]);
   // rules 2026-10-11: titles dropped, initials read, the demo's misses
   for (const [a, b] of [["Smt. J. Shantha", "श्रीमती जे. शान्ता"], ["Dr. C. P. Joshi", "डॉ. सी.पी. जोशी"],
     ["Singh", "সিং"], ["Lakshmi", "லட்சுமி"], ["Shri", "श्री"],

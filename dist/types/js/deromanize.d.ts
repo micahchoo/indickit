@@ -41,8 +41,9 @@ export interface Deromanizer {
     text(text: string): string;
     /**
      * Is the Latin-typed word, read as `word` reads it, in the language's English list
-     * (an English word a typist of the language writes in English)? Only Hindi has a list:
-     * load it with `{ english: true }`. False for a language with no list.
+     * (an English word a typist of the language writes in English)? Hindi, Marathi, Kannada,
+     * Malayalam and Tamil have a list: load it with `{ english: true }`. False for a
+     * language with no list.
      */
     isEnglish(word: string): boolean;
     /**

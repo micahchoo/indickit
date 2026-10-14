@@ -39,6 +39,12 @@ type rawRules struct {
 	Meetei struct {
 		Ranges  [][2]rune         `json:"ranges"`
 		Letters map[string]string `json:"letters"`
+		// rules 2026-10-13: Carrier before one of CarrierBefore is not read (mni-atiya);
+		// Nung before a letter whose class is not a vowel reads NungClass (mni-nung)
+		Carrier       string `json:"carrier"`
+		CarrierBefore string `json:"carrier_before"`
+		Nung          string `json:"nung"`
+		NungClass     string `json:"nung_class"`
 	} `json:"meetei"`
 	OlChiki struct {
 		From       rune              `json:"from"`
@@ -122,6 +128,8 @@ type engine struct {
 	wawVBefore, finalHe      string
 	finalHeHAfter            string
 	meeteiRanges             [][2]rune
+	carrier, nung, nungClass rune // 0 = not in the rules
+	carrierBefore            string
 	olFrom, olTo             rune
 	groups                   []group
 	latin                    [128]rune // 0 = not coded
@@ -171,6 +179,8 @@ func load(data []byte) (*engine, error) {
 		ain: one(r.Urdu.Ain), waw: one(r.Urdu.Waw), aspiration: one(r.OlChiki.Aspiration),
 		wawVBefore: r.Urdu.WawVBefore, finalHe: r.Urdu.FinalHe, finalHeHAfter: r.Urdu.FinalHeHAfter,
 		meeteiRanges: r.Meetei.Ranges, olFrom: r.OlChiki.From, olTo: r.OlChiki.To,
+		carrier: one(r.Meetei.Carrier), carrierBefore: r.Meetei.CarrierBefore,
+		nung: one(r.Meetei.Nung), nungClass: one(r.Meetei.NungClass),
 		isVowel: map[rune]bool{}, digitZeros: r.DigitZeros, maxKeys: r.MaxKeys,
 		ngK: r.Steps["ng-k"], initialVowels: r.Steps["initial-vowels-alike"],
 		dropH: r.Steps["drop-h"], dropY: r.Steps["drop-y"], dropVowels: r.Steps["drop-vowels"],
@@ -314,6 +324,26 @@ func (k *engine) readTable(word string, table map[rune]rune, olChiki bool, out [
 	return out
 }
 
+// readMeetei reads Meetei Mayek by its table, with the carrier and nung rules (rules 2026-10-13).
+func (k *engine) readMeetei(word string, out []rune) []rune {
+	cs := []rune(word)
+	for i, ch := range cs {
+		if k.carrier != 0 && ch == k.carrier && i+1 < len(cs) && strings.ContainsRune(k.carrierBefore, cs[i+1]) {
+			continue
+		}
+		if k.nung != 0 && ch == k.nung && i+1 < len(cs) {
+			if c, ok := k.meetei[cs[i+1]]; ok && !k.isVowel[c] {
+				out = append(out, k.nungClass)
+				continue
+			}
+		}
+		if c, ok := k.meetei[ch]; ok {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
 func (k *engine) read(word string) []rune {
 	out := make([]rune, 0, len(word))
 	ascii := true
@@ -345,7 +375,7 @@ func (k *engine) read(word string) []rune {
 		return k.readTable(word, k.ol, true, out)
 	}
 	if me {
-		return k.readTable(word, k.meetei, false, out)
+		return k.readMeetei(word, out)
 	}
 	return k.readBrahmic(word, out)
 }

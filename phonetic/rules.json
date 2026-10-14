@@ -1,5 +1,5 @@
 {
- "version": "2026-10-12",
+ "version": "2026-10-13",
  "folds": [
   "as-case-narrow",
   "as-w-glide-ni",
@@ -28,6 +28,8 @@
   "latin-zh-l",
   "ml-case",
   "ml-tta-add",
+  "mni-atiya",
+  "mni-nung",
   "nasal-all",
   "ng-k",
   "or-case",
@@ -340,7 +342,11 @@
    "ꫭ": "e",
    "ꫮ": "o",
    "ꫯ": "o"
-  }
+  },
+  "carrier": "ꯑ",
+  "carrier_before": "ꯣꯤꯥꯦꯧꯨꯩ",
+  "nung": "ꯪ",
+  "nung_class": "ṅ"
  },
  "ol_chiki": {
   "from": 7248,

@@ -307,6 +307,7 @@
   "hi.names-list.bin": 67117,
   "hi.names.bin": 95894,
   "hi.words.bin": 346268,
+  "kn.english.bin": 265876,
   "kn.list.bin": 5503070,
   "kn.names-list.bin": 31357,
   "kn.names.bin": 49035,
@@ -319,6 +320,7 @@
   "mai.names-list.bin": 15030,
   "mai.names.bin": 30010,
   "mai.words.bin": 265014,
+  "ml.english.bin": 108009,
   "ml.list.bin": 7515090,
   "ml.names-list.bin": 54838,
   "ml.names.bin": 77706,
@@ -327,6 +329,7 @@
   "mni.names-list.bin": 5010,
   "mni.names.bin": 5929,
   "mni.words.bin": 124789,
+  "mr.english.bin": 53903,
   "mr.list.bin": 2490422,
   "mr.names-list.bin": 52737,
   "mr.names.bin": 73778,
@@ -358,6 +361,7 @@
   "sd.names-list.bin": 2602,
   "sd.names.bin": 8121,
   "sd.words.bin": 327439,
+  "ta.english.bin": 55788,
   "ta.list.bin": 5456556,
   "ta.names-list.bin": 115830,
   "ta.names.bin": 118779,
@@ -438,6 +442,7 @@
    "words": "hi.list.bin"
   },
   "kn": {
+   "english": "kn.english.bin",
    "names": "kn.names-list.bin",
    "words": "kn.list.bin"
   },
@@ -450,6 +455,7 @@
    "words": "mai.list.bin"
   },
   "ml": {
+   "english": "ml.english.bin",
    "names": "ml.names-list.bin",
    "words": "ml.list.bin"
   },
@@ -458,6 +464,7 @@
    "words": "mni.list.bin"
   },
   "mr": {
+   "english": "mr.english.bin",
    "names": "mr.names-list.bin",
    "words": "mr.list.bin"
   },
@@ -486,6 +493,7 @@
    "words": "sd.list.bin"
   },
   "ta": {
+   "english": "ta.english.bin",
    "names": "ta.names-list.bin",
    "words": "ta.list.bin"
   },
@@ -502,7 +510,7 @@
  "max_n": 3,
  "nbest": 16,
  "order": 3,
- "rules_version": "2026-10-12.1",
+ "rules_version": "2026-10-14",
  "silent": "aeiouhwy",
  "unify": {
   "from": [

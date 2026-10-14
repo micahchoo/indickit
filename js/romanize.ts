@@ -11,6 +11,14 @@
  * names tables were trained on with them, and every other word with the
  * "words" tables.
  *
+ * A language written in a script its own tables cannot read is spelled by the
+ * tables of a language of that script (rules 2026-10-13.1): Sindhi, Kashmiri
+ * and Urdu in Devanagari by Hindi's, Punjabi in Shahmukhi by Urdu's. Pass
+ * `load(lang, mode, { secondScript: true })` to load those tables too; without
+ * it such a word gives []. Sindhi in Devanagari and Manipuri in Bengali
+ * script are converted to the script of their own tables first (rules
+ * 2026-10-13.2): no other tables needed.
+ *
  * The tables are learned from data and loaded per language, on demand:
  *
  *     const r = await load("hi");        // fetches the Hindi and Brahmic files (beside this module, else jsDelivr)
@@ -26,6 +34,7 @@ import rulesJson from "../romanize/rules.json" with { type: "json" };
 import { version as PACKAGE_VERSION } from "../package.json" with { type: "json" };
 import { langCode } from "./lang";
 import { isLetter, isMark, nfc } from "./unidata";
+import { convert, type Converter } from "./romanize-convert";
 
 /**
  * The tables: "words" for running text, "names" for person names, "places" for
@@ -42,6 +51,9 @@ type Rescore = { file: string; beta: number; depth: number; order: number; bos: 
 // a word in the known list (its file in the language's folder: the names tables' training
 // tokens) is spelled by the mode's tables; any other word by the "else" mode's.
 type Route = { file: string; else: Mode };
+// The script route of a language (rules 2026-10-13.1): a word whose letters all lie in
+// `ranges` is spelled by the tables of `to`, in the same mode.
+type ScriptRoute = { ranges: [number, number][]; to: string; via?: string }; // via: a converter first (rules 2026-10-13.2)
 type Rules = {
   rules_version: string;
   beam: Record<Mode, number>;
@@ -56,6 +68,8 @@ type Rules = {
   families: Record<Mode, Record<string, FamilyEntry>>;
   rescore?: Partial<Record<Mode, Rescore>>;
   route?: Partial<Record<Mode, Record<string, Route>>>;
+  script_route?: Record<string, ScriptRoute[]>;
+  converters?: Record<string, Converter>;
 };
 const RULES = rulesJson as unknown as Rules;
 
@@ -120,7 +134,7 @@ const pooledCache = new Map<string, Promise<ArrayBuffer>>(); // pooled and share
 export async function load(
   lang: string,
   mode: Mode = "words",
-  opts: { fetch?: Fetcher; base?: URL | string; route?: boolean } = {},
+  opts: { fetch?: Fetcher; base?: URL | string; route?: boolean; secondScript?: boolean } = {},
 ): Promise<Romanizer> {
   const c = langCode(lang);
   const l = RULES.families[mode][c];
@@ -134,6 +148,10 @@ export async function load(
   };
   const rc = RULES.rescore?.[mode];
   const rt = opts.route ? RULES.route?.[mode]?.[c] : undefined;
+  // secondScript: the Romanizers of the languages that spell this one's second scripts
+  // a route to the language itself (a converter first) needs no other tables
+  const targets = opts.secondScript ? [...new Set((RULES.script_route?.[c] ?? []).map((r) => r.to).filter((t) => t !== c))] : [];
+  const seconds = Promise.all(targets.map((t) => load(t, mode, { ...opts, route: false, secondScript: false })));
   const [own, pool, lm, known, other] = await Promise.all([
     get(new URL(`${c}/${l.file}`, base)),
     shared(`${l.group}/${l.pooled}`),
@@ -141,8 +159,9 @@ export async function load(
     rt ? get(new URL(`${c}/${rt.file}`, base)) : undefined,
     rt ? load(c, rt.else, { ...opts, route: false }) : undefined,
   ]);
+  const second = Object.fromEntries((await seconds).map((r) => [r.lang, r]));
   return fromBytes(c, mode, new Uint8Array(own), new Uint8Array(pool), lm && new Uint8Array(lm),
-    known && other ? { known: new Uint8Array(known), other } : undefined);
+    known && other ? { known: new Uint8Array(known), other } : undefined, second);
 }
 
 /**
@@ -150,6 +169,9 @@ export async function load(
  * group's pooled one and, for a mode with a letter n-gram (names), that file too. `route`
  * turns the route on where the mode has one (Hindi names): the known list's file and the
  * Romanizer of the other mode (Hindi words), as `load(..., { route: true })` passes them.
+ * `second` holds, by language, the Romanizers that spell a word in a second script (the
+ * language's script route, same mode), as `load(..., { secondScript: true })` passes them;
+ * a second-script word whose Romanizer is missing gives [].
  */
 export function fromBytes(
   lang: string,
@@ -158,6 +180,7 @@ export function fromBytes(
   pool: Uint8Array,
   lm?: Uint8Array,
   route?: { known: Uint8Array; other: Romanizer },
+  second: Record<string, Romanizer> = {},
 ): Romanizer {
   const l = RULES.families[mode][lang];
   if (!l) throw new Error(`romanize: no ${mode} tables for "${lang}"`);
@@ -170,7 +193,15 @@ export function fromBytes(
   // the route: a word outside the known list is spelled by the other mode
   const known = rt ? readKnown(route!.known) : null;
   const x = new Mix(own, pool, l.tag, RULES.beam[mode], rc && lm ? new LetterLM(lm, rc) : null, rc);
-  const ranges = RULES.groups[l.group];
+  const routes = RULES.script_route?.[lang] ?? [];
+  for (const sr of routes) {
+    const o = second[sr.to];
+    if (o && (o.lang !== sr.to || o.mode !== mode)) throw new Error(`romanize: the script route of "${lang}" needs the ${sr.to} ${mode} Romanizer`);
+  }
+  const within = (s: string, rs: [number, number][]) =>
+    s !== "" && [...s].every((ch) => { const cp = ch.codePointAt(0)!; return rs.some(([lo, hi]) => cp >= lo && cp <= hi); });
+  // runs in a second script are romanized too (the script route)
+  const ranges = [...RULES.groups[l.group], ...routes.flatMap((r) => r.ranges)];
   const inScript = (ch: string) => {
     const cp = ch.codePointAt(0)!;
     return cp === 0x200c || cp === 0x200d || ranges.some(([lo, hi]) => cp >= lo && cp <= hi);
@@ -182,6 +213,12 @@ export function fromBytes(
   // joiners shape a letter and spell nothing: deleted before the lookup and the decode
   const word = (w: string, n = 4): string[] => {
     const s = stripJoiners(nfc(w));
+    const sr = routes.find((r) => within(s, r.ranges));
+    if (sr) {
+      // a second script: converted (rules 2026-10-13.2), or the tables of a language written in it
+      const t = sr.via ? convert(RULES.converters![sr.via], s) : s;
+      return sr.to === lang ? word(t, n) : second[sr.to]?.word(t, n) ?? [];
+    }
     const cps = [...s];
     if (cps.length > RULES.max_letters) {
       // One spelling: each piece's first, joined. The beam's ties made a long run

@@ -249,12 +249,30 @@ When a held-out read finds a fault and you correct it, the corrected number
 is no longer held out. Write that in the log. The normalizer's held-out fonts
 were read twice: once to find the nta damage, once to confirm the correction.
 
+Spend FINAL only where it can say something. In every job so far the same-source
+slices agreed within noise (romanize DEV 46.8, TEST 47.0; deromanize TEST 87.3,
+FINAL 87.1, read two hours apart), while the reads that decided verdicts came
+from another source (phonetic 83.6 on Wikidata, 42 on a real roster) or another
+metric (stem's Wiktionary FINAL, then real search). So: TEST is the release
+number when nothing was chosen on it; FINAL is read only when TEST was used to
+choose, one release slice of five at a time (`lu/split.py#release`), on the
+metric that gates the verdict. A spent set is not waste: it becomes DEV
+(`read_once(..., now_dev=True)`, "now DEV since <date>" in the job's table),
+with a fresh reserve named before the climb.
+
+Record every gap. A job's "Gaps" table holds each held-out number against DEV
+with the cell's noise and the gap's kind (split, source, metric, ceiling) and
+one next word: climb, scope, or key. A gap written only in prose is a limit
+nobody can find later.
+
 ### Keep held-out reserves
 
 One held-out read finds faults. After you correct them, the same set is no
 longer held out, so the correction needs a fresh one. Plan several reserves
 before the work starts: more than one source, disjoint samples of each
-source, and fonts that no step has used.
+source, and fonts that no step has used. Keep two other-source reserves unread
+at all times; when one is left, fetching the next is the next phase, not a
+task for after FINAL is spent.
 
 ### Hold out more than data
 

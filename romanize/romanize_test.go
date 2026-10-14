@@ -44,7 +44,9 @@ import (
 // jobs/romanize/export.py). Decode rows [family, lang, unified word, [top 4]] are the
 // model's own lists; lookup rows ["names-lookup", lang, word, [spellings]] are what
 // Word returns for a known name; route rows ["names-routed", lang, word, [top 4]] are
-// what WordWith returns in the names mode with Options{Route: true} (Hindi, rules 2026-10-13).
+// what WordWith returns in the names mode with Options{Route: true} (Hindi, rules 2026-10-13);
+// script-route rows ["script-routed-<mode>", lang, word, [top 4]] are what Word returns for a
+// word in a second script (rules 2026-10-13.1).
 func TestConformance(t *testing.T) {
 	f, err := os.Open("testdata/conformance.jsonl.gz")
 	if err != nil {
@@ -78,6 +80,8 @@ func TestConformance(t *testing.T) {
 			if got, err = romanize.WordWith(word, lang, romanize.Names, 4, romanize.Options{Route: true}); err != nil {
 				t.Fatal(err)
 			}
+		case "script-routed-words", "script-routed-names", "script-routed-places":
+			got = romanize.Word(word, lang, romanize.Mode(strings.TrimPrefix(fam, "script-routed-")), 4)
 		default:
 			got = romanize.Decode(word, lang, romanize.Mode(fam), 4)
 		}
@@ -176,10 +180,11 @@ func TestALongWordIsRomanizedInPieces(t *testing.T) {
 }
 
 // Manipuri is written in Meetei Mayek and in Bengali script. Its own tables hold Meetei
-// Mayek only; a Bengali-script word is spelled by the shared Brahmic table, so the pooled
-// file must be the Brahmic one (v0.6.0 loaded a Meetei-only file: রামেন gave "en").
+// Mayek only; since rules 2026-10-13.2 a Bengali-script word is converted to Meetei Mayek
+// first (রামদারশ = ꯔꯥꯝꯗꯥꯔꯁ). The pooled file must still be the Brahmic one (v0.6.0 loaded a
+// Meetei-only file: রামেন gave "en").
 func TestManipuriInBengaliScript(t *testing.T) {
-	for w, want := range map[string]string{"রামেন": "ramen", "ওরাম": "oram", "রামদারশ": "ramdarsh", "ꯔꯥꯝ": "ram"} {
+	for w, want := range map[string]string{"রামেন": "ramen", "ওরাম": "oram", "রামদারশ": "ramdarsha", "ꯔꯥꯝ": "ram"} {
 		if got := romanize.Word(w, "mni", romanize.Names, 1); len(got) != 1 || got[0] != want {
 			t.Errorf("mni names %q: %v, want %q", w, got, want)
 		}
@@ -277,5 +282,37 @@ func TestRouteListHoldsBareRuns(t *testing.T) {
 	}
 	if err != nil || got != fmt.Sprintf("'%s' %s-%s", want[0], want[1], want[2]) {
 		t.Errorf("TextWith: %q (%v), want the routed words %v", got, err, want)
+	}
+}
+
+// A language in a script its tables cannot read (rules 2026-10-13.1): Word and Text spell it with the
+// tables of the route's language (Kashmiri and Sindhi in Devanagari: Hindi's), and leave the
+// language's own script to its own tables.
+func TestScriptRoute(t *testing.T) {
+	for _, lang := range []string{"ks", "ur"} {
+		got, want := romanize.Word("सरकार", lang, romanize.Words, 4), romanize.Word("सरकार", "hi", romanize.Words, 4)
+		if fmt.Sprint(got) != fmt.Sprint(want) || len(got) == 0 {
+			t.Errorf("%s सरकार: %v, want Hindi's %v", lang, got, want)
+		}
+	}
+	if got, want := romanize.Text("हिक सरकार", "sd", romanize.Words), romanize.Text("हिक सरकार", "hi", romanize.Words); got != want {
+		t.Errorf("Text sd Devanagari: %q, want %q", got, want)
+	}
+	if got, want := romanize.Word("پنجاب", "pa", romanize.Names, 4), romanize.Word("پنجاب", "ur", romanize.Names, 4); fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("pa Shahmukhi: %v, want Urdu's %v", got, want)
+	}
+	if got, want := romanize.Word("سرڪار", "sd", romanize.Words, 4), romanize.Word("سرڪار", "hi", romanize.Words, 4); fmt.Sprint(got) == fmt.Sprint(want) {
+		t.Errorf("sd in its own script went through the route: %v", got)
+	}
+}
+
+// Sindhi in Devanagari and Manipuri in Bengali script are converted first (rules 2026-10-13.2): सरकार
+// spells as its Perso-Arabic form سرڪار does, মণিপুর as its Meetei Mayek form ꯃꯅꯤꯄꯨꯔ does.
+func TestScriptConverters(t *testing.T) {
+	for _, c := range [][3]string{{"sd", "सरकार", "سرڪار"}, {"mni", "মণিপুর", "ꯃꯅꯤꯄꯨꯔ"}} {
+		got, want := romanize.Word(c[1], c[0], romanize.Words, 4), romanize.Word(c[2], c[0], romanize.Words, 4)
+		if fmt.Sprint(got) != fmt.Sprint(want) || len(got) == 0 {
+			t.Errorf("%s %s: %v, want %s's %v", c[0], c[1], got, c[2], want)
+		}
 	}
 }

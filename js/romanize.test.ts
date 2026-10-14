@@ -15,6 +15,12 @@ async function routed(lang: string): Promise<Romanizer> {
   if (!cache.has(k)) cache.set(k, await load(lang, "names", { fetch: disk, route: true }));
   return cache.get(k)!;
 }
+// with the tables of the language's second scripts (rules 2026-10-13.1)
+async function second(lang: string, mode: Mode): Promise<Romanizer> {
+  const k = `${lang}.${mode}.second`;
+  if (!cache.has(k)) cache.set(k, await load(lang, mode, { fetch: disk, secondScript: true }));
+  return cache.get(k)!;
+}
 async function get(lang: string, mode: Mode): Promise<Romanizer> {
   const k = `${lang}.${mode}`;
   if (!cache.has(k)) cache.set(k, await load(lang, mode, { fetch: disk }));
@@ -33,6 +39,8 @@ test("every conformance row: the Python reference's lists", async () => {
       ? (await get(lang, "names")).word(word, 4)
       : fam === "names-routed"
       ? (await routed(lang)).word(word, 4)
+      : fam.startsWith("script-routed-")
+      ? (await second(lang, fam.slice("script-routed-".length) as Mode)).word(word, 4)
       : _decode(await get(lang, fam as Mode), word, 4);
     if (JSON.stringify(got) !== JSON.stringify(want)) bad.push(`${fam} ${lang} ${word}: ${JSON.stringify(got)} ≠ ${JSON.stringify(want)}`);
   }
@@ -91,7 +99,8 @@ test("a long word is romanized in pieces", async () => {
 // the Brahmic one (v0.6.0 loaded a Meetei-only file: রামেন gave "en").
 test("Manipuri in Bengali script", async () => {
   const mni = await get("mni", "names");
-  for (const [w, want] of [["রামেন", "ramen"], ["ওরাম", "oram"], ["রামদারশ", "ramdarsh"], ["ꯔꯥꯝ", "ram"]]) {
+  // since rules 2026-10-13.2 a Bengali-script word is converted to Meetei Mayek first (রামদারশ = ꯔꯥꯝꯗꯥꯔꯁ)
+  for (const [w, want] of [["রামেন", "ramen"], ["ওরাম", "oram"], ["রামদারশ", "ramdarsha"], ["ꯔꯥꯝ", "ram"]]) {
     expect([w, mni.word(w, 1)]).toEqual([w, [want]]);
   }
   expect(mni.text("ꯔꯥꯝ, রামেন")).toBe("ram, ramen");
@@ -167,4 +176,24 @@ test("Hindi names: the route is an option", async () => {
   expect(fromBytes("hi", "names", own, pool, lm, { known, other: words }).word("गेवरा")).toEqual(words.word("गेवरा"));
   expect(() => fromBytes("hi", "names", own, pool, lm, { known, other: names })).toThrow(/words Romanizer/);
   expect(languages("names")).toContain("hi");
+});
+
+// A language in a script its tables cannot read (rules 2026-10-13.1): with secondScript, word and
+// text spell it with the route language's tables; without, such a word gives [] (Go: nil when the
+// route's package is not imported); the language's own script keeps its own tables.
+test("the script route", async () => {
+  const hi = await get("hi", "words");
+  for (const lang of ["ks", "ur"]) {
+    expect([lang, (await second(lang, "words")).word("सरकार")]).toEqual([lang, hi.word("सरकार")]);
+    expect([lang, (await get(lang, "words")).word("सरकार")]).toEqual([lang, []]);
+  }
+  expect((await second("ks", "words")).text("हिक सरकार")).toBe(hi.text("हिक सरकार"));
+  // converted first, with no other tables (rules 2026-10-13.2): सरकार as سرڪار, মণিপুর as ꯃꯅꯤꯄꯨꯔ
+  for (const [lang, w, twin] of [["sd", "सरकार", "سرڪار"], ["mni", "মণিপুর", "ꯃꯅꯤꯄꯨꯔ"]]) {
+    const r = await get(lang, "words");
+    expect([lang, r.word(w)]).toEqual([lang, r.word(twin)]);
+    expect(r.word(w).length).toBeGreaterThan(0);
+  }
+  expect((await second("pa", "names")).word("پنجاب")).toEqual((await get("ur", "names")).word("پنجاب"));
+  expect((await second("sd", "words")).word("سرڪار")).toEqual((await get("sd", "words")).word("سرڪار"));
 });

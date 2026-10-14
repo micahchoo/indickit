@@ -10,21 +10,25 @@ import (
 	_ "github.com/micahchoo/indickit/deromanize/lang/brahmic"
 )
 
-//go:embed kn.list.bin
+//go:embed kn.english.bin
 var f0 []byte
 
-//go:embed kn.names-list.bin
+//go:embed kn.list.bin
 var f1 []byte
 
-//go:embed kn.names.bin
+//go:embed kn.names-list.bin
 var f2 []byte
 
-//go:embed kn.words.bin
+//go:embed kn.names.bin
 var f3 []byte
 
+//go:embed kn.words.bin
+var f4 []byte
+
 func init() {
-	deromanize.Register("kn.list.bin", f0)
-	deromanize.Register("kn.names-list.bin", f1)
-	deromanize.Register("kn.names.bin", f2)
-	deromanize.Register("kn.words.bin", f3)
+	deromanize.Register("kn.english.bin", f0)
+	deromanize.Register("kn.list.bin", f1)
+	deromanize.Register("kn.names-list.bin", f2)
+	deromanize.Register("kn.names.bin", f3)
+	deromanize.Register("kn.words.bin", f4)
 }

@@ -72,3 +72,50 @@ func TestCases(t *testing.T) {
 		t.Errorf("Fold(हिन्दी) = %+q", got)
 	}
 }
+
+// BenchmarkConformance runs Text and Fold over every conformance input, so a
+// change to the scan (rule 1b) or the passes shows in ns/op on real text.
+func BenchmarkConformance(b *testing.B) {
+	f, err := os.Open("testdata/conformance.jsonl.gz")
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer f.Close()
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		b.Fatal(err)
+	}
+	s := bufio.NewScanner(gz)
+	s.Buffer(make([]byte, 1<<20), 1<<20)
+	type input struct{ text, lang string }
+	var inputs []input
+	for s.Scan() {
+		var row [4]*string
+		if err := json.Unmarshal(s.Bytes(), &row); err != nil {
+			b.Fatal(err)
+		}
+		lang := ""
+		if row[1] != nil {
+			lang = *row[1]
+		}
+		inputs = append(inputs, input{*row[0], lang})
+	}
+	if err := s.Err(); err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	b.Run("Text", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, x := range inputs {
+				Text(x.text, x.lang)
+			}
+		}
+	})
+	b.Run("Fold", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, x := range inputs {
+				Fold(x.text, x.lang)
+			}
+		}
+	})
+}

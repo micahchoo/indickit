@@ -153,7 +153,7 @@ IndicXlit: 47.5%). It is ahead in one language: Urdu running text, 46.1%
 against 39.9%. No held-out set was read for this comparison, because no
 tool came within reach.
 
-The browser file is 9 KB gzipped (8.5 KB; it crossed 8 KB with the Hindi route option in 0.13.0). The tables load on demand, one language
+The browser file is 11 KB gzipped (8.5 KB; it crossed 8 KB with the Hindi route option in 0.13.0). The tables load on demand, one language
 and mode at a time: about 0.5 MB for names and 1.9 MB for text in a Brahmic
 language, 0.3 MB and 1.0 MB in Urdu (brotli, as jsDelivr serves them; the
 names figure includes the 148 KB letter model every names page shares).
@@ -262,8 +262,24 @@ in the tables.
   (sushil, susheel), and the score counts only the one the person typed or
   Wikidata holds.
 - **Manipuri in Bengali script.** The Manipuri tables were trained on
-  Meetei Mayek only. A Bengali-script Manipuri word is spelled by the shared
-  Brahmic table. In the names mode that gives the name (রামেন → ramen). In
-  the words mode the Manipuri table takes 84% of the mix and holds no
-  Bengali-script piece, so syllables drop (ওরাম → o). No answer key holds
-  Bengali-script Manipuri, so this is not measured.
+  Meetei Mayek only. Since rules 2026-10-13.2 a Bengali-script Manipuri word
+  is converted to Meetei Mayek first, by the rules of Singh (2012) and the
+  Unicode charts (মণিপুর → ꯃꯅꯤꯄꯨꯔ → manipur). Before, the words mode dropped
+  syllables (ওরাম → o). No answer key holds typed Bengali-script Manipuri:
+  on FLORES word pairs the spelling agrees with its Meetei Mayek twin's 76.1%
+  of the time (20.7% before), a measure of sameness, not of correctness.
+- **A second script** (rules 2026-10-13.1 and .2). Sindhi and Kashmiri
+  are also written in Devanagari, Urdu sometimes is, and Punjabi in
+  Shahmukhi; their tables read one script only. A Sindhi word in Devanagari
+  is converted to Perso-Arabic first (Rathore et al. 2023), then spelled by
+  the Sindhi tables. A Kashmiri or Urdu word in Devanagari, or a Punjabi word
+  in Shahmukhi, is spelled by Hindi's or Urdu's tables (Go: import `lang/hi`
+  or `lang/ur` too; TypeScript: `load(lang, mode, { secondScript: true })`;
+  without them such a word gives nothing, where before it gave a broken
+  spelling such as सरकार → "sr" in Kashmiri). On development data only (FLORES
+  word pairs whose Perso-Arabic twin has a human romanization in Aksharantar,
+  words the tables never saw), the first spelling is right for 50.1% of
+  Sindhi words in Devanagari (7.9% before; 32.5% through Hindi's tables) and
+  43.1% of Kashmiri (15.0% before); typed in Perso-Arabic the same words
+  reach 67% and 73%. Urdu in Devanagari and Punjabi in Shahmukhi are not
+  measured. No held-out set exists for this yet.

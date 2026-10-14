@@ -198,13 +198,15 @@ func Text(text, lang string, mode Mode) string { return write(text, lang, mode, 
 
 // TextMixed is Text for mixed text such as Hinglish: a word in the
 // language's English list stays as typed ("kal meeting hai" → "कल meeting
-// है"). Only Hindi has a list; for another language it equals Text.
+// है"). Hindi, Marathi, Kannada, Malayalam and Tamil have a list; for another
+// language it equals Text.
 func TextMixed(text, lang string, mode Mode) string { return write(text, lang, mode, true) }
 
 // English reports whether a Latin-typed word, read as Word reads it, is in
 // the language's English list: an English word that a typist of the
-// language writes in English. Only Hindi has a list; for another language,
-// or when its package is not imported, it returns false.
+// language writes in English. Hindi, Marathi, Kannada, Malayalam and Tamil
+// have a list; for another language, or when its package is not imported, it
+// returns false.
 func English(word, lang string) bool {
 	_, ok := countOf(englishList(langtag.Code(lang)), clean(word))
 	return ok

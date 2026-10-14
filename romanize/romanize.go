@@ -10,6 +10,13 @@
 // only the names the Names tables were trained on with them, and every other
 // word with the Words tables.
 //
+// A language written in a script its own tables cannot read is spelled by
+// the tables of a language of that script (rules 2026-10-13.1): Sindhi,
+// Kashmiri and Urdu in Devanagari by Hindi's, Punjabi in Shahmukhi by Urdu's.
+// Import that language's package as well (lang/hi, lang/ur); without it such
+// a word gives nil. Sindhi in Devanagari and Manipuri in Bengali script are
+// converted to the script of their own tables first (rules 2026-10-13.2).
+//
 // The tables are learned from data (see the README for what, and how good
 // they are) and loaded per language: import the languages you need,
 //
@@ -94,6 +101,14 @@ var rules struct {
 		File string `json:"file"`
 		Else Mode   `json:"else"`
 	} `json:"route"`
+	// ScriptRoute, by language (rules 2026-10-13.1): a word whose letters all lie in
+	// Ranges is spelled by To's tables in the same mode.
+	ScriptRoute map[string][]struct {
+		Ranges [][2]rune `json:"ranges"`
+		To     string    `json:"to"`
+		Via    string    `json:"via"` // a converter first (rules 2026-10-13.2), else none
+	} `json:"script_route"`
+	Converters map[string]*converter `json:"converters"`
 }
 
 // RulesVersion changes whenever any output changes: store it beside
@@ -219,6 +234,15 @@ func wordRouted(word, lang string, mode Mode, n int, rt *route) []string {
 		return nil
 	}
 	w := stripJoiners(unorm.NFC(word))
+	if to, via := scriptRoute(lang, w); to != "" { // a second script: converted, or the tables of a language written in it
+		if get(to, mode) == nil {
+			return nil
+		}
+		if via != "" {
+			w = rules.Converters[via].convert(w)
+		}
+		return wordRouted(w, to, mode, n, nil)
+	}
 	if rs := []rune(w); len(rs) > rules.MaxLetters {
 		// One spelling: each piece's first, joined. The beam's ties made a long run
 		// quadratic (32K code points: 49 s); real words are far shorter.
@@ -273,6 +297,9 @@ func textRouted(text, c string, mode Mode, rt *route) string {
 		return text
 	}
 	ranges := rules.Groups[l.Group]
+	for _, sr := range rules.ScriptRoute[c] { // runs in a second script are romanized too (scriptRoute)
+		ranges = append(slices.Clip(ranges), sr.Ranges...)
+	}
 	in := func(r rune) bool {
 		if r == 0x200C || r == 0x200D {
 			return true
@@ -304,6 +331,24 @@ func textRouted(text, c string, mode Mode, rt *route) string {
 		i = j
 	}
 	return b.String()
+}
+
+// scriptRoute names the language whose tables spell w, and the converter that comes first
+// ("" for none), when every letter of w lies in one of lang's script-route ranges; else "", "".
+func scriptRoute(lang, w string) (string, string) {
+	for _, sr := range rules.ScriptRoute[lang] {
+		all := w != ""
+		for _, r := range w {
+			if !slices.ContainsFunc(sr.Ranges, func(rg [2]rune) bool { return r >= rg[0] && r <= rg[1] }) {
+				all = false
+				break
+			}
+		}
+		if all {
+			return sr.To, sr.Via
+		}
+	}
+	return "", ""
 }
 
 // stripJoiners deletes ZWNJ and ZWJ. The tables hold a "\u200d" → "" chunk from the

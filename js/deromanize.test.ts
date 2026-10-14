@@ -147,7 +147,19 @@ test("the English list loads only when asked", async () => {
   expect(() => hi.isEnglish("meeting")).toThrow(/english: true/);
   expect(() => hi.textMixed("kal meeting hai")).toThrow(/english: true/);
   expect(hi.text("kal meeting hai")).not.toMatch(/[a-z]/); // text() is unchanged
-  const mr = await get("mr", "words"); // no list: nothing is English, textMixed is text
-  expect(mr.isEnglish("meeting")).toBe(false);
-  expect(mr.textMixed("kal meeting hai")).toBe(mr.text("kal meeting hai"));
+  const bn = await get("bn", "words"); // no list (Marathi has one since rules 2026-10-13): nothing is English, textMixed is text
+  expect(bn.isEnglish("meeting")).toBe(false);
+  expect(bn.textMixed("kal meeting hai")).toBe(bn.text("kal meeting hai"));
+});
+
+// Rules 2026-10-14: Kannada, Malayalam and Tamil have an English list. A known
+// English word is English and a native Latin-typed word is not; both words are
+// rows of deromanize/testdata/english-conformance.jsonl.gz.
+test("the Dravidian English lists", async () => {
+  for (const lang of ["kn", "ml", "ta"]) {
+    const d = await load(lang, "words", { fetch: disk, english: true });
+    expect([lang, d.isEnglish("phone"), d.isEnglish("kal")]).toEqual([lang, true, false]);
+  }
+  const { RULES_VERSION } = await import("./deromanize");
+  expect(RULES_VERSION >= "2026-10-14").toBe(true);
 });

@@ -128,10 +128,10 @@ right word first 58.8% of the time and had no word at all for 26.1%;
 
 ## What it does not do
 
-- **English in the middle of Indian text**, except in Hindi with
-  `textMixed` (below). About 8% of the words of romanized Hinglish are
-  English. `word` and `text` write every word they are given in the Indian
-  script.
+- **English in the middle of Indian text**, except in Hindi, Marathi,
+  Kannada, Malayalam and Tamil with `textMixed` (below). About 8% of the words
+  of romanized Hinglish are English. `word` and `text` write every word they
+  are given in the Indian script.
 - **Rare words out of context** are 10 points behind IndicXlit (Aksharantar);
   on Dakshina's more common isolated words, 3.1 points.
 - **Santali** has names only; **Bodo** and **Dogri** have words only.
@@ -140,9 +140,12 @@ right word first 58.8% of the time and had no word at all for 26.1%;
 
 `textMixed` (Go `TextMixed`) is `text` with one change: a word on the
 language's English list stays as typed. `isEnglish` (Go `English`) asks the
-list about one word. Only Hindi has a list; for another language nothing is
-English and `textMixed` equals `text`. In the browser, load the list with
+list about one word. Hindi and Marathi (since rules 2026-10-13) have a list,
+and Kannada, Malayalam and Tamil have one each since rules 2026-10-14; for
+another language nothing is English and `textMixed` equals `text`. In the
+browser, load the list with
 `load("hi", "words", { english: true })`: 22 KB gzipped, fetched only then.
+The same call with `mr`, `kn`, `ml` or `ta` loads that language's list.
 
 ```ts
 const hi = await load("hi", "words", { english: true });
@@ -172,12 +175,49 @@ calling every word Hindi. The list size and the filter's factor were chosen
 on HingLID's validation split; no HingLID word is in the list (its licence
 allows measurement only).
 
+**Marathi.** The same recipe: the 10,000 most frequent English words, less
+every word that a typist of Marathi writes often (the 50,000 most frequent
+Marathi words through `romanize`), at the same factor of two; nothing was
+tuned on the data below. On L3Cube-MeLID (Roman-script Marathi tweets with
+each word tagged Marathi or English; its test split, read once, 14,428
+words):
+
+| | Right | Marathi called English | English found |
+|---|---|---|---|
+| none (every word Marathi) | 79.7% | 0 | 0 |
+| Hindi's list | 90.7% | 3.6% | 68.3% |
+| `textMixed`'s Marathi list | **93.4%** | **1.3%** | **72.3%** |
+
+Hindi's list calls Marathi words such as kay ("what"), la and he English;
+Marathi's own list keeps most of them Marathi.
+
+**Kannada, Malayalam and Tamil.** The same recipe, one list each. On
+CoLI-Dravidian's train split (Roman-typed words, each tagged the language or
+English; read once):
+
+| | Right | Hindi's list | Native words called English |
+|---|---|---|---|
+| Malayalam | **94.1%** | 89.3% | **1.7%** |
+| Tamil | **91.6%** | 89.1% | **2.8%** |
+| Kannada | **94.1%** | 81.8% | 7.1% |
+
+Each of the three lists beats Hindi's. Kannada's read failed the planned cap
+(7.1% of Kannada words typed in Latin are called English and stay in Latin);
+it ships by the owner's decision, and that weakness is under "What it gets
+wrong" just below.
+
 **What it gets wrong.** Chat spellings of frequent Hindi words that are also
 English words stay in Latin: "to" (तो), "he" (है), "ap" (आप), "maine" (मैंने),
 "per" (पर). English words that Hindi writes in its own script are not on the
 list, so they are written in Devanagari: "video" → वीडियो, as a Hindi writer
 would. HingLID itself tags some Hindi shorthand as English ("h" for है, "kr"
 for कर), so part of the 38% of English words not found is the key's error.
+
+**Kannada's English list is too eager (a known weakness).** It calls 7.1% of
+Kannada words typed in Latin English, and they stay in Latin: with `textMixed`
+a Kannada word that is not English can keep its Latin letters where `text`
+would write it in Kannada. Malayalam and Tamil are at 1.7% and 2.8%. Kannada's
+list ships by the owner's decision although its read failed the planned cap.
 
 ## Size
 
@@ -186,6 +226,6 @@ own model, and its word list. Brotli-compressed: Hindi 1.97 MB, Urdu 1.35 MB,
 Tamil 2.57 MB, Malayalam 3.13 MB. The npm package carries no tables:
 `load()` reads them beside the module, else from jsDelivr at the package's
 version. In Go, import the languages you need; a program carries only
-their files. The browser file is 34 KB gzipped: it holds `normalize`, which
+their files. The browser file is 35 KB gzipped: it holds `normalize`, which
 the re-rank uses to look words up, and since rules 2026-10-12 `wellformed`
 (6 KB), which puts a broken spelling last.
